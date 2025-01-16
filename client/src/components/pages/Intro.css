@@ -20,11 +20,31 @@
   align-items: center;
 }
 
-.responsive-svg {
-  width: 60vw; /* 60% of the viewport width */
-  height: auto; /* let the height adjust automatically */
-  display: block; /* ensures no extra whitespace below inline SVG */
-  margin: 0 auto; /* center horizontally if desired */
+@media only screen and (max-device-width: 960px) {
+  .responsive-svg {
+    width: 80vw;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+}
+
+@media only screen and (max-device-width: 480px) {
+  .responsive-svg {
+    width: 90vw;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+}
+
+@media only screen and (min-device-width: 961px) {
+  .responsive-svg {
+    width: 60vw;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
 }
 
 .title-text {
