@@ -38,6 +38,7 @@ const Intro = () => {
           <GoogleLogin onSuccess={handleLogin} onError={(err) => console.log(err)} />
         )}
         <button>Play as guest</button>
+        <button>Tutorial</button>
       </div>
     </div>
   );

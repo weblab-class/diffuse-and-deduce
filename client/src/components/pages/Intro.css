@@ -42,7 +42,7 @@ button {
   height: 40px; /* example height; adjust to match GoogleLogin */
 
   /* Match font, padding, borders, etc. */
-  font-size: 14px; /* match GoogleLogin’s font-size if known */
+  font-size: 14.5px; /* match GoogleLogin’s font-size if known */
   font-weight: 500;
   font-family: "Roboto", serif; /* or the font used by GoogleLogin */
   padding: 0 12px; /* adjust horizontal padding as needed */
