@@ -20,18 +20,22 @@
 :root {
   --yellow: #f0f3bd;
   --brown: #654900;
+  --darkcyan: #0f3c4b;
 
   --xs: 4px;
   --s: 8px;
   --m: 16px;
   --l: 24px;
+
+  --light: 300;
+  --semibold: 500;
 }
 
 body {
   margin: 0;
   padding: 0;
-  font-family: "Roboto", sans-serif;
-  font-weight: 300;
+  font-family: "Roboto", serif;
+  font-weight: var(--light);
   overflow: hidden;
 }
 

@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./components/App";
 import Intro from "./components/pages/Intro";
+import ChooseNumPlayers from "./components/pages/ChooseNumPlayers";
 import NotFound from "./components/pages/NotFound";
 
 import {
@@ -13,12 +14,13 @@ import {
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-const GOOGLE_CLIENT_ID = "760303899504-i94um0cvcqju0vjks0viegunjen8puj0.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "199130750908-mjfqj052l47dekm5kdd3j8c5cmk9d5j0.apps.googleusercontent.com";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route errorElement={<NotFound />} element={<App />}>
       <Route path="/" element={<Intro />} />
+      <Route path="/choose-num-players" element={<ChooseNumPlayers />} />
     </Route>
   )
 );

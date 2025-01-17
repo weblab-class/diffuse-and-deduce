@@ -21,8 +21,32 @@ const router = express.Router();
 //initialize socket
 const socketManager = require("./server-socket");
 
+// Generating temporary IDs for guests
+const { v4: uuidv4 } = require("uuid");
+
 router.post("/login", auth.login);
+
+function guestLogin(req, res) {
+  // Generate a unique temporary ID
+  const guestId = uuidv4();
+
+  // Create a guest user object
+  const guestUser = {
+    id: guestId,
+    name: `Guest-${guestId.substring(0, 5)}`, // Optional: create a display name
+    // guest: true, // Flag to indicate this is a guest user
+  };
+
+  // Store the guest user in the session
+  req.session.user = guestUser;
+
+  // Respond with the guest user data
+  res.send(guestUser);
+}
+router.post("/guest-login", guestLogin);
+
 router.post("/logout", auth.logout);
+
 router.get("/whoami", (req, res) => {
   if (!req.user) {
     // not logged in

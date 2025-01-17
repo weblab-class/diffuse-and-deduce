@@ -1,12 +1,43 @@
 import React, { useContext } from "react";
-import { GoogleLogin, googleLogout } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
+import { useNavigate } from "react-router-dom";
+
+import Button from "../modules/Button";
 
 import "../../utilities.css";
 import "./Intro.css";
 import { UserContext } from "../App";
 
 const Intro = () => {
-  const { userId, handleLogin, handleLogout } = useContext(UserContext);
+  const { handleLogin, handleGuestLogin } = useContext(UserContext);
+
+  const navigate = useNavigate();
+
+  const playAsGuest = async () => {
+    try {
+      const response = await fetch("/api/guest-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to log in as guest");
+      }
+      const guestUser = await response.json();
+
+      // Use context or state to store guest info if needed
+      handleGuestLogin(guestUser);
+
+      // Redirect to the desired page after guest login
+      navigate("/choose-num-players");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const goToTutorial = () => {
+    navigate("/tutorial");
+  };
+
   return (
     <div className="intro-container">
       <div style={{ width: "100%", textAlign: "center" }}>
@@ -25,20 +56,9 @@ const Intro = () => {
         </svg>
       </div>
       <div className="button-container">
-        {userId ? (
-          <button
-            onClick={() => {
-              googleLogout();
-              handleLogout();
-            }}
-          >
-            Logout
-          </button>
-        ) : (
-          <GoogleLogin onSuccess={handleLogin} onError={(err) => console.log(err)} />
-        )}
-        <button>Play as guest</button>
-        <button>Tutorial</button>
+        <GoogleLogin onSuccess={handleLogin} onError={(err) => console.log(err)} />
+        <Button text="Play as guest" onClick={playAsGuest} />
+        <Button text="Tutorial" onClick={goToTutorial} />
       </div>
     </div>
   );

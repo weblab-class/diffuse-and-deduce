@@ -1,0 +1,30 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap");
+
+.button-link {
+  width: 183px;
+  height: 40px;
+
+  font-size: 14.5px;
+  font-weight: var(--semibold);
+  text-decoration: none;
+
+  padding: 0 12px;
+  border: 1px solid var(--brown);
+  border-radius: 4px;
+
+  background-color: var(--yellow);
+  color: var(--brown);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.button-link:hover {
+  border-color: var(--yellow);
+  background-color: var(--brown);
+  color: var(--yellow);
+}

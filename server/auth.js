@@ -3,7 +3,7 @@ const User = require("./models/user");
 const socketManager = require("./server-socket");
 
 // create a new OAuth client used to verify google sign-in
-const CLIENT_ID = "760303899504-i94um0cvcqju0vjks0viegunjen8puj0.apps.googleusercontent.com";
+const CLIENT_ID = "199130750908-mjfqj052l47dekm5kdd3j8c5cmk9d5j0.apps.googleusercontent.com";
 const client = new OAuth2Client(CLIENT_ID);
 
 // accepts a login token from the frontend, and verifies that it's legit
@@ -41,7 +41,10 @@ function login(req, res) {
     })
     .catch((err) => {
       console.log(`Failed to log in: ${err}`);
-      res.status(401).send({ err });
+      res.status(401).send({
+        error: err.message || "Unauthorized",
+        details: err,
+      });
     });
 }
 
