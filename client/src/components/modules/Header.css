@@ -1,4 +1,12 @@
 .Header-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+}
+
+.Header-subcontainer {
   padding: var(--s) var(--m);
   background-color: var(--darkcyan);
 
@@ -7,6 +15,11 @@
 
   display: flex;
   justify-content: space-between;
+}
+
+.Header-right {
+  display: flex;
+  gap: 2rem;
 }
 
 .textlike {

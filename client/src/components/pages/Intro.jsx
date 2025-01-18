@@ -34,10 +34,6 @@ const Intro = () => {
     }
   };
 
-  const goToTutorial = () => {
-    navigate("/tutorial");
-  };
-
   return (
     <div className="intro-container">
       <div style={{ width: "100%", textAlign: "center" }}>
@@ -58,7 +54,7 @@ const Intro = () => {
       <div className="button-container">
         <GoogleLogin onSuccess={handleLogin} onError={(err) => console.log(err)} />
         <Button text="Play as guest" onClick={playAsGuest} />
-        <Button text="Tutorial" onClick={goToTutorial} />
+        <Button text="Tutorial" onClick={() => navigate("/tutorial")} />
       </div>
     </div>
   );

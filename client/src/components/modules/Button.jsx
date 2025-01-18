@@ -2,11 +2,19 @@ import React from "react";
 
 import "./Button.css";
 
-const Button = (props) => {
+const Button = ({ text, onClick, disabled = false, extraClass = "" }) => {
   return (
-    <button onClick={props.onClick} className="button-link">
-      {props.text}
-    </button>
+    <>
+      {disabled ? (
+        <button onClick={onClick} className={`button-link ${extraClass}`} disabled>
+          {text}
+        </button>
+      ) : (
+        <button onClick={onClick} className={`button-link ${extraClass}`}>
+          {text}
+        </button>
+      )}
+    </>
   );
 };
 

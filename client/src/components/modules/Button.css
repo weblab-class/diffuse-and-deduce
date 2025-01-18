@@ -9,7 +9,7 @@
   text-decoration: none;
 
   padding: 0 12px;
-  border: 1px solid var(--brown);
+  border: 1.5pt solid var(--brown);
   border-radius: 4px;
 
   background-color: var(--yellow);
@@ -27,4 +27,20 @@
   border-color: var(--yellow);
   background-color: var(--brown);
   color: var(--yellow);
+}
+
+.button-link:disabled {
+  background-color: #b7b988;
+  pointer-events: none;
+}
+
+.inverted-button {
+  background-color: var(--brown);
+  color: var(--yellow);
+}
+
+.inverted-button:hover {
+  border-color: var(--brown);
+  background-color: var(--yellow);
+  color: var(--brown);
 }

@@ -6,21 +6,13 @@
   min-height: 100vh;
 }
 
-.choose_num_players-header-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50px;
-}
-
 .choose_num_players-button-container {
   display: flex;
   flex-direction: row;
   gap: 20vw;
   align-items: center;
   justify-content: center;
-  padding-top: 50px;
+  padding-top: 25px;
   min-height: 100vh;
 }
 

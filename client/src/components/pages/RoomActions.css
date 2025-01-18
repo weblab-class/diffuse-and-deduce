@@ -1,0 +1,67 @@
+.room_actions-page-container {
+  background: url("/background-images/background-room_actions.png") no-repeat center center;
+  background-size: cover;
+  overflow: hidden;
+
+  min-height: 100vh;
+}
+
+.room_actions-button-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3vw;
+  align-items: center;
+  justify-content: center;
+  padding-top: 25px;
+  min-height: 100vh;
+}
+
+.create-container {
+  width: 410px;
+}
+
+.join-container {
+  width: 410px;
+  display: flex;
+  gap: 15px;
+}
+
+.enter-room-code {
+  background-color: rgba(0, 0, 0, 0.25);
+  color: #ffffff;
+
+  width: 155px;
+  height: 37px;
+
+  font-size: 14.5px;
+  font-weight: var(--light);
+  text-decoration: none;
+
+  padding: 0 12px;
+  border: 1pt solid #ffffff;
+  border-radius: 4px;
+}
+
+.enter-room-code::placeholder {
+  color: #ffffff;
+}
+
+.enter-room-code:focus {
+  outline-width: 0;
+}
+
+@media (max-width: 480px) {
+  .room_actions-button-container {
+    gap: 20vw;
+  }
+
+  .create-container {
+    width: 190px;
+  }
+
+  .join-container {
+    width: 190px;
+    flex-direction: column;
+    gap: 10px;
+  }
+}

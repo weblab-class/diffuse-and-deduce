@@ -5,7 +5,7 @@ import jwt_decode from "jwt-decode";
 
 import "../utilities.css";
 
-import { socket } from "../client-socket";
+import socket from "../client-socket";
 
 import { get, post } from "../utilities";
 
