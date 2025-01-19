@@ -6,6 +6,7 @@ import ChooseNumPlayers from "./components/pages/ChooseNumPlayers";
 import RoomActions from "./components/pages/RoomActions";
 import Lobby from "./components/pages/Lobby";
 import NotFound from "./components/pages/NotFound";
+import GameSettings from "./components/pages/GameSettings";
 
 import {
   createBrowserRouter,
@@ -25,6 +26,7 @@ const router = createBrowserRouter(
       <Route path="/choose-num-players" element={<ChooseNumPlayers />} />
       <Route path="/room-actions" element={<RoomActions />} />
       <Route path="/lobby/:roomCode" element={<Lobby />} />
+      <Route path="/game-settings" element={<GameSettings />} />
     </Route>
   )
 );

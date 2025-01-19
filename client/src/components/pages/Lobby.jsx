@@ -65,7 +65,11 @@ const Lobby = () => {
         <h1>Players:</h1>
         <div className="players-box"></div>
         <hr></hr>
-        <Button text="Continue" extraClass="inverted-button" />
+        <Button
+          text="Continue"
+          extraClass="inverted-button"
+          onClick={() => navigate("/game-settings")}
+        />
       </div>
     </div>
     //   {/* <h1>Lobby for Room: {roomCode}</h1>
