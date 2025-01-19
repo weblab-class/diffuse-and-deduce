@@ -40,13 +40,13 @@ module.exports = {
     io.on("connection", (socket) => {
       console.log(`socket has connected ${socket.id}`);
 
-      socket.on("createRoom", async ({ playerName }, callback) => {
+      socket.on("createRoom", async ({ userName }, callback) => {
         try {
           const roomCode = generateRoomCode(); // e.g. random string or use uuid
           const newRoom = new Room({
             code: roomCode,
             hostId: socket.id,
-            players: [{ id: socket.id, name: playerName }],
+            players: [{ id: socket.id, name: userName }],
             // settings, isGameStarted default from schema
           });
           await newRoom.save(); // store in DB
@@ -59,7 +59,7 @@ module.exports = {
         }
       });
 
-      socket.on("joinRoom", async ({ roomCode, playerName }, callback) => {
+      socket.on("joinRoom", async ({ roomCode, userName }, callback) => {
         try {
           const room = await Room.findOne({ code: roomCode });
           if (!room) {
@@ -69,7 +69,7 @@ module.exports = {
             return callback({ error: "Game has already started in this room." });
           }
           // Add the player to room
-          room.players.push({ id: socket.id, name: playerName });
+          room.players.push({ id: socket.id, name: userName });
           await room.save();
 
           socket.join(roomCode);
@@ -77,6 +77,7 @@ module.exports = {
           // Notify everyone in the room of updated player list
           io.to(roomCode).emit("roomData", {
             players: room.players,
+            hostId: room.hostId,
           });
 
           callback({ success: true });

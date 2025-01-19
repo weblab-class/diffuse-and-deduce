@@ -11,40 +11,27 @@ import "./Lobby.css";
 
 const Lobby = () => {
   const { roomCode } = useParams();
-  const isHost = true;
+  // const isHost = true;
 
   const [players, setPlayers] = useState([]);
-  // const [settings, setSettings] = useState({ duration: 60, rounds: 5 });
+  const [isHost, setIsHost] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    socket.on("roomData", ({ players }) => {
+    socket.on("roomData", ({ players, hostId }) => {
       setPlayers(players);
+      console.log("Updated players list:", players);
+      // console.log("Host ID:", hostId, "Socket ID:", socket.id);
+      if (socket.id === hostId) {
+        setIsHost(true);
+      }
     });
-
-    // socket.on("settingsUpdated", (newSettings) => {
-    //   setSettings(newSettings);
-    // });
-
-    // socket.on("gameStarted", ({ settings }) => {
-    //   console.log("Game started with settings:", settings);
-    // });
 
     return () => {
       socket.off("roomData");
-      // socket.off("settingsUpdated");
-      // socket.off("gameStarted");
     };
   }, []);
-
-  //   const updateSettings = () => {
-  //     socket.emit("updateSettings", { roomCode, settings });
-  //   };
-
-  //   const startGame = () => {
-  //     socket.emit("startGame", { roomCode });
-  //   };
 
   const leaveRoom = () => {
     socket.emit("leaveRoom", { roomCode: currentRoomCode }, (response) => {
@@ -63,13 +50,28 @@ const Lobby = () => {
         <h1 className="room-code">Room code: {roomCode}</h1>
         <hr></hr>
         <h1>Players:</h1>
-        <div className="players-box"></div>
-        <hr></hr>
-        <Button
+        <div className="players-box flex gap-4">
+          {players.map((player) => (
+              <div key={player.id} className="text-[#675325]">
+                {player.name}
+              </div>
+          ))}
+        </div>
+        {isHost && (
+          <>
+            <hr></hr>
+            <Button text="Start Game" onClick={() => navigate("/game-settings")} />
+          </>
+        )}
+        {/* <Button text="HII"/> */}
+        {/* (isHost ? (
+          <Button text="Start Game" onClick={() => navigate("/game-settings")} />
+        ) : ()) */}
+        {/* <Button
           text="Continue"
           extraClass="inverted-button"
           onClick={() => navigate("/game-settings")}
-        />
+        /> */}
       </div>
     </div>
     //   {/* <h1>Lobby for Room: {roomCode}</h1>
