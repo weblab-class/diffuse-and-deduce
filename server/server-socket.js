@@ -127,6 +127,7 @@ module.exports = {
           io.to(roomCode).emit("roomData", {
             players: room.players,
             hostId: room.hostId,
+            hostId: room.hostId,
           });
 
           callback({ success: true });
