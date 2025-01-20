@@ -31,11 +31,23 @@ const Header = (props) => {
     <div className="Header-container">
       <nav className="Header-subcontainer">
         <div className="Header-left">
-          {userId ? <div>Logged in as {userName}</div> : <div>Playing as {userName}</div>}
+          {userId ? (
+            <div>Logged in as {userName}</div>
+          ) : (
+            userName && <div>Playing as {userName}</div>
+          )}
         </div>
         <div className="Header-right">
           {(!userId || location.pathname !== "/choose-num-players") && (
-            <button className="textlike" onClick={handleBack}>
+            <button
+              className="textlike"
+              onClick={() => {
+                navigate(`/${props.backNav}`);
+                if (props.backNav === "") {
+                  handleLogout();
+                }
+              }}
+            >
               Back
             </button>
           )}

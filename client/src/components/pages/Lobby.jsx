@@ -80,6 +80,16 @@ const Lobby = () => {
         <div className="flex justify-center">
           <Button text="Leave Room" extraClass="inverted-button" onClick={leaveRoom} />
         </div>
+        {isHost && (
+          <>
+            <hr></hr>
+            <Button
+              text="Continue"
+              onClick={() => navigate("/game-settings")}
+              extraClass="inverted-button"
+            />
+          </>
+        )}
       </div>
     </div>
   );

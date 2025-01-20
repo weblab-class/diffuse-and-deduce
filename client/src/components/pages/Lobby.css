@@ -14,8 +14,8 @@
   padding: 1.5rem;
   background-color: var(--yellow);
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Soft shadow for depth */
   color: var(--brown);
+  border: 1.5pt solid var(--brown);
 }
 
 /* Headings style */
@@ -28,17 +28,17 @@ h1 {
 .lobby-text-container hr {
   margin: 1rem auto; /* Center the rule and space it */
   border-color: var(--brown);
-  border-width: 1pt;
+  border-width: 0.5pt;
 }
 
 /* Players box: visually separate from background */
 .players-box {
-  min-height: 100px; /* Reserve space for player names or placeholders */
+  min-height: 150px; /* Reserve space for player names or placeholders */
   background-color: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1pt solid rgba(255, 255, 255, 0.3);
   border-radius: 4px;
   border-color: var(--brown);
-  margin: 1rem auto;
+  margin: 1rem auto auto auto;
   display: flex; /* If you want to lay out player names horizontally */
   align-items: center;
   justify-content: center;
@@ -46,6 +46,10 @@ h1 {
 
 .players-box span {
   margin: 0 0.5rem;
+}
+
+.code {
+  font-weight: var(--semibold);
 }
 
 @media (max-width: 480px) {
