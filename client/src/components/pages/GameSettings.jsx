@@ -1,7 +1,13 @@
 import React from "react";
 import Header from "../modules/Header";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 const GameSettings = () => {
+  const navigate = useNavigate();
+  const { roomCode } = useParams();
+  const { state } = useLocation();
+  const gameMode = state?.gameMode || "multi";
+
   const [settings, setSettings] = React.useState({
     rounds: 1,
     timePerRound: 30,
@@ -43,11 +49,25 @@ const GameSettings = () => {
     }));
   };
 
+  const handleStartGame = () => {
+    if (!selectedTopic) return;
+
+    const gameState = {
+      settings: settings,
+      selectedTopic: selectedTopic,
+      gameMode: gameMode,
+      isSinglePlayer: gameMode === "single",
+    };
+
+    // Both single and multiplayer use roomCode for unique game instances
+    navigate(`/game/${roomCode}`, { state: gameState });
+  };
+
   return (
     <>
-      <Header backNav="room-actions" />
+      <Header backNav={gameMode === "single" ? "/choose-num-players" : "/room-actions"} />
       {/* Background container */}
-      <div className="h-screen bg-[url('background-images/background-game_settings.png')] bg-cover bg-center bg-no-repeat grid place-items-center p-8 font-sans antialiased">
+      <div className="h-screen bg-[url('/background-images/background-game_settings.png')] bg-cover bg-center bg-no-repeat grid place-items-center p-8 font-sans antialiased">
         <div className="flex gap-12 min-h-fit">
           {/* Topics Container */}
           <div className="bg-[#FFFCD1]/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl ring-1 ring-[#FFFCD1]/30 hover:shadow-2xl transition-all duration-300 flex flex-col w-96">
@@ -122,31 +142,33 @@ const GameSettings = () => {
                 </div>
               </div>
               {/* Toggle switch container */}
-              <div className="flex items-center justify-between group">
-                <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
-                  Sabotage:
-                </span>
-                <div className="w-64 flex justify-end">
-                  {/* main toggle switch */}
-                  <div
-                    onClick={() => handleToggle("sabotage")}
-                    className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ease-in-out ${
-                      settings.sabotage
-                        ? "bg-green-500 shadow-inner"
-                        : "bg-gray-200 hover:bg-gray-300"
-                    }`}
-                  >
-                    {/* toggle circle */}
+              {gameMode === "multi" && (
+                <div className="flex items-center justify-between group">
+                  <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
+                    Sabotage:
+                  </span>
+                  <div className="w-64 flex justify-end">
+                    {/* main toggle switch */}
                     <div
-                      className={`bg-white w-5 h-5 rounded-full shadow-md transform duration-300 ease-in-out ${
+                      onClick={() => handleToggle("sabotage")}
+                      className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ease-in-out ${
                         settings.sabotage
-                          ? "translate-x-7 shadow-lg"
-                          : "translate-x-0 shadow-md hover:shadow-lg"
+                          ? "bg-green-500 shadow-inner"
+                          : "bg-gray-200 hover:bg-gray-300"
                       }`}
-                    ></div>
+                    >
+                      {/* toggle circle */}
+                      <div
+                        className={`bg-white w-5 h-5 rounded-full shadow-md transform duration-300 ease-in-out ${
+                          settings.sabotage
+                            ? "translate-x-7 shadow-lg"
+                            : "translate-x-0 shadow-md hover:shadow-lg"
+                        }`}
+                      ></div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Hints toggle */}
               <div className="flex items-center justify-between group">
@@ -206,6 +228,34 @@ const GameSettings = () => {
             </div>
           </div>
         </div>
+      </div>
+      {/* Bottom Buttons Container */}
+      <div className="fixed bottom-8 left-0 right-0 flex justify-center items-center">
+        {/* Help Button (Left) */}
+        <button
+          onClick={() => navigate("/tutorial")}
+          className="absolute left-8 w-12 h-12 bg-emerald-600 hover:bg-emerald-500 
+                   text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300
+                   flex items-center justify-center text-2xl font-bold"
+          aria-label="Help"
+        >
+          ?
+        </button>
+
+        {/* Start Game Button */}
+        <button
+          onClick={handleStartGame}
+          disabled={!selectedTopic}
+          className={`px-8 py-3 text-lg font-semibold rounded-xl shadow-lg 
+                   transition-all duration-300 transform
+                   ${
+                     selectedTopic
+                       ? "bg-emerald-600 hover:bg-emerald-500 text-white hover:shadow-xl hover:scale-105"
+                       : "bg-gray-400 cursor-not-allowed text-gray-300"
+                   }`}
+        >
+          {selectedTopic ? "Start Game" : "Select a Topic to Start"}
+        </button>
       </div>
     </>
   );

@@ -12,7 +12,6 @@ const addUser = (user, socket) => {
   const oldSocket = userToSocketMap[user._id];
   if (oldSocket && oldSocket.id !== socket.id) {
     // there was an old tab open for this user, force it to disconnect
-    // FIXME: is this the behavior you want?
     oldSocket.disconnect();
     delete socketToUserMap[oldSocket.id];
   }
@@ -40,18 +39,34 @@ module.exports = {
     io.on("connection", (socket) => {
       console.log(`socket has connected ${socket.id}`);
 
+      socket.on("checkRoomExists", async (roomCode, callback) => {
+        try {
+          const room = await Room.findOne({ code: roomCode });
+          callback({ exists: !!room, error: null });
+        } catch (err) {
+          console.error("Error checking room:", err);
+          callback({ exists: false, error: "Failed to check room." });
+        }
+      });
+
       socket.on("createRoom", async ({ playerName }, callback) => {
         try {
-          const roomCode = generateRoomCode(); // e.g. random string or use uuid
+          const roomCode = generateRoomCode();
           const newRoom = new Room({
             code: roomCode,
             hostId: socket.id,
             players: [{ id: socket.id, name: playerName }],
-            // settings, isGameStarted default from schema
           });
-          await newRoom.save(); // store in DB
+          await newRoom.save();
 
-          socket.join(roomCode); // join the socket to this room
+          socket.join(roomCode);
+
+          // Emit room data to everyone in room
+          io.to(roomCode).emit("roomData", {
+            players: newRoom.players,
+            hostId: newRoom.hostId,
+          });
+
           callback({ roomCode });
         } catch (err) {
           console.error("Error creating room:", err);
@@ -59,8 +74,28 @@ module.exports = {
         }
       });
 
+      socket.on("getRoomData", async ({ roomCode }) => {
+        try {
+          const room = await Room.findOne({ code: roomCode });
+          if (room) {
+            // Emit to everyone in the room
+            io.to(roomCode).emit("roomData", {
+              players: room.players,
+              hostId: room.hostId,
+            });
+          }
+        } catch (err) {
+          console.error("Error getting room data:", err);
+        }
+      });
+
       socket.on("joinRoom", async ({ roomCode, playerName }, callback) => {
         try {
+          // Validate input
+          if (!roomCode || !playerName) {
+            return callback({ error: "Room code and player name are required." });
+          }
+
           const room = await Room.findOne({ code: roomCode });
           if (!room) {
             return callback({ error: "Room not found." });
@@ -68,15 +103,30 @@ module.exports = {
           if (room.isGameStarted) {
             return callback({ error: "Game has already started in this room." });
           }
-          // Add the player to room
-          room.players.push({ id: socket.id, name: playerName });
+
+          // Check if player is already in the room
+          const existingPlayer = room.players.find((player) => player.name === playerName);
+          if (existingPlayer) {
+            // Update the existing player's socket ID if needed
+            const oldSocketId = existingPlayer.id;
+            existingPlayer.id = socket.id;
+            if (room.hostId === oldSocketId) {
+              room.hostId = socket.id;
+            }
+          } else {
+            // Add the player to room in database only if they're not already there
+            room.players.push({ id: socket.id, name: playerName });
+          }
+
           await room.save();
 
+          // Join the socket room
           socket.join(roomCode);
 
-          // Notify everyone in the room of updated player list
+          // Immediately emit room data to ALL clients in the room
           io.to(roomCode).emit("roomData", {
             players: room.players,
+            hostId: room.hostId,
           });
 
           callback({ success: true });
@@ -160,23 +210,13 @@ module.exports = {
           // 5. Notify the remaining players in the room
           io.to(roomCode).emit("roomData", {
             players: room.players,
+            hostId: room.hostId,
           });
 
           callback({ success: true });
         } catch (err) {
           console.error("Error leaving room:", err);
           callback({ error: "Failed to leave room." });
-        }
-      });
-
-      // Example in server-socket.js
-      socket.on("checkRoomExists", async (roomCode, callback) => {
-        try {
-          const room = await Room.findOne({ code: roomCode });
-          callback(!!room); // true if found, false if not
-        } catch (err) {
-          console.error("Error checking room:", err);
-          callback(false);
         }
       });
 

@@ -32,9 +32,9 @@ function guestLogin(req, res) {
 
   // Create a guest user object
   const guestUser = {
-    id: guestId,
+    guest_id: guestId,
     name: `Guest-${guestId.substring(0, 5)}`, // Optional: create a display name
-    // guest: true, // Flag to indicate this is a guest user
+    is_guest: true, // Flag to indicate this is a guest user
   };
 
   // Store the guest user in the session
@@ -48,12 +48,12 @@ router.post("/guest-login", guestLogin);
 router.post("/logout", auth.logout);
 
 router.get("/whoami", (req, res) => {
-  if (!req.user) {
+  if (req.session.user) {
+    res.send(req.session.user);
+  } else {
     // not logged in
     return res.send({});
   }
-
-  res.send(req.user);
 });
 
 router.post("/initsocket", (req, res) => {
