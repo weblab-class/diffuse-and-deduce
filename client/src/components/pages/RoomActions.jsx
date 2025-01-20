@@ -28,19 +28,24 @@ const RoomActions = () => {
       return;
     }
 
-    socket.emit("checkRoomExists", userInput, (response) => {
-      if (response.error) {
-        setError(response.error);
-        setIsRoomCodeValid(false);
-      } else {
-        setIsRoomCodeValid(response.exists);
-        if (!response.exists) {
-          setError("Room not found");
+    // Only check if room exists if we have a complete room code
+    if (userInput.length === 5) {
+      socket.emit("checkRoomExists", userInput, (response) => {
+        if (response.error) {
+          setError(response.error);
+          setIsRoomCodeValid(false);
         } else {
-          setError(""); // Clear error if room exists
+          setIsRoomCodeValid(response.exists);
+          if (!response.exists) {
+            setError("Room not found");
+          } else {
+            setError(""); // Clear error if room exists
+          }
         }
-      }
-    });
+      });
+    } else {
+      setIsRoomCodeValid(false);
+    }
   }
 
   const createRoom = () => {
@@ -90,10 +95,6 @@ const RoomActions = () => {
         navigate(`/lobby/${roomCode}`);
       }
     });
-  };
-
-  const handleChange = (e) => {
-    setRoomCode(e.target.value);
   };
 
   return (

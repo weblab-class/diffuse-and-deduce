@@ -226,9 +226,37 @@ module.exports = {
         }
       });
 
-      socket.on("disconnect", (reason) => {
+      socket.on("disconnect", async (reason) => {
         const user = getUserFromSocketID(socket.id);
         removeUser(user, socket);
+
+        // Find and update any rooms this socket was in
+        try {
+          const rooms = await Room.find({ "players.id": socket.id });
+          for (const room of rooms) {
+            // Remove the player from the room
+            room.players = room.players.filter((player) => player.id !== socket.id);
+
+            // If this was the host and there are other players, assign new host
+            if (room.hostId === socket.id && room.players.length > 0) {
+              room.hostId = room.players[0].id;
+            }
+
+            // If room is empty, delete it
+            if (room.players.length === 0) {
+              await Room.deleteOne({ _id: room._id });
+            } else {
+              // Otherwise save and notify remaining players
+              await room.save();
+              io.to(room.code).emit("roomData", {
+                players: room.players,
+                hostId: room.hostId,
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Error handling disconnect room cleanup:", err);
+        }
       });
     });
   },
