@@ -40,6 +40,18 @@ module.exports = {
     io.on("connection", (socket) => {
       console.log(`socket has connected ${socket.id}`);
 
+      // server-socket.js
+      socket.on("getRoomData", async ({ roomCode }, callback) => {
+        try {
+          const room = await Room.findOne({ code: roomCode });
+          if (!room) return callback({ error: "Room not found." });
+          callback({ players: room.players, hostId: room.hostId });
+        } catch (err) {
+          console.error("Error fetching room data:", err);
+          callback({ error: "Failed to fetch room data." });
+        }
+      });
+
       socket.on("createRoom", async ({ userName }, callback) => {
         try {
           const roomCode = generateRoomCode(); // e.g. random string or use uuid
@@ -60,6 +72,7 @@ module.exports = {
       });
 
       socket.on("joinRoom", async ({ roomCode, userName }, callback) => {
+        console.log("Attempting to join room.");
         try {
           const room = await Room.findOne({ code: roomCode });
           if (!room) {
