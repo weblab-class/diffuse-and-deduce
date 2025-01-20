@@ -51,14 +51,18 @@ module.exports = {
 
       socket.on("createRoom", async ({ playerName }, callback) => {
         try {
+          if (!playerName) {
+            return callback({ error: "Player name is required" });
+          }
+
           const roomCode = generateRoomCode();
           const newRoom = new Room({
             code: roomCode,
             hostId: socket.id,
             players: [{ id: socket.id, name: playerName }],
           });
-          await newRoom.save();
 
+          await newRoom.save();
           socket.join(roomCode);
 
           // Emit room data to everyone in room
@@ -67,10 +71,11 @@ module.exports = {
             hostId: newRoom.hostId,
           });
 
-          callback({ roomCode });
+          // Make sure we're sending a properly structured response
+          return callback({ roomCode: roomCode });
         } catch (err) {
           console.error("Error creating room:", err);
-          callback({ error: "Failed to create room." });
+          return callback({ error: "Failed to create room: " + (err.message || "Unknown error") });
         }
       });
 
