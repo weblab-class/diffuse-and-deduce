@@ -4,9 +4,11 @@ import { useLocation } from "react-router-dom";
 import socket from "../../client-socket";
 
 export default function GameScreen() {
+  const initialNoise = 10.0;
+
   const canvasRef = useRef(null);
   const location = useLocation();
-  const [noiseLevel, setNoiseLevel] = useState(1.0);
+  const [noiseLevel, setNoiseLevel] = useState(initialNoise);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
 
@@ -26,27 +28,6 @@ export default function GameScreen() {
     };
   }, [imageSrc]);
 
-  useEffect(() => {
-    if (!imgLoaded) return;
-
-    // Suppose we want to reduce noise from 1.0 to 0 over exactly timePerRound seconds
-    // We still do an interval every 500ms (feel free to pick another interval).
-    const totalTicks = (timePerRound * 1000) / 500; // e.g. (30 * 1000)/500 = 60
-    let currentTick = 0;
-
-    const interval = setInterval(() => {
-      currentTick++;
-      if (currentTick >= totalTicks) {
-        setNoiseLevel(0); // fully denoised
-        clearInterval(interval);
-      } else {
-        setNoiseLevel(1 - currentTick / totalTicks);
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [imgLoaded, timePerRound]);
-
   // 3. Re-apply noise whenever noiseLevel changes
   useEffect(() => {
     if (!imgLoaded) return;
@@ -65,9 +46,9 @@ export default function GameScreen() {
       const amplitude = 255 * noiseLevel;
       for (let i = 0; i < data.length; i += 4) {
         const offset = (Math.random() - 0.5) * amplitude;
-        data[i] += offset; // R
-        data[i + 1] += offset; // G
-        data[i + 2] += offset; // B
+        data[i] = Math.min(255, Math.max(0, data[i] + offset)); // R
+        data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + offset)); // G
+        data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + offset)); // B
       }
       ctx.putImageData(imageData, 0, 0);
     };
@@ -75,9 +56,9 @@ export default function GameScreen() {
 
   useEffect(() => {
     socket.on("timeUpdate", ({ timeElapsed }) => {
-      setTimeElapsed(timeElapsed); // <-- update the local state
+      setTimeElapsed(timeElapsed);
       const fraction = timeElapsed / timePerRound;
-      setNoiseLevel(Math.max(1 - fraction, 0));
+      setNoiseLevel(Math.max(initialNoise * (1 - fraction), 0));
     });
 
     return () => {
