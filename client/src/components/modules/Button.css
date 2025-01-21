@@ -35,6 +35,7 @@
 }
 
 .inverted-button {
+  border-color: var(--yellow);
   background-color: var(--brown);
   color: var(--yellow);
 }
@@ -43,4 +44,11 @@
   border-color: var(--brown);
   background-color: var(--yellow);
   color: var(--brown);
+}
+
+.inverted-button:disabled {
+  border-color: #b7b988;
+  background-color: #39301e;
+  color: #b7b988;
+  pointer-events: none;
 }

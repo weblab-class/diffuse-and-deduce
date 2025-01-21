@@ -28,9 +28,6 @@ const Header = (props) => {
               className="textlike"
               onClick={() => {
                 navigate(`/${props.backNav}`);
-                if (props.backNav === "") {
-                  handleLogout();
-                }
               }}
             >
               Back

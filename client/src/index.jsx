@@ -8,6 +8,7 @@ import Lobby from "./components/pages/Lobby";
 import NotFound from "./components/pages/NotFound";
 import GameSettings from "./components/pages/GameSettings";
 import Tutorial from "./components/pages/Tutorial";
+import GameScreen from "./components/pages/GameScreen";
 
 import {
   createBrowserRouter,
@@ -29,6 +30,7 @@ const router = createBrowserRouter(
       <Route path="/lobby/:roomCode" element={<Lobby />} />
       <Route path="/game-settings" element={<GameSettings />} />
       <Route path="/tutorial" element={<Tutorial />} />
+      <Route path="/game-screen" element={<GameScreen />} />
     </Route>
   )
 );

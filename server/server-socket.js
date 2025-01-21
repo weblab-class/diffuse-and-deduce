@@ -33,6 +33,32 @@ function generateRoomCode() {
   return Math.random().toString(36).substr(2, 5).toUpperCase();
 }
 
+// Pseudocode: an interval that checks the round doc from DB
+function startRoundTimer(roomCode) {
+  const interval = setInterval(async () => {
+    const round = await Round.findOne({ roomCode });
+    if (!round || !round.isActive) {
+      clearInterval(interval);
+      return;
+    }
+
+    const now = Date.now();
+    const elapsed = Math.floor((now - round.startTime) / 1000);
+    if (elapsed >= round.totalTime) {
+      // Round over
+      round.isActive = false;
+      await round.save();
+      clearInterval(interval);
+      io.to(roomCode).emit("roundOver");
+    } else {
+      io.to(roomCode).emit("timeUpdate", { timeElapsed: elapsed });
+    }
+  }, 1000);
+
+  // Store interval ID if needed to clear later
+  rooms[roomCode].intervalId = interval;
+}
+
 module.exports = {
   init: (http) => {
     io = require("socket.io")(http);
@@ -40,7 +66,64 @@ module.exports = {
     io.on("connection", (socket) => {
       console.log(`socket has connected ${socket.id}`);
 
-      // server-socket.js
+      const Round = require("./models/round");
+
+      socket.on("submitGuess", async ({ roomCode, guessText }) => {
+        try {
+          const round = await Round.findOne({ roomCode });
+          if (!round || !round.isActive) {
+            return socket.emit("errorMessage", "No active round in this room");
+          }
+
+          const timeElapsed = Math.floor((Date.now() - round.startTime) / 1000);
+
+          // Check guess logic...
+          // Possibly store player's score in `round.players`, e.g.:
+          // let player = round.players.find(p => p.socketId === socket.id);
+          // if correct:
+          //   player.score += someCalculation(timeElapsed, round.totalTime);
+
+          await round.save();
+
+          io.to(roomCode).emit("playerGuessed", {
+            // data about the guess or updated score
+          });
+        } catch (err) {
+          console.error("Error in submitGuess:", err);
+          socket.emit("errorMessage", "Failed to process guess");
+        }
+      });
+
+      // Socket event: Host starts round
+      socket.on("startRound", async ({ roomCode, totalTime }) => {
+        try {
+          // Find or create the round doc
+          let round = await Round.findOne({ roomCode });
+          if (!round) {
+            round = new Round({ roomCode });
+          }
+
+          round.startTime = Date.now();
+          round.totalTime = totalTime;
+          round.isActive = true;
+
+          // e.g. reset scores or players if needed
+          // round.players = [...some players array...]
+
+          await round.save();
+
+          // Then start your interval or emit the “round started” event
+          io.to(roomCode).emit("roundStarted", {
+            roomCode,
+            startTime: round.startTime,
+            totalTime,
+          });
+        } catch (err) {
+          console.error("Error starting round:", err);
+          socket.emit("errorMessage", "Could not start round");
+        }
+      });
+
       socket.on("getRoomData", async ({ roomCode }, callback) => {
         try {
           const room = await Room.findOne({ code: roomCode });
