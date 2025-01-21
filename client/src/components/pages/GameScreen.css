@@ -1,0 +1,75 @@
+.game_screen-page-container {
+  background: url("/background-images/background-game_screen.png");
+  background-size: cover;
+  overflow: hidden;
+
+  min-height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game_screen-text-container {
+  width: 650px;
+  height: 540px;
+
+  padding: 1rem;
+  background-color: var(--yellow);
+  border-radius: 4px;
+  color: var(--brown);
+  border: 1.5pt solid var(--brown);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game_screen-text {
+  font-size: 16pt;
+}
+
+.to-deduce {
+  border: 1pt solid var(--brown);
+  border-radius: 4px;
+
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+
+  width: 600px;
+  height: 400px;
+}
+
+.submission-container {
+  width: 600px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: space-between;
+}
+
+.enter-guess {
+  background-color: rgba(0, 0, 0, 0.25);
+  color: var(--brown);
+  font-weight: var(--semibold);
+
+  width: 400px;
+  height: 40px;
+
+  font-size: 14.5px;
+  font-weight: var(--light);
+  text-decoration: none;
+
+  padding: 0 12px;
+  border: 1pt solid var(--brown);
+  border-radius: 4px;
+}
+
+.enter-guess::placeholder {
+  color: var(--brown);
+  font-weight: var(--semibold);
+}
+
+.enter-guess:focus {
+  outline-width: 0;
+}

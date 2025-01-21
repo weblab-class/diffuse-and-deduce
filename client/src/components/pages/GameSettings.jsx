@@ -1,6 +1,11 @@
 import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+
+import socket from "../../client-socket";
+
 import Header from "../modules/Header";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import Button from "../modules/Button";
 
 const GameSettings = () => {
   const navigate = useNavigate();
@@ -50,17 +55,17 @@ const GameSettings = () => {
   };
 
   const handleStartGame = () => {
-    if (!selectedTopic) return;
+    // You’ll need the user’s roomCode somehow (maybe pass it from context or props)
+    const totalTime = settings.timePerRound;
 
-    const gameState = {
-      settings: settings,
-      selectedTopic: selectedTopic,
-      gameMode: gameMode,
-      isSinglePlayer: gameMode === "single",
-    };
+    // 1. Tell server to start the round
+    socket.emit("startRound", { roomCode, totalTime });
 
-    // Both single and multiplayer use roomCode for unique game instances
-    navigate(`/game/${roomCode}`, { state: gameState });
+    // 2. Then navigate to GameScreen
+    // pass timePerRound if needed for local logic (like noise animations)
+    navigate("/game-screen", {
+      state: { timePerRound: totalTime },
+    });
   };
 
   return (
@@ -77,10 +82,10 @@ const GameSettings = () => {
                 <li
                   key={topic}
                   onClick={() => setSelectedTopic(topic)}
-                  className={`relative flex items-center justify-center p-3.5 rounded-xl font-medium transition-all duration-300 cursor-pointer ${
+                  className={`relative flex items-center justify-center p-2 rounded-[4px] font-medium transition-all duration-300 cursor-pointer ${
                     selectedTopic === topic
-                      ? "bg-emerald-600 text-white scale-[1.02] shadow-lg hover:bg-emerald-500 ring-4 ring-emerald-500/20"
-                      : "bg-[#675325]/90 text-white hover:bg-gray-600 hover:scale-[1.01]"
+                      ? "bg-emerald-600 text-[#FFFCD1] scale-[1.02] shadow-lg hover:bg-emerald-500 ring-4 ring-emerald-500/20"
+                      : "bg-[#675325] text-[#FFFCD1] hover:bg-gray-600 hover:scale-[1.01]"
                   }`}
                 >
                   <span className="relative flex items-center gap-2">
@@ -105,28 +110,28 @@ const GameSettings = () => {
               ))}
             </ul>
           </div>
-          {/* Settings Container */}
-          <div className="bg-[#FFFCD1]/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl ring-1 ring-[#FFFCD1]/30 hover:shadow-2xl transition-all duration-300 flex flex-col w-96">
-            <h2 className="text-2xl font-bold mb-6 pb-3 border-b border-gray-400">Settings</h2>
-            <div className="flex flex-col justify-between h-full space-y-7">
+          <div class="bg-[#FFFCD1] w-96 h-[520px] mt-8 rounded-[4px] border-[#675325] border-[1.5pt] p-8">
+            <h2 class="text-[#675325] text-2xl font-bold pb-4">Settings</h2>
+            <hr class="border-[0.5pt] border-[#675325]"></hr>
+            <div className="h-[450px] flex flex-col justify-evenly">
               <div className="flex items-center justify-between group">
-                <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
+                <span className="w-48 text-[#675325]-700 font-medium group-hover:text-emerald-700 transition-colors">
                   Rounds:
                 </span>
-                <div className="flex items-center gap-4 w-64">
+                <div className="flex gap-4 w-64">
                   <input
                     type="range"
                     min="1"
                     max="10"
                     value={settings.rounds}
                     onChange={(e) => handleSliderChange("rounds", parseInt(e.target.value))}
-                    className="w-52 cursor-pointer accent-green-500 hover:accent-green-600"
+                    className="w-32 cursor-pointer accent-green-500 hover:accent-green-600"
                   />
                   <span className="w-8 text-right">{settings.rounds}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between group">
-                <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
+                <span className="w-48 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
                   Time per round:
                 </span>
                 <div className="flex items-center gap-4 w-64">
@@ -136,12 +141,39 @@ const GameSettings = () => {
                     max="120"
                     value={settings.timePerRound}
                     onChange={(e) => handleSliderChange("timePerRound", parseInt(e.target.value))}
-                    className="w-52 cursor-pointer accent-green-500 hover:accent-green-600"
+                    className="w-32 cursor-pointer accent-green-500 hover:accent-green-600"
                   />
                   <span className="w-8 text-right">{settings.timePerRound}s</span>
                 </div>
               </div>
               {/* Toggle switch container */}
+              {gameMode === "multi" && (
+                <div className="flex items-center justify-between group">
+                  <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
+                    Sabotage:
+                  </span>
+                  <div className="w-64 flex justify-end">
+                    {/* main toggle switch */}
+                    <div
+                      onClick={() => handleToggle("sabotage")}
+                      className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ease-in-out ${
+                        settings.sabotage
+                          ? "bg-green-500 shadow-inner"
+                          : "bg-gray-200 hover:bg-gray-300"
+                      }`}
+                    >
+                      {/* toggle circle */}
+                      <div
+                        className={`bg-white w-5 h-5 rounded-full shadow-md transform duration-300 ease-in-out ${
+                          settings.sabotage
+                            ? "translate-x-7 shadow-lg"
+                            : "translate-x-0 shadow-md hover:shadow-lg"
+                        }`}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )}
               {gameMode === "multi" && (
                 <div className="flex items-center justify-between group">
                   <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
@@ -195,11 +227,11 @@ const GameSettings = () => {
 
               {/* Reveal Mode Toggle */}
               <div className="flex items-center justify-between group">
-                <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
+                <span className="w-48 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
                   Reveal Mode:
                 </span>
                 <div className="w-80 flex justify-end">
-                  <div className="relative w-72 h-10 flex rounded-full overflow-hidden shadow-[0_4px_12px_-1px_rgba(0,0,0,0.15),0_2px_4px_-2px_rgba(0,0,0,0.1)] border border-gray-200">
+                  <div className="relative w-[250px] h-10 flex rounded-full overflow-hidden shadow-[0_4px_12px_-1px_rgba(0,0,0,0.15),0_2px_4px_-2px_rgba(0,0,0,0.1)] border border-gray-200">
                     {/* diffusion option */}
                     <div
                       onClick={() => handleRevealMode()}
@@ -228,6 +260,7 @@ const GameSettings = () => {
             </div>
           </div>
         </div>
+        <Button text="Start Game" disabled={!selectedTopic} onClick={handleStartGame} />
       </div>
       {/* Bottom Buttons Container */}
       <div className="fixed bottom-8 left-0 right-0 flex justify-center items-center">

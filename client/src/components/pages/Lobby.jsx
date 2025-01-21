@@ -79,7 +79,11 @@ const Lobby = () => {
           {isHost && (
             <Button
               text="Continue"
-              onClick={() => navigate("/game-settings")}
+              onClick={() =>
+                navigate("/game-settings", {
+                  state: { roomCode: roomCode }, // pass the room code here
+                })
+              }
               extraClass="inverted-button"
             />
           )}

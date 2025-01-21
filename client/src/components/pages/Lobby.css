@@ -42,6 +42,7 @@ h1 {
   display: flex; /* If you want to lay out player names horizontally */
   align-items: center;
   justify-content: center;
+  font-weight: var(--semibold);
 }
 
 .players-box span {
