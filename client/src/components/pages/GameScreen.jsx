@@ -3,6 +3,12 @@ import { useLocation } from "react-router-dom";
 
 import socket from "../../client-socket";
 
+import Button from "../modules/Button";
+import Header from "../modules/Header";
+
+import "../../utilities.css";
+import "./GameScreen.css";
+
 export default function GameScreen() {
   const initialNoise = 10.0;
 
@@ -67,10 +73,18 @@ export default function GameScreen() {
   }, [timePerRound]);
 
   return (
-    <div style={{ textAlign: "center", marginTop: "20px" }}>
-      <canvas ref={canvasRef} width={600} height={400} style={{ border: "1px solid #ccc" }} />
-      <p>Noise Level: {noiseLevel.toFixed(2)}</p>
-      <p>Time Elapsed: {timeElapsed}</p>
+    <div className="game_screen-page-container">
+      <Header backNav="/room-actions" />
+      <div className="game_screen-text-container">
+        <p className="game_screen-text">
+          Time Remaining: <span style={{ fontWeight: 600 }}>{timePerRound - timeElapsed}</span>
+        </p>
+        <canvas ref={canvasRef} className="to-deduce" />
+        <div className="submission-container">
+          <input className="enter-guess" placeholder="Enter guess..."></input>
+          <Button text="Submit" extraClass="inverted-button" />
+        </div>
+      </div>
     </div>
   );
 }
