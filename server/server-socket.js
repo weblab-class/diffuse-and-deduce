@@ -27,14 +27,17 @@ const removeUser = (user, socket) => {
 };
 
 const Room = require("./models/room");
+const Round = require("./models/round");
 
 function generateRoomCode() {
   // e.g., 4-digit alphanumeric or simple random code
   return Math.random().toString(36).substr(2, 5).toUpperCase();
 }
 
-// Pseudocode: an interval that checks the round doc from DB
+const rooms = {}; // to store interval references for each room
+
 function startRoundTimer(roomCode) {
+  // create an interval that checks the DB each second
   const interval = setInterval(async () => {
     const round = await Round.findOne({ roomCode });
     if (!round || !round.isActive) {
@@ -44,19 +47,20 @@ function startRoundTimer(roomCode) {
 
     const now = Date.now();
     const elapsed = Math.floor((now - round.startTime) / 1000);
+
     if (elapsed >= round.totalTime) {
-      // Round over
       round.isActive = false;
       await round.save();
       clearInterval(interval);
       io.to(roomCode).emit("roundOver");
     } else {
+      // This is what the client listens for
       io.to(roomCode).emit("timeUpdate", { timeElapsed: elapsed });
     }
   }, 1000);
 
-  // Store interval ID if needed to clear later
-  rooms[roomCode].intervalId = interval;
+  // Remember the interval so we could clear it if needed
+  rooms[roomCode] = { intervalId: interval };
 }
 
 module.exports = {
@@ -94,25 +98,22 @@ module.exports = {
         }
       });
 
-      // Socket event: Host starts round
       socket.on("startRound", async ({ roomCode, totalTime }) => {
         try {
-          // Find or create the round doc
           let round = await Round.findOne({ roomCode });
           if (!round) {
             round = new Round({ roomCode });
           }
 
+          // set start time, total time, isActive
           round.startTime = Date.now();
           round.totalTime = totalTime;
           round.isActive = true;
-
-          // e.g. reset scores or players if needed
-          // round.players = [...some players array...]
-
           await round.save();
 
-          // Then start your interval or emit the “round started” event
+          // Start the timer so we begin emitting `timeUpdate` events
+          startRoundTimer(roomCode);
+
           io.to(roomCode).emit("roundStarted", {
             roomCode,
             startTime: round.startTime,

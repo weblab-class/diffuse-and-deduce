@@ -1,6 +1,8 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
+import socket from "../../client-socket";
+
 import Header from "../modules/Header";
 import Button from "../modules/Button";
 
@@ -8,6 +10,7 @@ const GameSettings = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
   const gameMode = state?.gameMode || "multi";
+  const roomCode = state?.roomCode; // or default if needed
 
   const [settings, setSettings] = React.useState({
     rounds: 1,
@@ -48,6 +51,20 @@ const GameSettings = () => {
       ...prevSettings,
       [key]: value,
     }));
+  };
+
+  const handleStartGame = () => {
+    // You’ll need the user’s roomCode somehow (maybe pass it from context or props)
+    const totalTime = settings.timePerRound;
+
+    // 1. Tell server to start the round
+    socket.emit("startRound", { roomCode, totalTime });
+
+    // 2. Then navigate to GameScreen
+    // pass timePerRound if needed for local logic (like noise animations)
+    navigate("/game-screen", {
+      state: { timePerRound: totalTime },
+    });
   };
 
   return (
@@ -216,11 +233,7 @@ const GameSettings = () => {
             </div>
           </div>
         </div>
-        <Button
-          text="Start Game"
-          disabled={!selectedTopic}
-          onClick={() => navigate("/game-screen")}
-        />
+        <Button text="Start Game" disabled={!selectedTopic} onClick={handleStartGame} />
       </div>
     </>
   );

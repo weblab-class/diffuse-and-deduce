@@ -1,14 +1,17 @@
 import React, { useRef, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import socket from "../../client-socket";
 
 export default function GameScreen() {
   const canvasRef = useRef(null);
+  const location = useLocation();
   const [noiseLevel, setNoiseLevel] = useState(1.0);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
 
   const imageSrc = "/game-images/secret_image.jpg";
+  const timePerRound = location.state?.timePerRound || 30;
 
   // 1. Load the base image once
   useEffect(() => {
@@ -23,19 +26,26 @@ export default function GameScreen() {
     };
   }, [imageSrc]);
 
-  // 2. Decrease noise over time if image is loaded
   useEffect(() => {
     if (!imgLoaded) return;
 
+    // Suppose we want to reduce noise from 1.0 to 0 over exactly timePerRound seconds
+    // We still do an interval every 500ms (feel free to pick another interval).
+    const totalTicks = (timePerRound * 1000) / 500; // e.g. (30 * 1000)/500 = 60
+    let currentTick = 0;
+
     const interval = setInterval(() => {
-      setNoiseLevel((prev) => {
-        let newLevel = prev - 0.1;
-        return newLevel < 0 ? 0 : newLevel;
-      });
+      currentTick++;
+      if (currentTick >= totalTicks) {
+        setNoiseLevel(0); // fully denoised
+        clearInterval(interval);
+      } else {
+        setNoiseLevel(1 - currentTick / totalTicks);
+      }
     }, 500);
 
     return () => clearInterval(interval);
-  }, [imgLoaded]);
+  }, [imgLoaded, timePerRound]);
 
   // 3. Re-apply noise whenever noiseLevel changes
   useEffect(() => {
@@ -63,21 +73,17 @@ export default function GameScreen() {
     };
   }, [noiseLevel, imgLoaded, imageSrc]);
 
-  // 4. Socket listeners at the top level
   useEffect(() => {
-    // Example: If you want to sync time
     socket.on("timeUpdate", ({ timeElapsed }) => {
-      setTimeElapsed(timeElapsed);
-    });
-    socket.on("roundOver", () => {
-      // show scoreboard or final
+      setTimeElapsed(timeElapsed); // <-- update the local state
+      const fraction = timeElapsed / timePerRound;
+      setNoiseLevel(Math.max(1 - fraction, 0));
     });
 
     return () => {
       socket.off("timeUpdate");
-      socket.off("roundOver");
     };
-  }, []);
+  }, [timePerRound]);
 
   return (
     <div style={{ textAlign: "center", marginTop: "20px" }}>
