@@ -14,6 +14,7 @@ const Lobby = () => {
   const { roomCode } = useParams();
   const [players, setPlayers] = useState([]);
   const [hostId, setHostId] = useState(null);
+  const [isHost, setIsHost] = useState(false);
   const { userName } = useContext(UserContext);
   const navigate = useNavigate();
 
@@ -24,6 +25,7 @@ const Lobby = () => {
     socket.emit("joinRoom", { roomCode, playerName: userName }, (response) => {
       if (response.error) {
         console.error(response.error);
+        navigate("/room-actions"); // Navigate back if there's an error
       }
     });
 
@@ -38,23 +40,19 @@ const Lobby = () => {
       });
       setPlayers(sortedPlayers);
       setHostId(hostId);
+      setIsHost(socket.id === hostId);
     });
 
+    // Cleanup function when component unmounts
     return () => {
+      socket.emit("leaveRoom", { roomCode }, (response) => {
+        if (response?.error) {
+          console.error("Error leaving room:", response.error);
+        }
+      });
       socket.off("roomData");
     };
-  }, [roomCode, userName]); // Re-run if roomCode, us changes
-
-  const leaveRoom = () => {
-    socket.emit("leaveRoom", { roomCode }, (response) => {
-      if (response.error) {
-        console.error(response.error);
-      } else {
-        console.log("Left the room successfully.");
-        navigate("/room-actions");
-      }
-    });
-  };
+  }, [roomCode, userName]);
 
   return (
     <div className="lobby-page-container">
@@ -78,18 +76,26 @@ const Lobby = () => {
         </div>
         <hr />
         <div className="flex justify-center">
-          <Button text="Leave Room" extraClass="inverted-button" onClick={leaveRoom} />
-        </div>
-        {isHost && (
-          <>
-            <hr></hr>
+          {isHost && (
             <Button
               text="Continue"
               onClick={() => navigate("/game-settings")}
               extraClass="inverted-button"
             />
-          </>
-        )}
+          )}
+          <Button
+            text="Leave Room"
+            onClick={() => {
+              socket.emit("leaveRoom", { roomCode }, (response) => {
+                if (response?.error) {
+                  console.error("Error leaving room:", response.error);
+                }
+                navigate("/room-actions");
+              });
+            }}
+            extraClass="inverted-button"
+          />
+        </div>
       </div>
     </div>
   );

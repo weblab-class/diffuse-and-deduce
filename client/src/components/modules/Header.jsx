@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import { googleLogout } from "@react-oauth/google";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
+import socket from "../../client-socket";
 
 import "./Header.css";
 import { UserContext } from "../App";
@@ -13,16 +14,15 @@ const Header = (props) => {
   const { roomCode } = useParams();
 
   const handleBack = () => {
-    // If we're in game and going back to game-settings
-    if (location.pathname.startsWith("/game/") && props.backNav === "game-settings") {
-      navigate(`/game-settings/${roomCode}`);
-    }
-    // If we're in game-settings and going back to lobby
-    else if (location.pathname.startsWith("/game-settings/") && props.backNav === "lobby") {
-      navigate(`/lobby/${roomCode}`);
-    }
-    // Default case
-    else {
+    // If we're in the lobby, handle leaving the room
+    if (location.pathname.startsWith("/lobby/")) {
+      socket.emit("leaveRoom", { roomCode }, (response) => {
+        if (response.error) {
+          console.error(response.error);
+        }
+        navigate(`/${props.backNav}`);
+      });
+    } else {
       navigate(`/${props.backNav}`);
     }
   };
@@ -39,15 +39,7 @@ const Header = (props) => {
         </div>
         <div className="Header-right">
           {(!userId || location.pathname !== "/choose-num-players") && (
-            <button
-              className="textlike"
-              onClick={() => {
-                navigate(`/${props.backNav}`);
-                if (props.backNav === "") {
-                  handleLogout();
-                }
-              }}
-            >
+            <button className="textlike" onClick={handleBack}>
               Back
             </button>
           )}
@@ -59,7 +51,7 @@ const Header = (props) => {
                 handleLogout();
               }}
             >
-              Log out
+              Logout
             </button>
           )}
         </div>

@@ -23,6 +23,8 @@ const RoomActions = () => {
     setRoomCode(userInput);
     setError("");
 
+    console.log("Room code input:", userInput);
+
     if (!userInput) {
       setIsRoomCodeValid(false);
       return;
@@ -30,7 +32,9 @@ const RoomActions = () => {
 
     // Only check if room exists if we have a complete room code
     if (userInput.length === 5) {
+      console.log("Checking if room exists:", userInput);
       socket.emit("checkRoomExists", userInput, (response) => {
+        console.log("Check room response:", response);
         if (response.error) {
           setError(response.error);
           setIsRoomCodeValid(false);
@@ -39,6 +43,7 @@ const RoomActions = () => {
           if (!response.exists) {
             setError("Room not found");
           } else {
+            console.log("Room found:", response);
             setError(""); // Clear error if room exists
           }
         }

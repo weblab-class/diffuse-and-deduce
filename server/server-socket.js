@@ -128,10 +128,9 @@ module.exports = {
           // Join the socket room
           socket.join(roomCode);
 
-          // Immediately emit room data to ALL clients in the room
+          // Immediately emit room data to all clients in the room
           io.to(roomCode).emit("roomData", {
             players: room.players,
-            hostId: room.hostId,
             hostId: room.hostId,
           });
 
