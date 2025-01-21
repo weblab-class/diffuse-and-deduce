@@ -1,6 +1,4 @@
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-
 import socket from "../../client-socket";
 
 import Header from "../modules/Header";
@@ -147,33 +145,6 @@ const GameSettings = () => {
                 </div>
               </div>
               {/* Toggle switch container */}
-              {gameMode === "multi" && (
-                <div className="flex items-center justify-between group">
-                  <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
-                    Sabotage:
-                  </span>
-                  <div className="w-64 flex justify-end">
-                    {/* main toggle switch */}
-                    <div
-                      onClick={() => handleToggle("sabotage")}
-                      className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ease-in-out ${
-                        settings.sabotage
-                          ? "bg-green-500 shadow-inner"
-                          : "bg-gray-200 hover:bg-gray-300"
-                      }`}
-                    >
-                      {/* toggle circle */}
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform duration-300 ease-in-out ${
-                          settings.sabotage
-                            ? "translate-x-7 shadow-lg"
-                            : "translate-x-0 shadow-md hover:shadow-lg"
-                        }`}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              )}
               {gameMode === "multi" && (
                 <div className="flex items-center justify-between group">
                   <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">

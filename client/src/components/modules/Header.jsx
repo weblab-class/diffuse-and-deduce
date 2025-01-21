@@ -19,6 +19,7 @@ const Header = (props) => {
       socket.emit("leaveRoom", { roomCode }, (response) => {
         if (response.error) {
           console.error(response.error);
+          return;
         }
         navigate(`/${props.backNav}`);
       });

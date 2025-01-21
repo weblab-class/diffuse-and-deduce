@@ -9,6 +9,7 @@ const PlayerSchema = new mongoose.Schema({
 const RoomSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true },
   hostId: { type: String, required: true }, // store the socket.id of the host
+  hostDisconnected: { type: Boolean, default: false },
   players: { type: [PlayerSchema], default: [] },
   settings: {
     duration: { type: Number, default: 60 },

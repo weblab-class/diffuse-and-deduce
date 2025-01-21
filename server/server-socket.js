@@ -62,9 +62,53 @@ function startRoundTimer(roomCode) {
   rooms[roomCode] = { intervalId: interval };
 }
 
+// Clean up old rooms periodically
+const cleanupRooms = async () => {
+  try {
+    // Only clean up rooms that are:
+    // 1. More than 24 hours old OR
+    // 2. Have no players and are more than 1 hour old
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    const oldRooms = await Room.find({
+      $or: [
+        { _id: { $lt: objectIdFromDate(oneDayAgo) } },
+        {
+          _id: { $lt: objectIdFromDate(oneHourAgo) },
+          "players.0": { $exists: false },
+        },
+      ],
+    });
+
+    if (oldRooms.length > 0) {
+      const oldRoomIds = oldRooms.map((r) => r._id);
+      await Room.deleteMany({ _id: { $in: oldRoomIds } });
+      console.log(`Cleaned up ${oldRooms.length} old/empty rooms`);
+    }
+  } catch (err) {
+    console.error("Error cleaning up rooms:", err);
+  }
+};
+
+// Helper function to convert date to ObjectId
+function objectIdFromDate(date) {
+  return Math.floor(date.getTime() / 1000).toString(16) + "0000000000000000";
+}
+
+// Clean up rooms every 5 minutes
+setInterval(cleanupRooms, 5 * 60 * 1000);
+
 module.exports = {
   init: (http) => {
-    io = require("socket.io")(http);
+    io = require("socket.io")(http, {
+      pingTimeout: 60000,
+      pingInterval: 25000,
+      cors: {
+        origin: true,
+        credentials: true,
+      },
+    });
 
     io.on("connection", (socket) => {
       console.log(`socket has connected ${socket.id}`);
@@ -124,9 +168,42 @@ module.exports = {
         }
       });
 
-      socket.on("getRoomData", async ({ roomCode }, callback) => {
+      socket.on("checkRoomExists", async ({ roomCode }, callback) => {
+        if (!callback || typeof callback !== "function") {
+          console.error("No callback provided");
+          return;
+        }
+
         try {
+          console.log("Checking room exists for code:", roomCode);
+
+          // Log all rooms in the database
+          const allRooms = await Room.find({});
+          console.log(
+            "All rooms in database:",
+            allRooms.map((r) => ({
+              code: r.code,
+              hostId: r.hostId,
+              players: r.players.length,
+              created: r._id.getTimestamp(),
+            }))
+          );
+
+          // Try to find room
           const room = await Room.findOne({ code: roomCode });
+          console.log("Room search result:", room);
+
+          if (!room) {
+            console.log("Room not found with code:", roomCode);
+          } else {
+            console.log("Found room:", {
+              code: room.code,
+              hostId: room.hostId,
+              players: room.players.length,
+              created: room._id.getTimestamp(),
+            });
+          }
+
           callback({ exists: !!room, error: null });
         } catch (err) {
           console.error("Error checking room:", err);
@@ -140,7 +217,12 @@ module.exports = {
             return callback({ error: "Player name is required" });
           }
 
+          // Clean up old rooms first
+          await cleanupRooms();
+
           const roomCode = generateRoomCode();
+          console.log("Generated new room code:", roomCode);
+
           const newRoom = new Room({
             code: roomCode,
             hostId: socket.id,
@@ -148,6 +230,27 @@ module.exports = {
           });
 
           await newRoom.save();
+          console.log("Room saved successfully:", {
+            code: newRoom.code,
+            hostId: newRoom.hostId,
+            players: newRoom.players,
+            _id: newRoom._id,
+          });
+
+          // Verify room was saved
+          const verifyRoom = await Room.findOne({ code: roomCode });
+          console.log(
+            "Verification - Found room in DB:",
+            verifyRoom
+              ? {
+                  code: verifyRoom.code,
+                  hostId: verifyRoom.hostId,
+                  players: verifyRoom.players,
+                  _id: verifyRoom._id,
+                }
+              : "Not found"
+          );
+
           socket.join(roomCode);
 
           // Emit room data to everyone in room
@@ -156,7 +259,6 @@ module.exports = {
             hostId: newRoom.hostId,
           });
 
-          // Make sure we're sending a properly structured response
           return callback({ roomCode: roomCode });
         } catch (err) {
           console.error("Error creating room:", err);
@@ -264,40 +366,29 @@ module.exports = {
       });
 
       socket.on("leaveRoom", async ({ roomCode }, callback) => {
+        if (!callback || typeof callback !== "function") {
+          console.error("No callback provided for leaveRoom");
+          return;
+        }
+
         try {
-          // 1. Find the room in the DB or in-memory
           const room = await Room.findOne({ code: roomCode });
           if (!room) {
             return callback({ error: "Room not found." });
           }
 
-          // 2. Remove the user from the room’s player list
           room.players = room.players.filter((player) => player.id !== socket.id);
 
-          // 3. Handle logic if the departing user was the host
           if (room.hostId === socket.id) {
-            // Option A: Assign a new host if any players remain
-            // if (room.players.length > 0) {
-            //   room.hostId = room.players[0].id;
-            //   // Or handle other host assignment logic
-            // } else {
-            //   // Option B: If no one left, just remove the room
-            //   await Room.deleteOne({ code: roomCode });
-            //   return callback({ success: true });
-            // }
-
-            // For simplicity, let's just remove the room if the host leaves
+            // Options are to either delete the room or assign a new host (if there are other players left)
             await Room.deleteOne({ code: roomCode });
             socket.leave(roomCode);
-            callback({ success: true });
-            return;
+            return callback({ success: true });
           }
 
-          // 4. Otherwise, just update the room and save
           await room.save();
           socket.leave(roomCode);
 
-          // 5. Notify the remaining players in the room
           io.to(roomCode).emit("roomData", {
             players: room.players,
             hostId: room.hostId,
@@ -305,41 +396,47 @@ module.exports = {
 
           callback({ success: true });
         } catch (err) {
-          console.error("Error leaving room:", err);
-          callback({ error: "Failed to leave room." });
+          console.error("Error in leaveRoom:", err);
+          callback({ error: "Failed to leave room: " + err.message });
         }
       });
 
+      // Handle socket disconnects
       socket.on("disconnect", async (reason) => {
+        console.log(`Socket disconnected: ${socket.id}`);
         const user = getUserFromSocketID(socket.id);
         removeUser(user, socket);
 
-        // Find and update any rooms this socket was in
         try {
+          // Find any rooms this socket was in
           const rooms = await Room.find({ "players.id": socket.id });
           for (const room of rooms) {
-            // Remove the player from the room
+            // Remove the player from the room's player list
             room.players = room.players.filter((player) => player.id !== socket.id);
 
-            // If this was the host and there are other players, assign new host
-            if (room.hostId === socket.id && room.players.length > 0) {
-              room.hostId = room.players[0].id;
+            // If this was the host, mark the room as host disconnected
+            if (room.hostId === socket.id) {
+              console.log(`Host ${socket.id} disconnected from room ${room.code}`);
+              room.hostDisconnected = true;
+              // Optionally assign new host if there are other players
+              if (room.players.length > 0) {
+                room.hostId = room.players[0].id;
+                room.hostDisconnected = false;
+              }
             }
 
-            // If room is empty, delete it
-            if (room.players.length === 0) {
-              await Room.deleteOne({ _id: room._id });
-            } else {
-              // Otherwise save and notify remaining players
-              await room.save();
-              io.to(room.code).emit("roomData", {
-                players: room.players,
-                hostId: room.hostId,
-              });
-            }
+            // Save the room (don't delete it)
+            await room.save();
+
+            // Notify remaining players
+            io.to(room.code).emit("roomData", {
+              players: room.players,
+              hostId: room.hostId,
+              hostDisconnected: room.hostDisconnected,
+            });
           }
         } catch (err) {
-          console.error("Error handling disconnect room cleanup:", err);
+          console.error("Error handling disconnect:", err);
         }
       });
     });

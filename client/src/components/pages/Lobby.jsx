@@ -20,7 +20,13 @@ const Lobby = () => {
 
   useEffect(() => {
     // Request initial room data when component mounts
-    socket.emit("getRoomData", { roomCode });
+    socket.emit("getRoomData", { roomCode }),
+      (response) => {
+        if (response.error) {
+          console.error("Error getting room data: ", response.error);
+        }
+      };
+
     // Join the room
     socket.emit("joinRoom", { roomCode, playerName: userName }, (response) => {
       if (response.error) {
@@ -43,7 +49,6 @@ const Lobby = () => {
       setIsHost(socket.id === hostId);
     });
 
-    // Cleanup function when component unmounts
     return () => {
       socket.emit("leaveRoom", { roomCode }, (response) => {
         if (response?.error) {
@@ -79,26 +84,10 @@ const Lobby = () => {
           {isHost && (
             <Button
               text="Continue"
-              onClick={() =>
-                navigate("/game-settings", {
-                  state: { roomCode: roomCode }, // pass the room code here
-                })
-              }
+              onClick={() => navigate(`/game-settings/${roomCode}`)}
               extraClass="inverted-button"
             />
           )}
-          <Button
-            text="Leave Room"
-            onClick={() => {
-              socket.emit("leaveRoom", { roomCode }, (response) => {
-                if (response?.error) {
-                  console.error("Error leaving room:", response.error);
-                }
-                navigate("/room-actions");
-              });
-            }}
-            extraClass="inverted-button"
-          />
         </div>
       </div>
     </div>

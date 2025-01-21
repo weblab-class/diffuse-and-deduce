@@ -33,7 +33,7 @@ const RoomActions = () => {
     // Only check if room exists if we have a complete room code
     if (userInput.length === 5) {
       console.log("Checking if room exists:", userInput);
-      socket.emit("checkRoomExists", userInput, (response) => {
+      socket.emit("checkRoomExists", { roomCode: userInput }, (response) => {
         console.log("Check room response:", response);
         if (response.error) {
           setError(response.error);
@@ -63,7 +63,7 @@ const RoomActions = () => {
     setIsLoading(true);
     socket.emit("createRoom", { playerName: userName }, (response) => {
       setIsLoading(false);
-      console.log("Create room response:", response); // Debug log
+      console.log("Create room response:", response);
 
       if (response.error) {
         console.error("Room creation error:", response.error);
@@ -140,7 +140,7 @@ const RoomActions = () => {
 
         {/* Not Logged In Message */}
         {!userName && (
-          <div className="text-gray-600 mt-4 text-center">
+          <div className="text-red-600 mt-4 text-center bold text-xl mt-10">
             Please log in or continue as guest to create/join rooms
           </div>
         )}
