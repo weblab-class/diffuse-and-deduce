@@ -19,14 +19,6 @@ const Lobby = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Request initial room data when component mounts
-    socket.emit("getRoomData", { roomCode }),
-      (response) => {
-        if (response.error) {
-          console.error("Error getting room data: ", response.error);
-        }
-      };
-
     // Join the room
     socket.emit("joinRoom", { roomCode, playerName: userName }, (response) => {
       if (response.error) {
@@ -37,7 +29,14 @@ const Lobby = () => {
 
     // Listen for room data updates
     socket.on("roomData", ({ players, hostId }) => {
-      console.log("Received room data:", players, "Host:", hostId);
+      console.log("Room Update Received:");
+      console.log(
+        "Current Players:",
+        players.map((p) => ({ name: p.name, id: p.id, isHost: p.id === hostId }))
+      );
+      console.log("Host ID:", hostId);
+      console.log("Your Socket ID:", socket.id);
+
       // Sort players where host is first
       const sortedPlayers = [...players].sort((a, b) => {
         if (a.id === hostId) return -1;

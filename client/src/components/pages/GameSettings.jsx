@@ -231,7 +231,6 @@ const GameSettings = () => {
             </div>
           </div>
         </div>
-        <Button text="Start Game" disabled={!selectedTopic} onClick={handleStartGame} />
       </div>
       {/* Bottom Buttons Container */}
       <div className="fixed bottom-8 left-0 right-0 flex justify-center items-center">

@@ -266,21 +266,6 @@ module.exports = {
         }
       });
 
-      socket.on("getRoomData", async ({ roomCode }) => {
-        try {
-          const room = await Room.findOne({ code: roomCode });
-          if (room) {
-            // Emit to everyone in the room
-            io.to(roomCode).emit("roomData", {
-              players: room.players,
-              hostId: room.hostId,
-            });
-          }
-        } catch (err) {
-          console.error("Error getting room data:", err);
-        }
-      });
-
       socket.on("joinRoom", async ({ roomCode, playerName }, callback) => {
         try {
           // Validate input
@@ -295,6 +280,15 @@ module.exports = {
           if (room.isGameStarted) {
             return callback({ error: "Game has already started in this room." });
           }
+
+          console.log(`\n[Room ${roomCode}] Player attempting to join:`, {
+            name: playerName,
+            socketId: socket.id,
+          });
+          console.log(
+            `Current players in room:`,
+            room.players.map((p) => ({ name: p.name, id: p.id }))
+          );
 
           // Check if player is already in the room
           const existingPlayer = room.players.find((player) => player.name === playerName);
@@ -311,9 +305,16 @@ module.exports = {
           }
 
           await room.save();
-
-          // Join the socket room
           socket.join(roomCode);
+
+          console.log(
+            `\n[Room ${roomCode}] Updated player list:`,
+            room.players.map((p) => ({
+              name: p.name,
+              id: p.id,
+              isHost: p.id === room.hostId,
+            }))
+          );
 
           // Immediately emit room data to all clients in the room
           io.to(roomCode).emit("roomData", {
@@ -325,6 +326,57 @@ module.exports = {
         } catch (err) {
           console.error("Error joining room:", err);
           callback({ error: "Failed to join room." });
+        }
+      });
+
+      socket.on("leaveRoom", async ({ roomCode }, callback) => {
+        if (!callback || typeof callback !== "function") {
+          console.error("No callback provided for leaveRoom");
+          return;
+        }
+
+        try {
+          const room = await Room.findOne({ code: roomCode });
+          if (!room) {
+            return callback({ error: "Room not found." });
+          }
+
+          console.log(`\n[Room ${roomCode}] Player leaving:`, { socketId: socket.id });
+          console.log(
+            `Players before removal:`,
+            room.players.map((p) => ({ name: p.name, id: p.id }))
+          );
+
+          room.players = room.players.filter((player) => player.id !== socket.id);
+
+          if (room.hostId === socket.id) {
+            // Options are to either delete the room or assign a new host (if there are other players left)
+            await Room.deleteOne({ code: roomCode });
+            socket.leave(roomCode);
+            return callback({ success: true });
+          }
+
+          await room.save();
+          socket.leave(roomCode);
+
+          console.log(
+            `\n[Room ${roomCode}] Updated player list:`,
+            room.players.map((p) => ({
+              name: p.name,
+              id: p.id,
+              isHost: p.id === room.hostId,
+            }))
+          );
+
+          io.to(roomCode).emit("roomData", {
+            players: room.players,
+            hostId: room.hostId,
+          });
+
+          callback({ success: true });
+        } catch (err) {
+          console.error("Error in leaveRoom:", err);
+          callback({ error: "Failed to leave room: " + err.message });
         }
       });
 
@@ -365,80 +417,44 @@ module.exports = {
         }
       });
 
-      socket.on("leaveRoom", async ({ roomCode }, callback) => {
-        if (!callback || typeof callback !== "function") {
-          console.error("No callback provided for leaveRoom");
-          return;
-        }
-
-        try {
-          const room = await Room.findOne({ code: roomCode });
-          if (!room) {
-            return callback({ error: "Room not found." });
-          }
-
-          room.players = room.players.filter((player) => player.id !== socket.id);
-
-          if (room.hostId === socket.id) {
-            // Options are to either delete the room or assign a new host (if there are other players left)
-            await Room.deleteOne({ code: roomCode });
-            socket.leave(roomCode);
-            return callback({ success: true });
-          }
-
-          await room.save();
-          socket.leave(roomCode);
-
-          io.to(roomCode).emit("roomData", {
-            players: room.players,
-            hostId: room.hostId,
-          });
-
-          callback({ success: true });
-        } catch (err) {
-          console.error("Error in leaveRoom:", err);
-          callback({ error: "Failed to leave room: " + err.message });
-        }
-      });
-
       // Handle socket disconnects
-      socket.on("disconnect", async (reason) => {
-        console.log(`Socket disconnected: ${socket.id}`);
-        const user = getUserFromSocketID(socket.id);
-        removeUser(user, socket);
+      //   socket.on("disconnect", async (reason) => {
+      //     console.log(`Socket disconnected: ${socket.id}`);
+      //     const user = getUserFromSocketID(socket.id);
+      //     removeUser(user, socket);
 
-        try {
-          // Find any rooms this socket was in
-          const rooms = await Room.find({ "players.id": socket.id });
-          for (const room of rooms) {
-            // Remove the player from the room's player list
-            room.players = room.players.filter((player) => player.id !== socket.id);
+      //     try {
+      //       // Find any rooms this socket was in
+      //       const rooms = await Room.find({ "players.id": socket.id });
+      //       for (const room of rooms) {
+      //         // Remove the player from the room's player list
+      //         room.players = room.players.filter((player) => player.id !== socket.id);
 
-            // If this was the host, mark the room as host disconnected
-            if (room.hostId === socket.id) {
-              console.log(`Host ${socket.id} disconnected from room ${room.code}`);
-              room.hostDisconnected = true;
-              // Optionally assign new host if there are other players
-              if (room.players.length > 0) {
-                room.hostId = room.players[0].id;
-                room.hostDisconnected = false;
-              }
-            }
+      //         // If this was the host, mark the room as host disconnected
+      //         if (room.hostId === socket.id) {
+      //           console.log(`Host ${socket.id} disconnected from room ${room.code}`);
+      //           room.hostDisconnected = true;
+      //           // Optionally assign new host if there are other players
+      //           if (room.players.length > 0) {
+      //             room.hostId = room.players[0].id;
+      //             room.hostDisconnected = false;
+      //           }
+      //         }
 
-            // Save the room (don't delete it)
-            await room.save();
+      //         // Save the room (don't delete it)
+      //         await room.save();
 
-            // Notify remaining players
-            io.to(room.code).emit("roomData", {
-              players: room.players,
-              hostId: room.hostId,
-              hostDisconnected: room.hostDisconnected,
-            });
-          }
-        } catch (err) {
-          console.error("Error handling disconnect:", err);
-        }
-      });
+      //         // Notify remaining players
+      //         io.to(room.code).emit("roomData", {
+      //           players: room.players,
+      //           hostId: room.hostId,
+      //           hostDisconnected: room.hostDisconnected,
+      //         });
+      //       }
+      //     } catch (err) {
+      //       console.error("Error handling disconnect:", err);
+      //     }
+      //   });
     });
   },
 
