@@ -157,6 +157,7 @@ module.exports = {
             io.to(roomCode).emit("correctGuess", { playerId });
           } else {
             rooms[roomCode].scores[playerId] = (rooms[roomCode].scores[playerId] || 0) - 100;
+            io.to(roomCode).emit("wrongGuess", { playerId });
           }
           io.to(roomCode).emit("scoreUpdate", { scores: rooms[roomCode].scores });
 

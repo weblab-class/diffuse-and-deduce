@@ -14,6 +14,7 @@ export default function GameScreen() {
   const [scores, setScores] = useState({});
   const [guessText, setGuessText] = useState("");
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
+  const [guessedWrong, setGuessedWrong] = useState(false);
   const navigate = useNavigate();
 
   const initialNoise = 10.0;
@@ -119,6 +120,13 @@ export default function GameScreen() {
     socket.on("correctGuess", ({ playerId }) => {
       if (playerId === socket.id) {
         setGuessedCorrectly(true);
+        setGuessedWrong(false);
+      }
+    });
+
+    socket.on("wrongGuess", ({ playerId }) => { 
+      if (playerId === socket.id) {
+        setGuessedWrong(true);
       }
     });
 
@@ -155,6 +163,7 @@ export default function GameScreen() {
             </div>
           </>
         )}
+        {guessedWrong && <div className="w-48 h-10 text-center bg-[#f0f3bd] border-[#675325] border-[1pt] text-[#675325] mt-10">Wrong guess! Try again.</div>}
       </div>
     </div>
   );
