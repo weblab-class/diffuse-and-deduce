@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import socket from "../../client-socket";
 
 import Header from "../modules/Header";
@@ -9,7 +9,24 @@ const GameSettings = () => {
   const navigate = useNavigate();
   const { roomCode } = useParams();
   const { state } = useLocation();
-  const gameMode = state?.gameMode || "multi";
+
+  useEffect(() => {
+    if (!state) {
+      navigate("/choose-num-players");
+    }
+  }, [state, navigate]);
+
+  const gameMode = state?.gameMode;
+
+  useEffect(() => {
+    // Log for debugging
+    console.log("GameSettings state:", {
+      roomCode,
+      gameMode,
+      locationState: state,
+      backNavValue: gameMode === "single" ? "choose-num-players" : "room-actions",
+    });
+  }, [roomCode, gameMode, state]);
 
   const [settings, setSettings] = React.useState({
     rounds: 1,
@@ -68,7 +85,7 @@ const GameSettings = () => {
 
   return (
     <>
-      <Header backNav={gameMode === "single" ? "/choose-num-players" : "/room-actions"} />
+      <Header backNav={gameMode === "single" ? "choose-num-players" : "room-actions"} />
       {/* Background container */}
       <div className="h-screen bg-[url('/background-images/background-game_settings.png')] bg-cover bg-center bg-no-repeat grid place-items-center p-8 font-sans antialiased">
         <div className="flex gap-12 min-h-fit">
