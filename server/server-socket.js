@@ -99,6 +99,11 @@ function objectIdFromDate(date) {
 // Clean up rooms every 5 minutes
 setInterval(cleanupRooms, 5 * 60 * 1000);
 
+function checkGuess(guessText, correctAnswer) {
+  // Implement your guess checking logic here
+  return guessText.toLowerCase() === correctAnswer.toLowerCase();
+}
+
 module.exports = {
   init: (http) => {
     io = require("socket.io")(http, {
@@ -130,16 +135,39 @@ module.exports = {
           // if correct:
           //   player.score += someCalculation(timeElapsed, round.totalTime);
 
-          await round.save();
+          console.log("Guess recieved:", guessText);
 
-          io.to(roomCode).emit("playerGuessed", {
-            // data about the guess or updated score
-          });
+          const isCorrect = checkGuess(guessText, round.correctAnswer)
+
+          const playerId = socket.id;
+
+          // Initialize room and scores if they don't exist
+          if (!rooms[roomCode]) {
+            rooms[roomCode] = { scores: {} };
+          }
+          if (!rooms[roomCode].scores) {
+            rooms[roomCode].scores = {};
+          }
+
+          if (isCorrect) {
+            const totalTime = round.totalTime;
+            const score = Math.round(((totalTime - timeElapsed) / totalTime) * 1000);
+            rooms[roomCode].scores[playerId] = (rooms[roomCode].scores[playerId] || 0) + score;
+
+            io.to(roomCode).emit("correctGuess", { playerId });
+          } else {
+            rooms[roomCode].scores[playerId] = (rooms[roomCode].scores[playerId] || 0) - 100;
+          }
+          io.to(roomCode).emit("scoreUpdate", { scores: rooms[roomCode].scores });
+
+          await round.save();
         } catch (err) {
           console.error("Error in submitGuess:", err);
           socket.emit("errorMessage", "Failed to process guess");
         }
       });
+
+
 
       socket.on("startRound", async ({ roomCode, totalTime }) => {
         try {
@@ -148,10 +176,12 @@ module.exports = {
             round = new Round({ roomCode });
           }
 
-          // set start time, total time, isActive
+          // set start time, total time, isActive, correctAnswer
           round.startTime = Date.now();
           round.totalTime = totalTime;
           round.isActive = true;
+          round.correctAnswer = "butterfly"; // may change into prop! imageids?
+          round.scores = new Map();
           await round.save();
 
           // Start the timer so we begin emitting `timeUpdate` events

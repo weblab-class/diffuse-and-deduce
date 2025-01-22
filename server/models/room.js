@@ -17,6 +17,7 @@ const RoomSchema = new mongoose.Schema({
     // add other fields as needed
   },
   isGameStarted: { type: Boolean, default: false },
+  scores: { type: Map, of: Number, default: {} },
 });
 
 module.exports = mongoose.model("Room", RoomSchema);

@@ -48,6 +48,14 @@ const Lobby = () => {
       setIsHost(socket.id === hostId);
     });
 
+    // Listen for round starting
+    socket.on("roundStarted", ({ startTime, totalTime }) => {
+      console.log("Round started");
+      navigate(`/game-screen/${roomCode}`, {
+        state: { timePerRound: totalTime },
+      });
+    });
+
     return () => {
       socket.emit("leaveRoom", { roomCode }, (response) => {
         if (response?.error) {

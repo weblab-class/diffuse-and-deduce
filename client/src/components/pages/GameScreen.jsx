@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 import socket from "../../client-socket";
 
@@ -10,6 +10,12 @@ import "../../utilities.css";
 import "./GameScreen.css";
 
 export default function GameScreen() {
+  const { roomCode } = useParams(); // same image screen for all users in room
+  const [scores, setScores] = useState({});
+  const [guessText, setGuessText] = useState("");
+  const [guessedCorrectly, setGuessedCorrectly] = useState(false);
+  const navigate = useNavigate();
+
   const initialNoise = 10.0;
 
   const canvasRef = useRef(null);
@@ -62,15 +68,45 @@ export default function GameScreen() {
 
   useEffect(() => {
     socket.on("timeUpdate", ({ timeElapsed }) => {
+      console.log("Received time update:", timeElapsed);
       setTimeElapsed(timeElapsed);
       const fraction = timeElapsed / timePerRound;
       setNoiseLevel(Math.max(initialNoise * (1 - fraction), 0));
     });
 
+    socket.on("scoreUpdate", ( { scores } ) => {
+      console.log("Received score update:", scores);
+      setScores(scores);
+    });
+
+    socket.on("roundStarted", ({ startTime, totalTime }) => {
+      console.log("Round started");
+      setTimeElapsed(0);
+    });
+
     return () => {
       socket.off("timeUpdate");
+      socket.off("scoreUpdate");
     };
-  }, [timePerRound]);
+  }, [timePerRound, navigate]);
+
+  const handleSubmitGuess = () => {
+    socket.emit("submitGuess", { roomCode, guessText });
+    setGuessText("");
+  }
+
+  // Listen for correct guess event
+  useEffect(() => {
+    socket.on("correctGuess", ({ playerId }) => {
+      if (playerId === socket.id) {
+        setGuessedCorrectly(true);
+      }
+    });
+
+    return () => {
+      socket.off("correctGuess");
+    };
+  }, []);
 
   return (
     <div className="game_screen-page-container">
@@ -79,12 +115,40 @@ export default function GameScreen() {
         <p className="game_screen-text">
           Time Remaining: <span style={{ fontWeight: 600 }}>{timePerRound - timeElapsed}</span>
         </p>
-        <canvas ref={canvasRef} className="to-deduce" />
-        <div className="submission-container">
-          <input className="enter-guess" placeholder="Enter guess..."></input>
-          <Button text="Submit" extraClass="inverted-button" />
-        </div>
+        <canvas ref={canvasRef} className="to-deduce" width="800" height="600" />
+        {guessedCorrectly ? (
+          <>
+            <div className="waiting-message">
+              <p>Congratulations! You guessed correctly.</p>
+              <p>Waiting for the round to end...</p>
+              <p>Your score: {scores[socket.id] || 0}</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="submission-container">
+              <input
+                className="enter-guess"
+                placeholder="Enter guess..."
+                value={guessText}
+                onChange={(e) => setGuessText(e.target.value)}
+              />
+              <Button text="Submit" extraClass="inverted-button" onClick={handleSubmitGuess} />
+            </div>
+          </>
+        )}
       </div>
+      {/* <div className="scores-container">
+          <h2>Scores</h2>
+          <ul>
+            {Object.entries(scores).map(([playerId, score]) => (
+              <li key={playerId}>
+                Player {playerId}: {score} points
+              </li>
+            ))}
+          </ul>
+      </div> */}
     </div>
   );
-}
+};
+
