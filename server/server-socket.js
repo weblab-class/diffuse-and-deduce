@@ -47,13 +47,15 @@ function startRoundTimer(roomCode) {
     const now = Date.now();
     const elapsed = Math.floor((now - round.startTime) / 1000);
 
+    // Send time update (capped at total round time)
+    const timeUpdate = { timeElapsed: Math.min(elapsed, round.totalTime) };
+    io.to(roomCode).emit("timeUpdate", timeUpdate);
+
     if (elapsed >= round.totalTime) {
       round.isActive = false;
       await round.save();
       clearInterval(interval);
       io.to(roomCode).emit("roundOver");
-    } else {
-      io.to(roomCode).emit("timeUpdate", { timeElapsed: elapsed });
     }
   }, 1000);
 
@@ -134,9 +136,9 @@ module.exports = {
           // if correct:
           //   player.score += someCalculation(timeElapsed, round.totalTime);
 
-          console.log("Guess recieved:", guessText);
+          console.log("Guess received:", guessText);
 
-          const isCorrect = checkGuess(guessText, round.correctAnswer)
+          const isCorrect = checkGuess(guessText, round.correctAnswer);
 
           const playerId = socket.id;
 
@@ -165,8 +167,6 @@ module.exports = {
           socket.emit("errorMessage", "Failed to process guess");
         }
       });
-
-
 
       socket.on("startRound", async ({ roomCode, totalTime }) => {
         try {

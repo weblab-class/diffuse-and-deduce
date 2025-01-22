@@ -58,7 +58,7 @@ const Game = () => {
 
   return (
     <>
-      <Header backNav="game-settings" />
+      <Header backNav="room-actions" />
       <div className="h-screen bg-gradient-to-br from emerald-50 to emerald-100 p-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-8">
