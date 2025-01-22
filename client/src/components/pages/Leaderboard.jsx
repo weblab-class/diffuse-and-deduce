@@ -21,10 +21,10 @@ const Leaderboard = () => {
           <p className="font-medium place-self-center text-2xl pt-3 pb-1">Leaderboard</p>
           <hr class="border-[#675325] border-[0.5pt] mx-5"></hr>
           <div className="space-y-2 font-normal text-xl mt-4 mx-2">
-            {Object.entries(scores).map(([playerId, score]) => (
+            {Object.entries(socketToUserMap).map(([playerId, player]) => (
               <div key={playerId} className="flex justify-between px-5">
-                <span>{socketToUserMap[playerId]?.name}</span>
-                <span className="font-medium">{score} points</span>
+                <span>{player.name}</span>
+                <span className="font-bold">{scores[playerId] || 0} points</span>
               </div>
             ))}
           </div>

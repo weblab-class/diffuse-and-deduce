@@ -339,6 +339,10 @@ module.exports = {
           }
           rooms[roomCode].players[socket.id] = playerName;
 
+          if (!rooms[roomCode].scores[socket.id]) {
+            rooms[roomCode].scores[socket.id] = 0;
+          }
+
           await room.save();
           socket.join(roomCode);
 
