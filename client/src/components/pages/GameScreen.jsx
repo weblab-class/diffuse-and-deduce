@@ -64,7 +64,21 @@ export default function GameScreen() {
     socket.on("timeUpdate", ({ timeElapsed }) => {
       setTimeElapsed(timeElapsed);
       const fraction = timeElapsed / timePerRound;
-      setNoiseLevel(Math.max(initialNoise * (1 - fraction), 0));
+
+      let easedFraction;
+      if (fraction < 0.2) {
+        easedFraction = 0.2 * Math.pow(fraction / 0.2, 2);
+      } else if (fraction < 0.8) {
+        // starts slow, accelerates in the middle, decelerates at the end (bell curve)
+        const middleFraction = (fraction - 0.2) / 0.6;
+        const bellCurve = -4 * Math.pow(middleFraction - 0.5, 2) + 1;
+        easedFraction = 0.2 + 0.7 * bellCurve;
+      } else {
+        const endFraction = (fraction - 0.8) / 0.2;
+        easedFraction = 0.9 + 0.1 * Math.pow(endFraction, 3);
+      }
+
+      setNoiseLevel(Math.max(initialNoise * (1 - easedFraction), 0));
     });
 
     return () => {
