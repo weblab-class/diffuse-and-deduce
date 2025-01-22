@@ -95,9 +95,17 @@ export default function GameScreen() {
       setTimeElapsed(0);
     });
 
+    socket.on("roundOver", ({ scores, socketToUserMap }) => {
+      console.log("Round over!");
+      console.log("Mapping:", socketToUserMap);
+      navigate("/leaderboard", { state: { scores, socketToUserMap } });
+    });
+
     return () => {
       socket.off("timeUpdate");
       socket.off("scoreUpdate");
+      socket.off("roundStarted");
+      socket.off("roundOver");
     };
   }, [timePerRound, navigate]);
 
@@ -148,16 +156,6 @@ export default function GameScreen() {
           </>
         )}
       </div>
-      {/* <div className="scores-container">
-          <h2>Scores</h2>
-          <ul>
-            {Object.entries(scores).map(([playerId, score]) => (
-              <li key={playerId}>
-                Player {playerId}: {score} points
-              </li>
-            ))}
-          </ul>
-      </div> */}
     </div>
   );
 }

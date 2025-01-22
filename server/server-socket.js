@@ -47,15 +47,18 @@ function startRoundTimer(roomCode) {
     const now = Date.now();
     const elapsed = Math.floor((now - round.startTime) / 1000);
 
-    // Send time update (capped at total round time)
-    const timeUpdate = { timeElapsed: Math.min(elapsed, round.totalTime) };
-    io.to(roomCode).emit("timeUpdate", timeUpdate);
-
     if (elapsed >= round.totalTime) {
       round.isActive = false;
       await round.save();
       clearInterval(interval);
-      io.to(roomCode).emit("roundOver");
+
+      // Create id_to_name mapping
+      // const id_to_name = socketToUserMap;
+      io.to(roomCode).emit("roundOver", { scores: rooms[roomCode].scores, socketToUserMap });
+    } else {
+      // Send time update (capped at total round time)
+      const timeUpdate = { timeElapsed: Math.min(elapsed, round.totalTime) };
+      io.to(roomCode).emit("timeUpdate", timeUpdate);
     }
   }, 1000);
 
@@ -131,10 +134,6 @@ module.exports = {
           const timeElapsed = Math.floor((Date.now() - round.startTime) / 1000);
 
           // Check guess logic...
-          // Possibly store player's score in `round.players`, e.g.:
-          // let player = round.players.find(p => p.socketId === socket.id);
-          // if correct:
-          //   player.score += someCalculation(timeElapsed, round.totalTime);
 
           console.log("Guess received:", guessText);
 
@@ -144,7 +143,7 @@ module.exports = {
 
           // Initialize room and scores if they don't exist
           if (!rooms[roomCode]) {
-            rooms[roomCode] = { scores: {} };
+            rooms[roomCode] = { scores: {}, players: {} };
           }
           if (!rooms[roomCode].scores) {
             rooms[roomCode].scores = {};
@@ -332,6 +331,12 @@ module.exports = {
             // Add the player to room in database only if they're not already there
             room.players.push({ id: socket.id, name: playerName });
           }
+
+          // Add player to the in-memory room data
+          if (!rooms[roomCode]) {
+            rooms[roomCode] = { players: {}, scores: {} };
+          }
+          rooms[roomCode].players[socket.id] = playerName;
 
           await room.save();
           socket.join(roomCode);

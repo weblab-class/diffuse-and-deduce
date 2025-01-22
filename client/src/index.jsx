@@ -10,6 +10,7 @@ import GameSettings from "./components/pages/GameSettings";
 import Tutorial from "./components/pages/Tutorial";
 import Game from "./components/pages/Game";
 import GameScreen from "./components/pages/GameScreen";
+import Leaderboard from "./components/pages/Leaderboard";
 
 import {
   createBrowserRouter,
@@ -33,6 +34,7 @@ const router = createBrowserRouter(
       <Route path="/game/:roomCode" element={<Game />} />
       <Route path="/tutorial" element={<Tutorial />} />
       <Route path="/game-screen/:roomCode" element={<GameScreen />} />
+      <Route path="/leaderboard" element={<Leaderboard />} />
     </Route>
   )
 );
