@@ -1,70 +1,22 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-
-import socket from "../../client-socket";
-
+import { UserContext } from "../App";
 import Button from "../modules/Button";
 import Header from "../modules/Header";
-import { UserContext } from "../App";
-
+import useRoom from "../../hooks/useRoom";
 import "../../utilities.css";
 import "./Lobby.css";
 
 const Lobby = () => {
   const { roomCode } = useParams();
-  const [players, setPlayers] = useState([]);
-  const [hostId, setHostId] = useState(null);
-  const [isHost, setIsHost] = useState(false);
   const { userName } = useContext(UserContext);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Join the room
-    socket.emit("joinRoom", { roomCode, playerName: userName }, (response) => {
-      if (response.error) {
-        console.error(response.error);
-        navigate("/room-actions"); // Navigate back if there's an error
-      }
-    });
+  const { players, isHost, hostId } = useRoom(roomCode, userName);
 
-    // Listen for room data updates
-    socket.on("roomData", ({ players, hostId }) => {
-      console.log("Room Update Received:");
-      console.log(
-        "Current Players:",
-        players.map((p) => ({ name: p.name, id: p.id, isHost: p.id === hostId }))
-      );
-      console.log("Host ID:", hostId);
-      console.log("Your Socket ID:", socket.id);
-
-      // Sort players where host is first
-      const sortedPlayers = [...players].sort((a, b) => {
-        if (a.id === hostId) return -1;
-        if (b.id === hostId) return 1;
-        return 0;
-      });
-      setPlayers(sortedPlayers);
-      setHostId(hostId);
-      setIsHost(socket.id === hostId);
-    });
-
-    // Listen for round starting
-    socket.on("roundStarted", ({ startTime, totalTime }) => {
-      console.log("Round started");
-      navigate(`/game-screen/${roomCode}`, {
-        state: { timePerRound: totalTime },
-      });
-    });
-
-    return () => {
-      socket.emit("leaveRoom", { roomCode }, (response) => {
-        if (response?.error) {
-          console.error("Error leaving room:", response.error);
-        }
-      });
-      socket.off("roomData");
-    };
-  }, [roomCode, userName]);
+  const handleContinue = () => {
+    navigate(`/game-settings/${roomCode}`, { state: { playerName: userName, gameMode: "multi" } });
+  };
 
   return (
     <div className="lobby-page-container">
@@ -89,11 +41,7 @@ const Lobby = () => {
         <hr />
         <div className="flex justify-center">
           {isHost && (
-            <Button
-              text="Continue"
-              onClick={() => navigate(`/game-settings/${roomCode}`)}
-              extraClass="inverted-button"
-            />
+            <Button text="Continue" onClick={handleContinue} extraClass="inverted-button" />
           )}
         </div>
       </div>

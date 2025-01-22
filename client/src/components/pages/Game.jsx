@@ -18,7 +18,6 @@ const Game = () => {
     roomCode: roomCode,
   });
 
-  // First useEffect for socket connection
   useEffect(() => {
     socket.emit("joinRoom", { roomCode }, (response) => {
       if (response.error) {
@@ -28,42 +27,34 @@ const Game = () => {
       }
     });
 
+    // Listen for time updates from server
+    socket.on("timeUpdate", ({ timeElapsed }) => {
+      const totalTime = state?.settings.timePerRound || 30;
+      setGameState((prev) => ({
+        ...prev,
+        timeLeft: Math.max(0, totalTime - timeElapsed),
+      }));
+    });
+
     socket.on("gameUpdate", (update) => {
-      setGameState(update);
+      setGameState((prev) => ({
+        ...prev,
+        ...update,
+      }));
+    });
+
+    socket.on("roundOver", () => {
+      // Handle round over
+      console.log("Round over!");
     });
 
     return () => {
+      socket.off("timeUpdate");
       socket.off("gameUpdate");
-    };
-  }, []);
-
-  // Second useEffect for timer
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setGameState((prevState) => {
-        // checks if time's up
-        if (prevState.timeLeft <= 1) {
-          clearInterval(timer);
-          // TODO: handle round end
-          return {
-            ...prevState,
-            timeLeft: 0,
-          };
-        }
-
-        return {
-          ...prevState,
-          timeLeft: prevState.timeLeft - 1,
-        };
-      });
-    }, 1000);
-
-    // Cleanup function
-    return () => {
-      clearInterval(timer);
+      socket.off("roundOver");
       socket.emit("leaveRoom", { roomCode });
     };
-  }, [roomCode]); // Only re-run if roomCode changes
+  }, [roomCode, state?.settings.timePerRound]);
 
   return (
     <>

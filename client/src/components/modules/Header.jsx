@@ -14,16 +14,27 @@ const Header = (props) => {
   const { roomCode } = useParams();
 
   const handleBack = () => {
-    // If we're in the lobby, handle leaving the room
-    if (location.pathname.startsWith("/lobby/")) {
+    console.log("Navigation Debug:", {
+      currentPath: location.pathname,
+      roomCode: roomCode,
+      backNav: props.backNav,
+      gameMode: location.state?.gameMode,
+      fullLocation: location,
+    });
+
+    // If we're in a room-based page (lobby or game settings), clean up
+    if (roomCode) {
+      console.log("Leaving room before navigation");
+      navigate(`/${props.backNav}`);
       socket.emit("leaveRoom", { roomCode }, (response) => {
         if (response.error) {
           console.error(response.error);
           return;
         }
-        navigate(`/${props.backNav}`);
+        console.log("Successfully left room, navigating to:", props.backNav);
       });
     } else {
+      console.log("Direct navigation to:", props.backNav);
       navigate(`/${props.backNav}`);
     }
   };
