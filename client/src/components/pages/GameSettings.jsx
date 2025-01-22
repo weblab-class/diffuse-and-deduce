@@ -95,9 +95,9 @@ const GameSettings = () => {
       <div className="relative z-0 min-h-screen font-sans antialiased overflow-auto">
         {/* Flex container to push button to bottom */}
         <div className="min-h-screen flex flex-col">
-          {/* Main content */}
-          <div className="flex-grow pt-16 p-8">
-            <div className="flex flex-col lg:flex-row gap-8 justify-center items-stretch">
+          {/* Main content - centered vertically and horizontally */}
+          <div className="flex-grow pt-16 p-8 flex items-center">
+            <div className="w-full flex flex-col lg:flex-row gap-8 justify-center items-stretch">
               {/* Topics Container */}
               <div className="bg-[#FFFCD1]/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl ring-1 ring-[#FFFCD1]/30 hover:shadow-2xl transition-all duration-300 flex flex-col w-full lg:w-96">
                 <h2 className="text-2xl font-bold mb-6 pb-3 border-b border-gray-400">Topics</h2>
@@ -137,11 +137,12 @@ const GameSettings = () => {
               <div className="bg-[#FFFCD1]/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl ring-1 ring-[#FFFCD1]/30 hover:shadow-2xl transition-all duration-300 flex flex-col w-full lg:w-96">
                 <h2 className="text-2xl font-bold mb-6 pb-3 border-b border-gray-400">Settings</h2>
                 <div className="flex flex-col gap-8">
+                  {/* Rounds Slider */}
                   <div className="flex items-center justify-between group">
-                    <span className="w-48 text-[#675325]-700 font-medium group-hover:text-emerald-700 transition-colors">
+                    <span className="w-32 text-[#675325]-700 font-medium group-hover:text-emerald-700 transition-colors">
                       Rounds:
                     </span>
-                    <div className="flex gap-4 w-64">
+                    <div className="w-48 flex gap-4 justify-end">
                       <input
                         type="range"
                         min="1"
@@ -153,11 +154,13 @@ const GameSettings = () => {
                       <span className="w-8 text-right">{settings.rounds}</span>
                     </div>
                   </div>
+
+                  {/* Time per Round Slider */}
                   <div className="flex items-center justify-between group">
-                    <span className="w-48 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
+                    <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
                       Time per round:
                     </span>
-                    <div className="flex items-center gap-4 w-64">
+                    <div className="w-48 flex gap-4 justify-end">
                       <input
                         type="range"
                         min="30"
@@ -171,14 +174,14 @@ const GameSettings = () => {
                       <span className="w-8 text-right">{settings.timePerRound}s</span>
                     </div>
                   </div>
-                  {/* Toggle switch container */}
+
+                  {/* Sabotage Toggle */}
                   {gameMode === "multi" && (
                     <div className="flex items-center justify-between group">
                       <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
                         Sabotage:
                       </span>
-                      <div className="w-64 flex justify-end">
-                        {/* main toggle switch */}
+                      <div className="w-48 flex justify-end">
                         <div
                           onClick={() => handleToggle("sabotage")}
                           className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ease-in-out ${
@@ -187,7 +190,6 @@ const GameSettings = () => {
                               : "bg-gray-200 hover:bg-gray-300"
                           }`}
                         >
-                          {/* toggle circle */}
                           <div
                             className={`bg-white w-5 h-5 rounded-full shadow-md transform duration-300 ease-in-out ${
                               settings.sabotage
@@ -200,12 +202,12 @@ const GameSettings = () => {
                     </div>
                   )}
 
-                  {/* Hints toggle */}
+                  {/* Hints Toggle */}
                   <div className="flex items-center justify-between group">
                     <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
                       Hints:
                     </span>
-                    <div className="w-64 flex justify-end">
+                    <div className="w-48 flex justify-end">
                       <div
                         onClick={() => handleToggle("hints")}
                         className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ease-in-out ${
