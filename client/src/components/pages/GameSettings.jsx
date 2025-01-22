@@ -125,9 +125,8 @@ const GameSettings = () => {
               ))}
             </ul>
           </div>
-          <div class="bg-[#FFFCD1] w-96 h-[520px] mt-8 rounded-[4px] border-[#675325] border-[1.5pt] p-8">
-            <h2 class="text-[#675325] text-2xl font-bold pb-4">Settings</h2>
-            <hr class="border-[0.5pt] border-[#675325]"></hr>
+          <div className="bg-[#FFFCD1]/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl ring-1 ring-[#FFFCD1]/30 hover:shadow-2xl transition-all duration-300 flex flex-col w-96">
+            <h2 className="text-2xl font-bold mb-6 pb-3 border-b border-gray-400">Settings</h2>
             <div className="h-[450px] flex flex-col justify-evenly">
               <div className="flex items-center justify-between group">
                 <span className="w-48 text-[#675325]-700 font-medium group-hover:text-emerald-700 transition-colors">
