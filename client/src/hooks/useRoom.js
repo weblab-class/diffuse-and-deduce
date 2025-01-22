@@ -36,7 +36,7 @@ const useRoom = (roomCode, playerName) => {
       console.log("Cleaning up room effect");
       socket.off("roomData");
     };
-  }, [roomCode, playerName, hasJoined]);
+  }, [roomCode, playerName]);
 
   return {
     players,
