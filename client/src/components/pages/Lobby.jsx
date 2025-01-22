@@ -15,7 +15,7 @@ const Lobby = () => {
   const { players, isHost, hostId } = useRoom(roomCode, userName);
 
   const handleContinue = () => {
-    navigate(`/game-settings/${roomCode}`, { state: { playerName: userName } });
+    navigate(`/game-settings/${roomCode}`, { state: { playerName: userName, gameMode: "multi" } });
   };
 
   return (

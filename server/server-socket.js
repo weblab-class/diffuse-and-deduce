@@ -53,7 +53,6 @@ function startRoundTimer(roomCode) {
       clearInterval(interval);
       io.to(roomCode).emit("roundOver");
     } else {
-      // This is what the client listens for
       io.to(roomCode).emit("timeUpdate", { timeElapsed: elapsed });
     }
   }, 1000);
