@@ -78,7 +78,7 @@ const GameSettings = () => {
 
     // 2. Then navigate to GameScreen
     // pass timePerRound if needed for local logic (like noise animations)
-    navigate("/game-screen", {
+    navigate(`/game-screen/${roomCode}`, {
       state: { timePerRound: totalTime },
     });
   };

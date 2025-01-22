@@ -32,7 +32,7 @@ const router = createBrowserRouter(
       <Route path="/game-settings/:roomCode" element={<GameSettings />} />
       <Route path="/game/:roomCode" element={<Game />} />
       <Route path="/tutorial" element={<Tutorial />} />
-      <Route path="/game-screen" element={<GameScreen />} />
+      <Route path="/game-screen/:roomCode" element={<GameScreen />} />
     </Route>
   )
 );
