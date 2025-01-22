@@ -6,7 +6,7 @@ const Tutorial = () => {
   return (
     <>
       <Header backNav="" />{" "}
-      <div class="bg-no-repeat bg-cover bg-center bg-[url('background-images/background-tutorial.png')] min-h-screen flex justify-center items-center scroll-smooth">
+      <div class="bg-no-repeat bg-cover bg-center bg-[url('/background-images/background-tutorial.png')] min-h-screen flex justify-center items-center scroll-smooth">
         <div class="border-[#675325] bg-[#FFFCD1] border-2 h-full mt-16 mb-8 text-[#675325] rounded-[4px]">
           <div>
             <p class="font-medium place-self-center text-2xl pt-3 pb-1">Tutorial</p>
