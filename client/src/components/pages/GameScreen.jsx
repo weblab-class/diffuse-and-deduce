@@ -73,22 +73,19 @@ export default function GameScreen() {
       const fraction = timeElapsed / timePerRound;
 
       let easedFraction;
-      if (fraction < 0.2) {
-        easedFraction = 0.2 * Math.pow(fraction / 0.2, 2);
-      } else if (fraction < 0.8) {
-        // starts slow, accelerates in the middle, decelerates at the end (bell curve)
-        const middleFraction = (fraction - 0.2) / 0.6;
-        const bellCurve = -4 * Math.pow(middleFraction - 0.5, 2) + 1;
-        easedFraction = 0.2 + 0.7 * bellCurve;
+      if (fraction < 0.3) {
+        easedFraction = 0.3 * Math.pow(fraction / 0.3, 3);
+      } else if (fraction < 0.7) {
+        easedFraction = 0.3 + 0.4 * ((fraction - 0.3) / 0.4);
       } else {
-        const endFraction = (fraction - 0.8) / 0.2;
-        easedFraction = 0.9 + 0.1 * Math.pow(endFraction, 3);
+        const endFraction = (fraction - 0.7) / 0.3;
+        easedFraction = 0.7 + 0.3 * (1 - Math.pow(1 - endFraction, 3));
       }
 
       setNoiseLevel(Math.max(initialNoise * (1 - easedFraction), 0));
     });
 
-    socket.on("scoreUpdate", ( { scores } ) => {
+    socket.on("scoreUpdate", ({ scores }) => {
       console.log("Received score update:", scores);
       setScores(scores);
     });
@@ -107,7 +104,7 @@ export default function GameScreen() {
   const handleSubmitGuess = () => {
     socket.emit("submitGuess", { roomCode, guessText });
     setGuessText("");
-  }
+  };
 
   // Listen for correct guess event
   useEffect(() => {
@@ -164,5 +161,4 @@ export default function GameScreen() {
       </div> */}
     </div>
   );
-};
-
+}

@@ -9,8 +9,6 @@ const useRoom = (roomCode, playerName) => {
   const [hasJoined, setHasJoined] = useState(false); // Track if we've already joined
 
   useEffect(() => {
-    console.log("useRoom effect running with:", { roomCode, playerName, hasJoined });
-
     // Only join if we haven't joined yet
     if (!roomCode || !playerName || hasJoined) return;
 
