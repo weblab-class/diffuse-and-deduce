@@ -130,9 +130,8 @@ export default function GameScreen() {
         {guessedCorrectly ? (
           <>
             <div className="waiting-message">
-              <p>Congratulations! You guessed correctly.</p>
-              <p>Waiting for the round to end...</p>
-              <p>Your score: {scores[socket.id] || 0}</p>
+              <p>Congratulations! Your scored {scores[socket.id] || 0} points.</p>
+              <p>Waiting for the round to end... </p>
             </div>
           </>
         ) : (
