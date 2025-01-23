@@ -13,6 +13,9 @@
 | - Actually starts the webserver
 */
 
+const path = require("path");
+// ... existing imports
+
 // validator runs some basic checks to make sure you've set everything up correctly
 // this is a tool provided by staff, so you don't need to worry about it
 const validator = require("./validator");
@@ -26,7 +29,8 @@ const http = require("http");
 const express = require("express"); // backend framework for our node server.
 const session = require("express-session"); // library that stores info about each connected user
 const mongoose = require("mongoose"); // library to connect to MongoDB
-const path = require("path"); // provide utilities for working with file and directory paths
+
+const cors = require("cors"); // Import CORS
 
 const api = require("./api");
 const auth = require("./auth");
@@ -54,6 +58,18 @@ mongoose
 // create a new express server
 const app = express();
 app.use(validator.checkRoutes);
+
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Frontend URL
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+
+// Serve static files from 'public'
+const publicPath = path.resolve(__dirname, "public");
+app.use("/game-images", express.static(path.join(publicPath, "game-images")));
 
 // allow us to process POST requests
 app.use(express.json());

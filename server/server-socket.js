@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+
 let io;
 
 const userToSocketMap = {}; // maps user ID to socket object
@@ -168,28 +171,55 @@ module.exports = {
         }
       });
 
-      socket.on("startRound", async ({ roomCode, totalTime }) => {
+      socket.on("startRound", async ({ roomCode, totalTime, topic }) => {
         try {
           let round = await Round.findOne({ roomCode });
           if (!round) {
             round = new Round({ roomCode });
           }
 
-          // set start time, total time, isActive, correctAnswer
+          // Set round details
           round.startTime = Date.now();
           round.totalTime = totalTime;
           round.isActive = true;
-          round.correctAnswer = "butterfly"; // may change into prop! imageids?
+
+          // Define the directory containing images for the selected topic
+          const imagesDir = path.join(__dirname, "public", "game-images", topic);
+
+          // Read all image files from the topic directory
+          const files = fs
+            .readdirSync(imagesDir)
+            .filter((file) => /\.(jpg|jpeg|png|gif)$/.test(file));
+          if (files.length === 0) {
+            throw new Error(`No images found for topic: ${topic}`);
+          }
+
+          // Select a random image
+          const randomIndex = Math.floor(Math.random() * files.length);
+          const selectedImage = files[randomIndex];
+
+          // Derive the correct answer from the image filename (without extension)
+          const correctAnswer = path.parse(selectedImage).name.toLowerCase();
+
+          // Set the image path accessible by the frontend
+          const imagePath = `/game-images/${topic}/${selectedImage}`;
+          console.log(`Selected image path: ${imagePath}`);
+
+          // Update the round with the selected image and answer
+          round.correctAnswer = correctAnswer;
+          round.imagePath = imagePath;
           round.scores = new Map();
           await round.save();
 
-          // Start the timer so we begin emitting `timeUpdate` events
+          // Start the round timer
           startRoundTimer(roomCode);
 
+          // Emit 'roundStarted' to all clients in the room with image information
           io.to(roomCode).emit("roundStarted", {
             roomCode,
             startTime: round.startTime,
             totalTime,
+            imagePath, // Ensure this path is correct
           });
         } catch (err) {
           console.error("Error starting round:", err);

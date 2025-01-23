@@ -1,16 +1,15 @@
+// GameScreen.jsx
+
 import React, { useRef, useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-
 import socket from "../../client-socket";
-
 import Button from "../modules/Button";
 import Header from "../modules/Header";
-
 import "../../utilities.css";
 import "./GameScreen.css";
 
 export default function GameScreen() {
-  const { roomCode } = useParams(); // same image screen for all users in room
+  const { roomCode } = useParams();
   const [scores, setScores] = useState({});
   const [guessText, setGuessText] = useState("");
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
@@ -18,30 +17,46 @@ export default function GameScreen() {
   const navigate = useNavigate();
 
   const initialNoise = 10.0;
-
   const canvasRef = useRef(null);
   const location = useLocation();
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
 
-  const imageSrc = "/game-images/secret_image.jpg";
+  // Retrieve server URL from Vite environment variables
+  const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+
+  // Initialize imagePath state with the backend server URL
+  const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`); // default image
+
   const timePerRound = location.state?.timePerRound || 30;
 
-  // 1. Load the base image once
+  // Load the image whenever imagePath changes
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
-    img.src = imageSrc;
+    // Enable CORS for the image
+    img.crossOrigin = "Anonymous";
+    img.src = imagePath;
     img.onload = () => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       setImgLoaded(true);
     };
-  }, [imageSrc]);
+    img.onerror = (err) => {
+      console.error(`Failed to load image at path: ${imagePath}`, err);
+      setImgLoaded(false);
+      // Optionally, display a placeholder or error message
+      ctx.fillStyle = "#CCCCCC";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#000000";
+      ctx.font = "20px Arial";
+      ctx.fillText("Image failed to load.", 10, 50);
+    };
+  }, [imagePath, SERVER_URL]);
 
-  // 3. Re-apply noise whenever noiseLevel changes
+  // Re-apply noise whenever noiseLevel changes
   useEffect(() => {
     if (!imgLoaded) return;
 
@@ -49,7 +64,8 @@ export default function GameScreen() {
     const ctx = canvas.getContext("2d");
 
     const baseImage = new Image();
-    baseImage.src = imageSrc;
+    baseImage.crossOrigin = "Anonymous";
+    baseImage.src = imagePath;
     baseImage.onload = () => {
       ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
 
@@ -65,9 +81,13 @@ export default function GameScreen() {
       }
       ctx.putImageData(imageData, 0, 0);
     };
-  }, [noiseLevel, imgLoaded, imageSrc]);
+    baseImage.onerror = (err) => {
+      console.error(`Failed to load base image at path: ${imagePath}`, err);
+    };
+  }, [noiseLevel, imgLoaded, imagePath]);
 
   useEffect(() => {
+    // Handle various socket events
     socket.on("timeUpdate", ({ timeElapsed }) => {
       console.log("Received time update:", timeElapsed);
       setTimeElapsed(timeElapsed);
@@ -91,9 +111,13 @@ export default function GameScreen() {
       setScores(scores);
     });
 
-    socket.on("roundStarted", ({ startTime, totalTime }) => {
-      console.log("Round started");
+    // Handle 'roundStarted' to receive the new image
+    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath }) => {
+      console.log("Round started with image:", serverImagePath);
       setTimeElapsed(0);
+      setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
+      setNoiseLevel(initialNoise); // Reset noise
+      setImgLoaded(false); // Trigger image loading
     });
 
     socket.on("roundOver", ({ scores, socketToUserMap }) => {
@@ -108,7 +132,7 @@ export default function GameScreen() {
       socket.off("roundStarted");
       socket.off("roundOver");
     };
-  }, [timePerRound, navigate]);
+  }, [timePerRound, navigate, SERVER_URL]);
 
   const handleSubmitGuess = () => {
     socket.emit("submitGuess", { roomCode, guessText });
@@ -124,7 +148,7 @@ export default function GameScreen() {
       }
     });
 
-    socket.on("wrongGuess", ({ playerId }) => { 
+    socket.on("wrongGuess", ({ playerId }) => {
       if (playerId === socket.id) {
         setGuessedWrong(true);
       }
@@ -132,6 +156,7 @@ export default function GameScreen() {
 
     return () => {
       socket.off("correctGuess");
+      socket.off("wrongGuess");
     };
   }, []);
 
@@ -142,6 +167,7 @@ export default function GameScreen() {
         <p className="game_screen-text">
           Time Remaining: <span style={{ fontWeight: 600 }}>{timePerRound - timeElapsed}</span>
         </p>
+        {/* Display the dynamic image */}
         <canvas ref={canvasRef} className="to-deduce" width="800" height="600" />
         {guessedCorrectly ? (
           <>
@@ -163,7 +189,11 @@ export default function GameScreen() {
             </div>
           </>
         )}
-        {guessedWrong && <div className="w-48 h-10 text-center bg-[#f0f3bd] border-[#675325] border-[1pt] text-[#675325] mt-10">Wrong guess! Try again.</div>}
+        {guessedWrong && (
+          <div className="w-48 h-10 text-center bg-[#f0f3bd] border-[#675325] border-[1pt] text-[#675325] mt-10">
+            Wrong guess! Try again.
+          </div>
+        )}
       </div>
     </div>
   );
