@@ -4,6 +4,7 @@ import socket from "../../client-socket";
 import Header from "../modules/Header";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Button from "../modules/Button";
+import { motion } from "framer-motion";
 
 const GameSettings = () => {
   const navigate = useNavigate();
@@ -88,56 +89,101 @@ const GameSettings = () => {
         <Header backNav={gameMode === "single" ? "choose-num-players" : "room-actions"} />
       </div>
       {/* Background container - lowest layer */}
-      <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-[url('/background-images/background-game_settings.png')] bg-cover bg-center bg-no-repeat" />
+      <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#0A0A1B] to-[#1A1A2E] overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/background-images/background-game_settings.png')] bg-cover bg-center bg-no-repeat opacity-40 mix-blend-overlay" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(233,69,96,0.1)_0%,transparent_70%)]" />
+      </div>
       {/* Content container - middle layer with scrolling */}
-      <div className="relative z-0 min-h-screen font-sans antialiased overflow-auto">
+      <div className="relative z-0 min-h-screen font-['Space_Grotesk'] antialiased overflow-auto">
         {/* Flex container to push button to bottom */}
         <div className="min-h-screen flex flex-col">
           {/* Main content - centered vertically and horizontally */}
-          <div className="flex-grow pt-16 p-8 flex items-center">
-            <div className="w-full flex flex-col lg:flex-row gap-8 justify-center items-stretch">
+          <div className="flex-grow pt-20 p-10 flex items-center">
+            <div className="w-full flex flex-col lg:flex-row gap-10 justify-center items-stretch">
               {/* Topics Container */}
-              <div className="bg-[#FFFCD1]/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl ring-1 ring-[#FFFCD1]/30 hover:shadow-2xl transition-all duration-300 flex flex-col w-full lg:w-96">
-                <h2 className="text-2xl font-bold mb-6 pb-3 border-b border-gray-400">Topics</h2>
-                <ul className="space-y-4">
-                  {topics.map((topic) => (
-                    <li
+              <div className="glass-card p-10 rounded-3xl shadow-2xl ring-1 ring-white/20 hover:shadow-[0_0_40px_rgba(233,69,96,0.2)] transition-all duration-500 flex flex-col w-full lg:w-[480px]">
+                <h2 className="text-3xl font-bold mb-8 pb-4 border-b border-white/20 text-white tracking-tight">
+                  Topics
+                </h2>
+                <ul className="space-y-5">
+                  {topics.map((topic, index) => (
+                    <motion.li
                       key={topic}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{
+                        duration: 0.5,
+                        delay: index * 0.1,
+                        type: "spring",
+                        stiffness: 100,
+                      }}
+                      whileHover={{
+                        scale: 1.03,
+                        transition: {
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 10,
+                        },
+                      }}
+                      whileTap={{
+                        scale: 0.97,
+                        transition: {
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 10,
+                        },
+                      }}
                       onClick={() => setSelectedTopic(topic)}
-                      className={`relative flex items-center justify-center p-2 rounded-[4px] font-medium transition-all duration-300 cursor-pointer ${
-                        selectedTopic === topic
-                          ? "bg-emerald-600 text-[#FFFCD1] scale-[1.02] shadow-lg hover:bg-emerald-500 ring-4 ring-emerald-500/20"
-                          : "bg-[#675325] text-[#FFFCD1] hover:bg-gray-600 hover:scale-[1.01]"
-                      }`}
+                      className={`relative flex items-center justify-center p-4 rounded-xl font-medium cursor-pointer 
+                        transform transition-all duration-500 ease-out
+                        before:absolute before:inset-0 before:rounded-xl before:transition-all before:duration-500
+                        before:opacity-0 before:bg-gradient-to-r before:from-[#E94560]/20 before:to-[#0F3460]/20
+                        hover:before:opacity-100 hover:shadow-[0_0_30px_rgba(233,69,96,0.3)]
+                        ${
+                          selectedTopic === topic
+                            ? "bg-gradient-to-r from-[#E94560] to-[#0F3460] text-white scale-[1.02] shadow-lg hover:shadow-xl ring-4 ring-[#E94560]/20"
+                            : "bg-white/5 text-white/90 hover:bg-gradient-to-r hover:from-white/10 hover:to-white/5"
+                        }`}
                     >
-                      <span className="relative flex items-center gap-2">
+                      <span className="relative flex items-center gap-3 text-lg group">
                         {topic}
-                        {selectedTopic === topic && (
-                          <svg
-                            className="w-4 h-4 text-emerald-300 ml-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={4}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        )}
+                        <motion.svg
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{
+                            scale: selectedTopic === topic ? 1 : 0,
+                            opacity: selectedTopic === topic ? 1 : 0,
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 500,
+                            damping: 25,
+                          }}
+                          className="w-5 h-5 text-white/90 ml-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </motion.svg>
                       </span>
-                    </li>
+                    </motion.li>
                   ))}
                 </ul>
               </div>
-              <div className="bg-[#FFFCD1]/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl ring-1 ring-[#FFFCD1]/30 hover:shadow-2xl transition-all duration-300 flex flex-col w-full lg:w-96">
-                <h2 className="text-2xl font-bold mb-6 pb-3 border-b border-gray-400">Settings</h2>
-                <div className="flex flex-col gap-8">
+              <div className="backdrop-blur-xl bg-white/10 p-10 rounded-3xl shadow-2xl ring-1 ring-white/20 hover:shadow-[0_0_40px_rgba(233,69,96,0.2)] transition-all duration-500 flex flex-col w-full lg:w-[480px]">
+                <h2 className="text-3xl font-bold mb-8 pb-4 border-b border-white/20 text-white tracking-tight">
+                  Settings
+                </h2>
+                <div className="flex flex-col gap-10">
                   {/* Rounds Slider */}
                   <div className="flex items-center justify-between group">
-                    <span className="w-32 text-[#675325]-700 font-medium group-hover:text-emerald-700 transition-colors">
+                    <span className="w-32 text-white/90 font-medium text-lg group-hover:text-[#E94560] transition-colors">
                       Rounds:
                     </span>
                     <div className="w-48 flex gap-4 justify-end">
@@ -147,15 +193,15 @@ const GameSettings = () => {
                         max="10"
                         value={settings.rounds}
                         onChange={(e) => handleSliderChange("rounds", parseInt(e.target.value))}
-                        className="w-32 cursor-pointer accent-green-500 hover:accent-green-600"
+                        className="w-32 cursor-pointer accent-[#E94560] hover:accent-[#0F3460]"
                       />
-                      <span className="w-8 text-right">{settings.rounds}</span>
+                      <span className="w-8 text-right text-white/90">{settings.rounds}</span>
                     </div>
                   </div>
 
                   {/* Time per Round Slider */}
                   <div className="flex items-center justify-between group">
-                    <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
+                    <span className="w-32 text-white/90 font-medium text-lg group-hover:text-[#E94560] transition-colors">
                       Time per round:
                     </span>
                     <div className="w-48 flex gap-4 justify-end">
@@ -167,16 +213,16 @@ const GameSettings = () => {
                         onChange={(e) =>
                           handleSliderChange("timePerRound", parseInt(e.target.value))
                         }
-                        className="w-32 cursor-pointer accent-green-500 hover:accent-green-600"
+                        className="w-32 cursor-pointer accent-[#E94560] hover:accent-[#0F3460]"
                       />
-                      <span className="w-8 text-right">{settings.timePerRound}s</span>
+                      <span className="w-8 text-right text-white/90">{settings.timePerRound}s</span>
                     </div>
                   </div>
 
                   {/* Sabotage Toggle */}
                   {gameMode === "multi" && (
                     <div className="flex items-center justify-between group">
-                      <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
+                      <span className="w-32 text-white/90 font-medium text-lg group-hover:text-[#E94560] transition-colors">
                         Sabotage:
                       </span>
                       <div className="w-48 flex justify-end">
@@ -184,8 +230,8 @@ const GameSettings = () => {
                           onClick={() => handleToggle("sabotage")}
                           className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ease-in-out ${
                             settings.sabotage
-                              ? "bg-green-500 shadow-inner"
-                              : "bg-gray-200 hover:bg-gray-300"
+                              ? "bg-[#E94560] shadow-inner"
+                              : "bg-white/10 hover:bg-white/20"
                           }`}
                         >
                           <div
@@ -202,7 +248,7 @@ const GameSettings = () => {
 
                   {/* Hints Toggle */}
                   <div className="flex items-center justify-between group">
-                    <span className="w-32 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
+                    <span className="w-32 text-white/90 font-medium text-lg group-hover:text-[#E94560] transition-colors">
                       Hints:
                     </span>
                     <div className="w-48 flex justify-end">
@@ -210,8 +256,8 @@ const GameSettings = () => {
                         onClick={() => handleToggle("hints")}
                         className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ease-in-out ${
                           settings.hints
-                            ? "bg-green-500 shadow-inner"
-                            : "bg-gray-200 hover:bg-gray-300"
+                            ? "bg-[#E94560] shadow-inner"
+                            : "bg-white/10 hover:bg-white/20"
                         }`}
                       >
                         <div
@@ -227,18 +273,18 @@ const GameSettings = () => {
 
                   {/* Reveal Mode Toggle */}
                   <div className="flex items-center justify-between group">
-                    <span className="w-48 text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">
+                    <span className="w-48 text-white/90 font-medium text-lg group-hover:text-[#E94560] transition-colors">
                       Reveal Mode:
                     </span>
                     <div className="w-80 flex justify-end">
-                      <div className="relative w-[250px] h-10 flex rounded-full overflow-hidden shadow-[0_4px_12px_-1px_rgba(0,0,0,0.15),0_2px_4px_-2px_rgba(0,0,0,0.1)] border border-gray-200">
+                      <div className="relative w-[250px] h-10 flex rounded-full overflow-hidden shadow-[0_4px_12px_-1px_rgba(0,0,0,0.15),0_2px_4px_-2px_rgba(0,0,0,0.1)] border border-white/20">
                         {/* diffusion option */}
                         <div
                           onClick={() => handleRevealMode()}
                           className={`flex-1 flex items-center justify-center transition-all duration-300 cursor-pointer ${
                             settings.revealMode === "diffusion"
-                              ? "bg-green-500 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"
-                              : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                              ? "bg-[#E94560] text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"
+                              : "bg-white/10 text-white/90 hover:bg-white/20"
                           }`}
                         >
                           <span className="text-sm font-medium">Diffusion</span>
@@ -248,8 +294,8 @@ const GameSettings = () => {
                           onClick={() => handleRevealMode()}
                           className={`flex-1 flex items-center justify-center transition-all duration-300 cursor-pointer ${
                             settings.revealMode === "random"
-                              ? "bg-green-500 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"
-                              : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                              ? "bg-[#E94560] text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"
+                              : "bg-white/10 text-white/90 hover:bg-white/20"
                           }`}
                         >
                           <span className="text-sm font-medium">Random Reveal</span>
@@ -262,7 +308,7 @@ const GameSettings = () => {
             </div>
           </div>
           {/* Bottom Buttons Container */}
-          <div className="p-8 flex justify-center items-center relative">
+          <div className="p-10 flex justify-center items-center relative">
             {/* Help Button (Left) */}
             <button
               onClick={() => navigate("/tutorial")}
