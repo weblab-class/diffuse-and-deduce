@@ -102,10 +102,11 @@ const GameSettings = () => {
             <div className="w-full flex flex-col lg:flex-row gap-10 justify-center items-stretch">
               {/* Topics Container */}
               <div className="glass-card p-10 rounded-3xl shadow-2xl ring-1 ring-white/20 hover:shadow-[0_0_40px_rgba(233,69,96,0.2)] transition-all duration-500 flex flex-col w-full lg:w-[480px]">
-                <h2 className="text-3xl font-bold mb-8 pb-4 border-b border-white/20 text-white tracking-tight">
+                <h2 className="text-3xl font-bold mb-8 pb-4 border-b border-white/20 text-white tracking-wider uppercase font-['Orbitron']">
                   Topics
+                  <div className="h-0.5 w-1/2 bg-gradient-to-r from-[#E94560] to-transparent mt-2"></div>
                 </h2>
-                <ul className="space-y-5">
+                <ul className="space-y-5 font-['Rajdhani'] text-lg">
                   {topics.map((topic, index) => (
                     <motion.li
                       key={topic}
@@ -177,10 +178,11 @@ const GameSettings = () => {
                 </ul>
               </div>
               <div className="backdrop-blur-xl bg-white/10 p-10 rounded-3xl shadow-2xl ring-1 ring-white/20 hover:shadow-[0_0_40px_rgba(233,69,96,0.2)] transition-all duration-500 flex flex-col w-full lg:w-[480px]">
-                <h2 className="text-3xl font-bold mb-8 pb-4 border-b border-white/20 text-white tracking-tight">
+                <h2 className="text-3xl font-bold mb-8 pb-4 border-b border-white/20 text-white tracking-wider uppercase font-['Orbitron']">
                   Settings
+                  <div className="h-0.5 w-1/2 bg-gradient-to-r from-[#E94560] to-transparent mt-2"></div>
                 </h2>
-                <div className="flex flex-col gap-10">
+                <div className="flex flex-col gap-10 font-['Rajdhani'] text-lg">
                   {/* Rounds Slider */}
                   <div className="flex items-center justify-between group">
                     <span className="w-32 text-white/90 font-medium text-lg group-hover:text-[#E94560] transition-colors">
