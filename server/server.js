@@ -13,24 +13,51 @@
 | - Actually starts the webserver
 */
 
+const express = require("express");
 const path = require("path");
-// ... existing imports
+const cors = require("cors");
+require("dotenv").config(); // Ensure environment variables are loaded
+// ... other imports
+
+const app = express();
+
+// Determine allowed origins based on environment
+const allowedOrigins = [
+  "http://localhost:5173", // Development frontend
+  "https://diffuse-and-deduce.onrender.com", // Production frontend
+];
+
+// Configure CORS
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg =
+          "The CORS policy for this site does not allow access from the specified Origin.";
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+
+// Serve static files from 'public/game-images'
+const publicPath = path.resolve(__dirname, "public");
+app.use("/game-images", express.static(path.join(publicPath, "game-images")));
 
 // validator runs some basic checks to make sure you've set everything up correctly
 // this is a tool provided by staff, so you don't need to worry about it
 const validator = require("./validator");
 validator.checkSetup();
 
-//allow us to use process.ENV
-require("dotenv").config();
-
 //import libraries needed for the webserver to work!
 const http = require("http");
-const express = require("express"); // backend framework for our node server.
 const session = require("express-session"); // library that stores info about each connected user
 const mongoose = require("mongoose"); // library to connect to MongoDB
-
-const cors = require("cors"); // Import CORS
 
 const api = require("./api");
 const auth = require("./auth");
@@ -55,21 +82,7 @@ mongoose
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.log(`Error connecting to MongoDB: ${err}`));
 
-// create a new express server
-const app = express();
 app.use(validator.checkRoutes);
-
-app.use(
-  cors({
-    origin: "http://localhost:5173", // Frontend URL
-    methods: ["GET", "POST"],
-    credentials: true,
-  })
-);
-
-// Serve static files from 'public'
-const publicPath = path.resolve(__dirname, "public");
-app.use("/game-images", express.static(path.join(publicPath, "game-images")));
 
 // allow us to process POST requests
 app.use(express.json());

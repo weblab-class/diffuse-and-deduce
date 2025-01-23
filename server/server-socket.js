@@ -111,6 +111,16 @@ function checkGuess(guessText, correctAnswer) {
   return guessText.toLowerCase() === correctAnswer.toLowerCase();
 }
 
+const allowedTopics = [
+  "Animals",
+  "Artworks",
+  "Famous People",
+  "Fictional Faces",
+  "Food",
+  "Landmarks",
+  "Sports",
+];
+
 module.exports = {
   init: (http) => {
     io = require("socket.io")(http, {
@@ -173,6 +183,11 @@ module.exports = {
 
       socket.on("startRound", async ({ roomCode, totalTime, topic }) => {
         try {
+          // Validate topic
+          if (!allowedTopics.includes(topic)) {
+            throw new Error(`Invalid topic selected: ${topic}`);
+          }
+
           let round = await Round.findOne({ roomCode });
           if (!round) {
             round = new Round({ roomCode });
@@ -203,7 +218,6 @@ module.exports = {
 
           // Set the image path accessible by the frontend
           const imagePath = `/game-images/${topic}/${selectedImage}`;
-          console.log(`Selected image path: ${imagePath}`);
 
           // Update the round with the selected image and answer
           round.correctAnswer = correctAnswer;
