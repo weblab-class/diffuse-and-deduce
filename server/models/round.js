@@ -1,3 +1,5 @@
+// models/round.js
+
 const mongoose = require("mongoose");
 
 const RoundSchema = new mongoose.Schema({
@@ -6,7 +8,7 @@ const RoundSchema = new mongoose.Schema({
   totalTime: { type: Number, default: 30 }, // how many seconds
   isActive: { type: Boolean, default: false },
   correctAnswer: { type: String, required: true },
-  // example additional fields:
+  imagePath: { type: String, required: true }, // New field
   players: [
     {
       socketId: String,
@@ -14,7 +16,7 @@ const RoundSchema = new mongoose.Schema({
       score: Number,
     },
   ],
-  // ...
+  // ... other fields
 });
 
 module.exports = mongoose.model("Round", RoundSchema);

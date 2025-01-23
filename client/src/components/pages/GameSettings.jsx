@@ -70,14 +70,12 @@ const GameSettings = () => {
   };
 
   const handleStartGame = () => {
-    // You’ll need the user’s roomCode somehow (maybe pass it from context or props)
     const totalTime = settings.timePerRound;
 
-    // 1. Tell server to start the round
-    socket.emit("startRound", { roomCode, totalTime });
+    // Emit 'startRound' with selected topic
+    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic });
 
-    // 2. Then navigate to GameScreen
-    // pass timePerRound if needed for local logic (like noise animations)
+    // Navigate to GameScreen
     navigate(`/game-screen/${roomCode}`, {
       state: { timePerRound: totalTime },
     });
