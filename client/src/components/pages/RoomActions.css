@@ -2,8 +2,8 @@
   background: url("/background-images/background-room_actions.png") no-repeat center center;
   background-size: cover;
   overflow: hidden;
-
   min-height: 100vh;
+  padding-top: 60px; /* Add padding to account for navbar height */
 }
 
 .room_actions-button-container {
@@ -12,8 +12,8 @@
   gap: 3vw;
   align-items: center;
   justify-content: center;
-  padding-top: 25px;
-  min-height: 100vh;
+  min-height: calc(100vh - 60px); /* Subtract navbar height */
+  padding: 2rem;
 }
 
 .create-container {
@@ -48,6 +48,72 @@
 
 .enter-room-code:focus {
   outline-width: 0;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.room-error {
+  color: #ff3333;
+  background-color: rgba(255, 51, 51, 0.1);
+  text-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+  border: 1px solid rgba(255, 51, 51, 0.3);
+  backdrop-filter: blur(5px);
+  font-weight: bold;
+  padding: 10px 20px;
+  margin-top: 10px;
+  border-radius: 8px;
+  text-align: center;
+  animation: shake 0.5s ease-in-out;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gallery-title {
+  position: relative;
+  padding: 0 60px; /* Space for the vines on sides */
+}
+
+.gallery-title::before,
+.gallery-title::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 30px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.gallery-title::before {
+  left: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2'%3E%3Cpath d='M100 30C80 30 70 10 50 10C30 10 20 30 0 30C20 30 30 50 50 50C70 50 80 30 100 30Z'/%3E%3Ccircle cx='25' cy='20' r='3' fill='rgba(255,255,255,0.6)'/%3E%3Ccircle cx='75' cy='40' r='3' fill='rgba(255,255,255,0.6)'/%3E%3C/svg%3E");
+  transform: translateY(-50%) scaleX(-1); /* Flip the left vine */
+}
+
+.gallery-title::after {
+  right: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2'%3E%3Cpath d='M100 30C80 30 70 10 50 10C30 10 20 30 0 30C20 30 30 50 50 50C70 50 80 30 100 30Z'/%3E%3Ccircle cx='25' cy='20' r='3' fill='rgba(255,255,255,0.6)'/%3E%3Ccircle cx='75' cy='40' r='3' fill='rgba(255,255,255,0.6)'/%3E%3C/svg%3E");
 }
 
 @media (max-width: 480px) {

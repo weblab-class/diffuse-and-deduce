@@ -2,9 +2,8 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import socket from "../../client-socket";
-import Button from "../modules/Button";
-import Header from "../modules/Header";
 import { UserContext } from "../../components/App.jsx";
+import Header from "../modules/Header";
 
 import "../../utilities.css";
 import "./RoomActions.css";
@@ -102,50 +101,126 @@ const RoomActions = () => {
     });
   };
 
+  const handleMouseMove = (e, element) => {
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    element.style.setProperty("--mouse-x", `${x}%`);
+    element.style.setProperty("--mouse-y", `${y}%`);
+  };
+
   return (
-    <div className="room_actions-page-container">
+    <>
       <Header backNav="choose-num-players" />
-      <div className="room_actions-button-container">
-        {/* Create room */}
-        <div className="create-container">
-          <Button
-            text={isLoading ? "Creating..." : "Create Room"}
-            onClick={createRoom}
-            disabled={isLoading || !userName}
-          />
-        </div>
-
-        {/* Join room */}
-        <div className="join-container flex justify-between">
-          <Button
-            text={isLoading ? "Joining..." : "Join Room"}
-            onClick={joinRoom}
-            disabled={isLoading || !isRoomCodeValid || !userName}
-          />
-          <input
-            className={`enter-room-code px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
-              isRoomCodeValid
-                ? "border-green-500 focus:ring-green-500"
-                : "border-gray-300 focus:ring-emerald-500"
-            }`}
-            value={roomCode}
-            onChange={handleRoomCodeChange}
-            placeholder="Enter room code..."
-            maxLength={5}
-          />
-        </div>
-
-        {/* Error Message */}
-        {error && <div className="error-message text-red-500 mt-4 text-center">{error}</div>}
-
-        {/* Not Logged In Message */}
-        {!userName && (
-          <div className="text-red-600 mt-4 text-center bold text-xl mt-10">
-            Please log in or continue as guest to create/join rooms
-          </div>
-        )}
+      {/* Background container - lowest layer */}
+      <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#0A0A1B] to-[#1A1A2E] overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/background-images/background-game_settings.png')] bg-cover bg-center bg-no-repeat opacity-40 mix-blend-overlay" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(233,69,96,0.1)_0%,transparent_70%)]" />
       </div>
-    </div>
+
+      {/* Content container */}
+      <div className="relative z-0 min-h-screen font-['Space_Grotesk'] antialiased overflow-auto pt-20">
+        <div className="container mx-auto px-4 flex flex-col items-center justify-center min-h-[calc(100vh-80px)]">
+          <div className="w-full max-w-2xl space-y-8">
+            <div className="gallery-container">
+              <h1 className="gallery-title">Diffuse & Deduce</h1>
+
+              <div className="gallery-frame">
+                {/* Corner accents */}
+                <div className="corner-accent corner-accent-tl"></div>
+                <div className="corner-accent corner-accent-tr"></div>
+                <div className="corner-accent corner-accent-bl"></div>
+                <div className="corner-accent corner-accent-br"></div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Create room */}
+                  <div
+                    className="card-frame animate-fade-in spotlight-container"
+                    style={{ animationDelay: "0.1s" }}
+                    onMouseMove={(e) => handleMouseMove(e, e.currentTarget)}
+                  >
+                    <div className="glass-card p-8">
+                      <h2 className="section-title text-2xl text-white font-light tracking-widest">
+                        Create Room
+                      </h2>
+                      <div className="flex flex-col space-y-4">
+                        <div className="h-[52px]"></div>
+                        <button
+                          onClick={createRoom}
+                          disabled={isLoading || !userName}
+                          className={`w-full py-3 rounded-xl transition-all duration-500
+                          ${
+                            !isLoading && userName
+                              ? "btn-modern"
+                              : "bg-white/5 text-white/30 cursor-not-allowed border border-white/10"
+                          }`}
+                        >
+                          {isLoading ? "Creating..." : "Begin"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Join room */}
+                  <div
+                    className="card-frame animate-fade-in spotlight-container"
+                    style={{ animationDelay: "0.2s" }}
+                    onMouseMove={(e) => handleMouseMove(e, e.currentTarget)}
+                  >
+                    <div className="glass-card p-8">
+                      <h2 className="section-title text-2xl text-white font-light tracking-widest">
+                        Join Room
+                      </h2>
+                      <div className="flex flex-col space-y-4">
+                        <input
+                          className={`gallery-input text-lg
+                            ${isRoomCodeValid ? "border-white/20 bg-white/10" : ""}`}
+                          value={roomCode}
+                          onChange={handleRoomCodeChange}
+                          placeholder="Enter room code"
+                          maxLength={5}
+                        />
+                        <button
+                          onClick={joinRoom}
+                          disabled={isLoading || !isRoomCodeValid || !userName}
+                          className={`w-full py-3 rounded-xl transition-all duration-500
+                            ${
+                              !isLoading && isRoomCodeValid && userName
+                                ? "btn-modern"
+                                : "bg-white/5 text-white/30 cursor-not-allowed border border-white/10"
+                            }`}
+                        >
+                          {isLoading ? "Joining..." : "Join"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div
+                  className="text-white/70 text-center tracking-wider font-light animate-fade-in room-error"
+                  style={{ animationDelay: "0.3s" }}
+                >
+                  {error}
+                </div>
+              )}
+
+              {/* Gallery footer */}
+              <div
+                className="mt-12 text-center text-white/50 font-light tracking-wider text-sm animate-fade-in"
+                style={{ animationDelay: "0.4s" }}
+              >
+                ― Art in Motion ―
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
 

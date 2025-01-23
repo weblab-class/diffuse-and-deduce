@@ -2,12 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import modern fonts */
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+/* Import elegant fonts */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&family=Cormorant+Garamond:wght@300;400;500;600&display=swap");
 
 @layer base {
   html {
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: "Montserrat", sans-serif;
   }
 
   h1,
@@ -16,48 +16,256 @@
   h4,
   h5,
   h6 {
-    font-family: "Space Grotesk", sans-serif;
+    font-family: "Cormorant Garamond", serif;
   }
 }
 
 @layer components {
-  /* Modern card styling */
+  /* Gallery layout styling */
+  .gallery-container {
+    @apply container mx-auto px-8 py-12;
+    max-width: 1400px;
+  }
+
+  .gallery-title {
+    @apply text-4xl text-white mb-12 text-center;
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 300;
+    letter-spacing: 0.2em;
+  }
+
+  .gallery-frame {
+    @apply relative p-8 mb-12;
+  }
+
+  .gallery-frame::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    @apply rounded-3xl;
+  }
+
+  /* Gallery card styling */
   .glass-card {
-    @apply backdrop-blur-xl bg-white/10 rounded-3xl shadow-2xl ring-1 ring-white/20 
-           transition-all duration-500 hover:shadow-[0_0_40px_rgba(233,69,96,0.2)];
+    @apply backdrop-blur-xl bg-white/5 rounded-2xl
+           transition-all duration-500;
+    position: relative;
+    overflow: hidden;
   }
 
-  /* Modern button styling */
+  .glass-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.03), transparent);
+  }
+
+  /* Spotlight effect */
+  .spotlight-container {
+    position: relative;
+    transition: all 0.5s ease;
+  }
+
+  .spotlight-container::after {
+    content: "";
+    position: absolute;
+    inset: -100px;
+    background: radial-gradient(
+      circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 50%
+    );
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+
+  .spotlight-container:hover::after {
+    opacity: 1;
+  }
+
+  /* Card frame with spotlight */
+  .card-frame {
+    @apply p-[1px] rounded-2xl;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    transition: all 0.5s ease;
+  }
+
+  .card-frame:hover {
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1));
+  }
+
+  /* Gallery section title */
+  .section-title {
+    @apply relative inline-block mb-8;
+  }
+
+  .section-title::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -8px;
+    width: 40px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    transition: width 0.3s ease;
+  }
+
+  .section-title:hover::after {
+    width: 100%;
+  }
+
+  /* Gallery button styling */
   .btn-modern {
-    @apply px-6 py-3 rounded-xl font-medium transition-all duration-300 
-           bg-gradient-to-r from-[#E94560] to-[#0F3460] text-white
-           hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-6 py-3 rounded-xl transition-all duration-500 
+           text-white relative overflow-hidden;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: "Montserrat", sans-serif;
+    letter-spacing: 0.1em;
+    font-weight: 300;
   }
 
-  /* Slider styling */
-  input[type="range"] {
-    @apply appearance-none bg-white/20 h-2 rounded-lg;
+  .btn-modern:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
-  input[type="range"]::-webkit-slider-thumb {
-    @apply appearance-none w-5 h-5 rounded-full bg-[#E94560] 
-           cursor-pointer transition-all duration-300
-           hover:scale-110 hover:bg-[#0F3460];
+  /* Gallery input styling */
+  .gallery-input {
+    @apply bg-white/5 backdrop-blur-xl rounded-xl px-6 py-3
+           text-white placeholder-white/30 outline-none
+           transition-all duration-500 border border-white/10;
+    font-family: "Montserrat", sans-serif;
+    letter-spacing: 0.1em;
+    font-weight: 300;
+  }
+
+  .gallery-input:focus {
+    @apply bg-white/10 border-white/20;
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.05);
+  }
+
+  /* Gallery decorative elements */
+  .corner-accent {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .corner-accent-tl {
+    top: 20px;
+    left: 20px;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .corner-accent-tr {
+    top: 20px;
+    right: 20px;
+    border-left: none;
+    border-bottom: none;
+  }
+
+  .corner-accent-bl {
+    bottom: 20px;
+    left: 20px;
+    border-right: none;
+    border-top: none;
+  }
+
+  .corner-accent-br {
+    bottom: 20px;
+    right: 20px;
+    border-left: none;
+    border-top: none;
+  }
+
+  /* Elegant card styling */
+  .glass-card {
+    @apply backdrop-blur-xl bg-white/10 rounded-3xl shadow-lg
+           transition-all duration-500;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.05), transparent);
+    opacity: 0.5;
+  }
+
+  .glass-card:hover {
+    @apply shadow-2xl;
+    backdrop-filter: blur(20px);
+  }
+
+  /* Artistic button styling */
+  .btn-modern {
+    @apply px-6 py-3 rounded-xl font-medium transition-all duration-500 
+           text-white relative overflow-hidden;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-modern:hover {
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+  /* Refined input styling */
+  .gallery-input {
+    @apply bg-white/5 backdrop-blur-xl rounded-xl px-6 py-3
+           text-white placeholder-white/40 outline-none
+           transition-all duration-500 border border-white/10;
+    font-family: "Montserrat", sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  .gallery-input:focus {
+    @apply bg-white/10 border-white/30;
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+  }
+
+  /* Elegant text effects */
+  .text-refined {
+    letter-spacing: 0.15em;
+    font-weight: 300;
+  }
+
+  /* Grain effect for artistic texture */
+  .grain-overlay {
+    position: relative;
+  }
+
+  .grain-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+    opacity: 0.15;
+    mix-blend-mode: overlay;
+    pointer-events: none;
   }
 }
 
-/* Custom animations */
-@keyframes glow {
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(233, 69, 96, 0.2);
+/* Refined animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  50% {
-    box-shadow: 0 0 40px rgba(233, 69, 96, 0.4);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.animate-glow {
-  animation: glow 3s ease-in-out infinite;
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
 }

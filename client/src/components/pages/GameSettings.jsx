@@ -314,9 +314,14 @@ const GameSettings = () => {
             {/* Help Button (Left) */}
             <button
               onClick={() => navigate("/tutorial")}
-              className="absolute left-8 w-12 h-12 bg-emerald-600 hover:bg-emerald-500 
-                       text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300
-                       flex items-center justify-center text-2xl font-bold"
+              className="absolute left-8 w-12 h-12 
+                       bg-white/10 backdrop-blur-md
+                       hover:bg-gradient-to-r hover:from-[#E94560] hover:to-[#0F3460]
+                       text-white/90 hover:text-white rounded-xl shadow-lg 
+                       hover:shadow-[0_0_20px_rgba(233,69,96,0.3)]
+                       ring-1 ring-white/20
+                       transition-all duration-300
+                       flex items-center justify-center text-2xl font-['Orbitron']"
               aria-label="Help"
             >
               ?
@@ -327,14 +332,15 @@ const GameSettings = () => {
               onClick={handleStartGame}
               disabled={!selectedTopic}
               className={`px-8 py-3 text-lg font-semibold rounded-xl shadow-lg 
+                     font-['Orbitron'] tracking-wider
                      transition-all duration-300 transform
                      ${
                        selectedTopic
-                         ? "bg-emerald-600 hover:bg-emerald-500 text-white hover:shadow-xl hover:scale-105"
-                         : "bg-gray-400 cursor-not-allowed text-gray-300"
+                         ? "bg-gradient-to-r from-[#E94560] to-[#0F3460] text-white hover:shadow-[0_0_30px_rgba(233,69,96,0.3)] hover:scale-105"
+                         : "bg-white/10 backdrop-blur-md text-white/50 cursor-not-allowed ring-1 ring-white/20"
                      }`}
             >
-              {selectedTopic ? "Start Game" : "Select a Topic to Start"}
+              {selectedTopic ? "START GAME" : "SELECT A TOPIC TO START"}
             </button>
           </div>
         </div>

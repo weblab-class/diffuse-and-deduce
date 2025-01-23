@@ -1,10 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Leckerli+One&display=swap");
 
 .intro-container {
-  background: url("/background-images/background-intro.png") no-repeat center center;
-  background-size: cover;
-  overflow: hidden;
-
   min-height: 100vh;
 
   display: flex;
@@ -57,4 +53,115 @@
   flex-direction: column;
   gap: 1rem;
   align-items: center;
+}
+
+.card-frame {
+  position: relative;
+  border-radius: 1rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  padding: 1px;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-modern {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-modern:hover {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.15) 100%);
+  transform: translateY(-4px) scale(1.15);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 1);
+}
+
+.btn-modern:hover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 150%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: skewX(-20deg);
+  animation: shine 1.5s infinite;
+}
+
+@keyframes shine {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.btn-modern:active {
+  transform: translateY(-2px) scale(0.99);
+  box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.2), 0 0 10px rgba(255, 255, 255, 0.08);
+}
+
+.spotlight-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.06) 0%,
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.spotlight-container:hover::before {
+  opacity: 1;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+/* Google button styling */
+.google-button-wrapper {
+  width: 100%;
+}
+
+.google-button-wrapper > div {
+  width: 100% !important;
+}
+
+.google-button-wrapper > div > div {
+  width: 100% !important;
+  padding: 0.75rem !important;
+  height: auto !important;
 }
