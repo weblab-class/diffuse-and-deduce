@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useParams } from "react-router-dom";
 
 import jwt_decode from "jwt-decode";
 
@@ -20,6 +20,7 @@ const App = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(undefined);
   const [userName, setUserName] = useState(undefined);
+  const { roomCode } = useParams();
 
   useEffect(() => {
     get("/api/whoami").then((user) => {
@@ -56,8 +57,21 @@ const App = () => {
   const handleLogout = () => {
     setUserId(undefined);
     setUserName(undefined);
+    if (roomCode) {
+      console.log("Leaving room before navigation");
+      navigate("/");
+      socket.emit("leaveRoom", { roomCode }, (response) => {
+        if (response.error) {
+          console.error(response.error);
+          return;
+        }
+        console.log("Successfully left room");
+      });
+    } else {
+      console.log("Direct navigation");
+      navigate("/");
+    }
     post("/api/logout");
-    navigate("/");
   };
 
   const authContextValue = {
