@@ -208,14 +208,6 @@ const RoomActions = () => {
                   {error}
                 </div>
               )}
-
-              {/* Gallery footer */}
-              <div
-                className="mt-12 text-center text-white/50 font-light tracking-wider text-sm animate-fade-in"
-                style={{ animationDelay: "0.4s" }}
-              >
-                ― Art in Motion ―
-              </div>
             </div>
           </div>
         </div>
