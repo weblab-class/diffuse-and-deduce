@@ -16,7 +16,7 @@ export default function GameScreen() {
   const [guessedWrong, setGuessedWrong] = useState(false);
   const navigate = useNavigate();
 
-  const initialNoise = 10.0;
+  const initialNoise = 6.0;
   const canvasRef = useRef(null);
   const location = useLocation();
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
