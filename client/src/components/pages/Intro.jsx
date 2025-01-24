@@ -125,6 +125,55 @@ const Intro = () => {
     drawStatic();
   }, [imgLoaded]);
 
+  // Add zigzag effect
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imgLoaded) return;
+
+    const ctx = canvas.getContext("2d");
+    const lines = [];
+    const lineCount = 15; // Number of zigzag lines
+
+    // Create zigzag lines
+    for (let i = 0; i < lineCount; i++) {
+      lines.push({
+        y: (canvas.height / lineCount) * i, // Evenly space lines
+        amplitude: Math.random() * 20 + 10, // Height of zigzags
+        frequency: Math.random() * 0.02 + 0.01, // Width of zigzags
+        speed: Math.random() * 0.5 + 0.2, // How fast they move
+        opacity: Math.random() * 0.1 + 0.05, // Subtle opacity
+        offset: Math.random() * 1000, // Random starting position
+      });
+    }
+
+    const drawZigzags = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      lines.forEach((line) => {
+        line.offset += line.speed;
+        line.opacity += (Math.random() - 0.5) * 0.02; // Flicker effect
+        line.opacity = Math.max(0.03, Math.min(0.15, line.opacity));
+
+        ctx.beginPath();
+        ctx.moveTo(0, line.y);
+
+        // Draw zigzag line
+        for (let x = 0; x < canvas.width; x += 2) {
+          const y = line.y + Math.sin(x * line.frequency + line.offset) * line.amplitude;
+          ctx.lineTo(x, y);
+        }
+
+        ctx.strokeStyle = `rgba(255, 255, 255, ${line.opacity})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+
+      requestAnimationFrame(drawZigzags);
+    };
+
+    drawZigzags();
+  }, [imgLoaded]);
+
   const playAsGuest = async () => {
     try {
       const response = await fetch("/api/guest-login", {
