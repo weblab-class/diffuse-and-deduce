@@ -43,6 +43,7 @@ export default function GameScreen() {
     img.onload = () => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       setImgLoaded(true);
+      applyNoise(ctx, canvas, initialNoise); // Apply full noise immediately after drawing the image
     };
     img.onerror = (err) => {
       console.error(`Failed to load image at path: ${imagePath}`, err);
@@ -68,18 +69,7 @@ export default function GameScreen() {
     baseImage.src = imagePath;
     baseImage.onload = () => {
       ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      const amplitude = 255 * noiseLevel;
-      for (let i = 0; i < data.length; i += 4) {
-        const offset = (Math.random() - 0.5) * amplitude;
-        data[i] = Math.min(255, Math.max(0, data[i] + offset)); // R
-        data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + offset)); // G
-        data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + offset)); // B
-      }
-      ctx.putImageData(imageData, 0, 0);
+      applyNoise(ctx, canvas, noiseLevel); // Apply noise based on current noise level
     };
     baseImage.onerror = (err) => {
       console.error(`Failed to load base image at path: ${imagePath}`, err);
@@ -159,6 +149,20 @@ export default function GameScreen() {
       socket.off("wrongGuess");
     };
   }, []);
+
+  const applyNoise = (ctx, canvas, noiseLevel) => {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    const amplitude = 255 * noiseLevel;
+    for (let i = 0; i < data.length; i += 4) {
+      const offset = (Math.random() - 0.5) * amplitude;
+      data[i] = Math.min(255, Math.max(0, data[i] + offset)); // R
+      data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + offset)); // G
+      data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + offset)); // B
+    }
+    ctx.putImageData(imageData, 0, 0);
+  };
 
   return (
     <div className="game_screen-page-container">
