@@ -102,11 +102,11 @@ const GameSettings = () => {
             <div className="w-full flex flex-col lg:flex-row gap-10 justify-center items-stretch">
               {/* Topics Container */}
               <div className="glass-card p-10 rounded-3xl shadow-2xl ring-1 ring-white/20 hover:shadow-[0_0_40px_rgba(233,69,96,0.2)] transition-all duration-500 flex flex-col w-full lg:w-[480px]">
-                <h2 className="text-3xl font-bold mb-8 pb-4 border-b border-white/20 text-white tracking-wider uppercase font-['Orbitron']">
+                <h2 className="text-3xl font-bold mb-8 pb-4 border-b border-white/20 text-white tracking-wider uppercase font-['Italiana']">
                   Topics
                   <div className="h-0.5 w-1/2 bg-gradient-to-r from-[#E94560] to-transparent mt-2"></div>
                 </h2>
-                <ul className="space-y-5 font-['Rajdhani'] text-lg">
+                <ul className="grid grid-cols-1 gap-5 font-['Cormorant'] text-xl">
                   {topics.map((topic, index) => (
                     <motion.li
                       key={topic}
@@ -136,7 +136,7 @@ const GameSettings = () => {
                         },
                       }}
                       onClick={() => setSelectedTopic(topic)}
-                      className={`relative flex items-center justify-center p-4 rounded-xl font-medium cursor-pointer 
+                      className={`relative p-4 rounded-xl font-medium cursor-pointer text-center
                         transform transition-all duration-500 ease-out
                         before:absolute before:inset-0 before:rounded-xl before:transition-all before:duration-500
                         before:opacity-0 before:bg-gradient-to-r before:from-[#E94560]/20 before:to-[#0F3460]/20
@@ -147,7 +147,7 @@ const GameSettings = () => {
                             : "bg-white/5 text-white/90 hover:bg-gradient-to-r hover:from-white/10 hover:to-white/5"
                         }`}
                     >
-                      <span className="relative flex items-center gap-3 text-lg group">
+                      <div className="relative inline-block">
                         {topic}
                         <motion.svg
                           initial={{ scale: 0, opacity: 0 }}
@@ -160,7 +160,7 @@ const GameSettings = () => {
                             stiffness: 500,
                             damping: 25,
                           }}
-                          className="w-5 h-5 text-white/90 ml-2"
+                          className="absolute -right-8 top-1/2 -translate-y-1/2 w-5 h-5 text-white/90"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -172,7 +172,7 @@ const GameSettings = () => {
                             d="M5 13l4 4L19 7"
                           />
                         </motion.svg>
-                      </span>
+                      </div>
                     </motion.li>
                   ))}
                 </ul>

@@ -53,7 +53,7 @@ const ChooseNumPlayers = () => {
         <div className="mode-cards-container">
           <motion.div
             className="mode-card single-player"
-            whileHover={{ scale: 1.2, boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)" }}
+            whileHover={{ scale: 1.05, boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)" }}
             whileTap={{ scale: 0.95 }}
             onClick={() => handleGameMode("single")}
           >
@@ -67,7 +67,7 @@ const ChooseNumPlayers = () => {
 
           <motion.div
             className="mode-card multi-player"
-            whileHover={{ scale: 1.2, boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)" }}
+            whileHover={{ scale: 1.05, boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)" }}
             whileTap={{ scale: 0.95 }}
             onClick={() => handleGameMode("multi")}
           >

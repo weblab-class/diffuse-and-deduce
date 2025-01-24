@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 /* Import elegant fonts */
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&family=Cormorant+Garamond:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant:wght@300;400;500;600&family=Italiana&family=Quicksand:wght@300;400;500;600&display=swap");
 
 @layer base {
   html {
-    font-family: "Montserrat", sans-serif;
+    font-family: "Quicksand", sans-serif;
   }
 
   h1,
@@ -16,7 +16,7 @@
   h4,
   h5,
   h6 {
-    font-family: "Cormorant Garamond", serif;
+    font-family: "Italiana", serif;
   }
 }
 
@@ -29,7 +29,7 @@
 
   .gallery-title {
     @apply text-4xl text-white mb-12 text-center;
-    font-family: "Cormorant Garamond", serif;
+    font-family: "Cormorant", serif;
     font-weight: 300;
     letter-spacing: 0.2em;
   }

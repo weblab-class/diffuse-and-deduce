@@ -82,7 +82,7 @@
 
 .btn-modern:hover {
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.15) 100%);
-  transform: translateY(-4px) scale(1.15);
+  transform: translateY(-4px) scale(1.05);
   box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 1);
