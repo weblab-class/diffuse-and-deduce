@@ -75,10 +75,6 @@ const GameSettings = () => {
     // Emit 'startRound' with selected topic
     socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic });
 
-    // Navigate to GameScreen
-    navigate(`/game-screen/${roomCode}`, {
-      state: { timePerRound: totalTime },
-    });
   };
 
   return (
