@@ -74,7 +74,6 @@ const GameSettings = () => {
 
     // Emit 'startRound' with selected topic
     socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic });
-
   };
 
   return (

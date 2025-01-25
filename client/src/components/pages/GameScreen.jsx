@@ -131,7 +131,7 @@ export default function GameScreen() {
     socket.on("roundOver", ({ scores, socketToUserMap }) => {
       console.log("Round over!");
       console.log("Mapping:", socketToUserMap);
-      navigate("/leaderboard", { state: { scores, socketToUserMap } });
+      navigate("/leaderboard", { state: { scores, socketToUserMap, roomCode } });
     });
 
     return () => {

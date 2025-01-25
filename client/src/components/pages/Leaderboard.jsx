@@ -12,11 +12,13 @@ const Leaderboard = () => {
   const { state } = useLocation();
   const scores = state?.scores || {};
   const socketToUserMap = state?.socketToUserMap || {};
+  const roomCode = state?.roomCode;
 
   // Sort socketToUserMap by score
-  const entries = Object.entries(socketToUserMap);
+  const entries = Object.entries(socketToUserMap).filter(([socketId]) => socketId in scores);
   entries.sort((a, b) => scores[b[0]] - scores[a[0]]);
   const sortedSocketToUserMap = new Map(entries);
+
 
   return (
     <div className="leaderboard-page-container">
