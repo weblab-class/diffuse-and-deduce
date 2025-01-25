@@ -32,14 +32,29 @@ export default function GameScreen() {
 
   const timePerRound = location.state?.timePerRound || 30;
 
+  // useEffect(() => {
+  //   get("/api/gameState", { roomCode }).then(({ imagePath: serverImagePath }) => {
+  //     console.log("Round started with image:", serverImagePath);
+  //     setTimeElapsed(0);
+  //     setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
+  //     setNoiseLevel(initialNoise); // Reset noise
+  //     setImgLoaded(false); // Trigger image loading
+  //   });
+  // }, []);
+
   useEffect(() => {
-    get("/api/gameState", { roomCode }).then(({ startTime, totalTime, imagePath: serverImagePath }) => {
-      console.log("Round started with image:", serverImagePath);
-      setTimeElapsed(0);
-      setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
-      setNoiseLevel(initialNoise); // Reset noise
-      setImgLoaded(false); // Trigger image loading
-    });
+    get("/api/gameState", { roomCode })
+      .then(({ imagePath: serverImagePath, startTime, totalTime }) => {
+        console.log("Round started with image:", serverImagePath);
+        setTimeElapsed(0);
+        setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
+        setNoiseLevel(initialNoise); // Reset noise
+        setImgLoaded(false); // Trigger image loading
+        // Handle other properties like startTime and totalTime if needed
+      })
+      .catch((error) => {
+        console.error("GET request to /api/gameState failed with error:", error);
+      });
   }, []);
 
   // Load the image whenever imagePath changes
@@ -112,15 +127,6 @@ export default function GameScreen() {
       console.log("Received score update:", scores);
       setScores(scores);
     });
-
-    // Handle 'roundStarted' to receive the new image
-    // socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath }) => {
-    //   console.log("Round started with image:", serverImagePath);
-    //   setTimeElapsed(0);
-    //   setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
-    //   setNoiseLevel(initialNoise); // Reset noise
-    //   setImgLoaded(false); // Trigger image loading
-    // });
 
     socket.on("roundOver", ({ scores, socketToUserMap }) => {
       console.log("Round over!");

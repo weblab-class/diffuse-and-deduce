@@ -41,8 +41,8 @@ const GameSettings = () => {
   const topics = [
     "Animals",
     "Artworks",
-    "Famous People",
-    "Fictional Faces",
+    "Famous_People",
+    "Fictional_Faces",
     "Food",
     "Landmarks",
     "Sports",
