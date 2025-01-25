@@ -179,6 +179,7 @@ module.exports = {
           if (!round) {
             round = new Round({ roomCode });
           }
+          console.log("Created round in server with roomcode:", roomCode);
 
           // Set round details
           round.startTime = Date.now();

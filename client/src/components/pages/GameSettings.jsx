@@ -42,8 +42,8 @@ const GameSettings = () => {
   const topics = [
     "Animals",
     "Artworks",
-    "Famous People",
-    "Fictional Faces",
+    "Famous_People",
+    "Fictional_Faces",
     "Food",
     "Landmarks",
     "Sports",
@@ -75,11 +75,6 @@ const GameSettings = () => {
 
     // Emit 'startRound' with selected topic
     socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic });
-
-    // Navigate to GameScreen
-    navigate(`/game-screen/${roomCode}`, {
-      state: { timePerRound: totalTime },
-    });
   };
 
   return (
