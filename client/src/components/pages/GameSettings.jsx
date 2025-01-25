@@ -49,6 +49,10 @@ const GameSettings = () => {
     "Sports",
   ];
 
+  const displayTopic = (topic) => {
+    return topic.replace(/_/g, " ");
+  };
+
   const handleToggle = (key) => {
     setSettings((prevSettings) => ({
       ...prevSettings,
@@ -150,7 +154,7 @@ const GameSettings = () => {
                         }`}
                     >
                       <div className="relative inline-block">
-                        {topic}
+                        {displayTopic(topic)}
                         <motion.svg
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{
