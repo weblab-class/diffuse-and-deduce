@@ -71,10 +71,17 @@ const GameSettings = () => {
   };
 
   const handleStartGame = () => {
+    if (!selectedTopic) return; // Early return if no topic selected
+
     const totalTime = settings.timePerRound;
 
     // Emit 'startRound' with selected topic
     socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic });
+
+    // Navigate to game screen with the correct route
+    navigate(`/game-screen/${roomCode}`, {
+      state: { timePerRound: totalTime },
+    });
   };
 
   return (
