@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import socket from "../../client-socket";
+import useRoom from "../../hooks/useRoom";
 
 import Header from "../modules/Header";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -10,6 +11,9 @@ const GameSettings = () => {
   const navigate = useNavigate();
   const { roomCode } = useParams();
   const { state } = useLocation();
+  const playerName = state?.playerName;
+
+  useRoom(roomCode, playerName);
 
   useEffect(() => {
     if (!state) {
@@ -79,19 +83,8 @@ const GameSettings = () => {
 
     const totalTime = settings.timePerRound;
 
-    // Emit 'startRound' with selected topic
+    // useRoom handles the navigation
     socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic });
-
-    if (gameMode === "single") {
-      socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath }) => {
-        navigate(`/game-screen/${roomCode}`, { state: { startTime, totalTime, imagePath: serverImagePath } });
-      });
-    }
-
-    // Navigate to game screen with the correct route
-    // navigate(`/game-screen/${roomCode}`, {
-    //   state: { timePerRound: totalTime },
-    // });
   };
 
   return (
