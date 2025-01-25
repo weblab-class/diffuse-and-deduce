@@ -15,6 +15,7 @@ const Intro = () => {
   const canvasRef = useRef(null);
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
 
   // Load the image
   useEffect(() => {
@@ -34,9 +35,20 @@ const Intro = () => {
     };
   }, []);
 
+  // Check if this is the user's first visit
+  useEffect(() => {
+    const hasVisited = sessionStorage.getItem("hasVisitedIntro");
+    if (hasVisited) {
+      setIsFirstVisit(false);
+      setNoiseLevel(0); // skip noise effect for returning visitors
+    } else {
+      sessionStorage.setItem("hasVisitedIntro", true);
+    }
+  }, []);
+
   // Gradually reduce noise over time
   useEffect(() => {
-    if (!imgLoaded) return;
+    if (!imgLoaded || !isFirstVisit) return;
 
     const startTime = Date.now();
     const duration = 2000;
@@ -123,7 +135,7 @@ const Intro = () => {
     };
 
     drawStatic();
-  }, [imgLoaded]);
+  }, [imgLoaded, isFirstVisit]);
 
   const playAsGuest = async () => {
     try {

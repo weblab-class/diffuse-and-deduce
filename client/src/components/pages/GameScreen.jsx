@@ -22,6 +22,7 @@ export default function GameScreen() {
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [isShaking, setIsShaking] = useState(false);
 
   // Retrieve server URL from Vite environment variables
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
@@ -92,6 +93,14 @@ export default function GameScreen() {
       console.log("Received time update:", timeElapsed);
       setTimeElapsed(timeElapsed);
       const fraction = timeElapsed / timePerRound;
+
+      // Add shake effect when time is less than 5 seconds
+      const timeRemaining = timePerRound - timeElapsed;
+      if (timeRemaining < 5) {
+        setIsShaking(true);
+        // Remove shake class after animation completes
+        setTimeout(() => setIsShaking(false), 2000);
+      }
 
       let easedFraction;
       if (fraction < 0.3) {
@@ -277,7 +286,7 @@ export default function GameScreen() {
         <div className="flex-1 flex flex-col px-4">
           <div className="max-w-4xl mx-auto w-full flex flex-col h-full">
             {/* Time remaining display */}
-            <div className="text-center pt-24 mb-2">
+            <div className={`text-center pt-24 mb-2 ${isShaking ? "animate-violent-shake" : ""}`}>
               <p
                 className={`text-lg ${
                   timePerRound - timeElapsed <= 5 ? "text-red-200" : "text-purple-200"
