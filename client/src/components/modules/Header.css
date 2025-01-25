@@ -3,32 +3,88 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 50px;
+  height: 60px;
+  z-index: 50;
 }
 
 .Header-subcontainer {
-  padding: var(--s) var(--m);
-  background-color: var(--darkcyan);
+  padding: 0.75rem 2rem;
+  background: linear-gradient(to right, rgba(10, 10, 27, 0.8), rgba(26, 26, 46, 0.8));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 
   font-size: 16px;
-  color: var(--yellow);
+  color: white;
+  font-family: "Space Grotesk", sans-serif;
 
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.Header-left {
+  display: flex;
+  align-items: center;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e94561, #9b2c3f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 0 15px rgba(233, 69, 96, 0.2);
 }
 
 .Header-right {
   display: flex;
-  gap: 2rem;
+  gap: 1rem;
 }
 
-.textlike {
-  background: none;
+.nav-button {
+  padding: 0.5rem 1.2rem;
   border: none;
-  padding: 0;
-  margin: 0;
-  font: inherit;
-  color: inherit;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
-  outline: none;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.back-button {
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(155, 44, 63, 0.1));
+  border: 1px solid rgba(233, 69, 96, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.logout-button {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(79, 70, 229, 0.1));
+  border: 1px solid rgba(147, 51, 234, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.nav-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.nav-button:active {
+  transform: translateY(1px);
 }

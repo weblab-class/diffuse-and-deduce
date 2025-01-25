@@ -73,3 +73,122 @@
 .enter-guess:focus {
   outline-width: 0;
 }
+
+.particle-canvas {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+@keyframes violent-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10% {
+    transform: translateX(-10px);
+  }
+  30% {
+    transform: translateX(8px);
+  }
+  50% {
+    transform: translateX(-10px);
+  }
+  70% {
+    transform: translateX(8px);
+  }
+  90% {
+    transform: translateX(-10px);
+  }
+}
+
+.animate-violent-shake {
+  animation: violent-shake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Dynamic border effect */
+.group:hover .border {
+  background: linear-gradient(90deg, rgba(147, 51, 234, 0.5), rgba(79, 70, 229, 0.5));
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Glow effects */
+.glow {
+  box-shadow: 0 0 15px rgba(147, 51, 234, 0.3);
+  transition: box-shadow 0.3s ease;
+}
+
+.glow:hover {
+  box-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
+}
+
+/* Score animation */
+@keyframes scorePopup {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.score-animate {
+  animation: scorePopup 0.5s ease-out forwards;
+}
+
+/* Canvas container hover effect */
+.canvas-container {
+  transition: transform 0.3s ease;
+}
+
+.canvas-container:hover {
+  transform: scale(1.01) rotate(0.5deg);
+}
