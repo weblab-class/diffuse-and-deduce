@@ -29,6 +29,7 @@ const Lobby = () => {
           {players.length === 0 ? (
             <span>Waiting for players to join...</span>
           ) : (
+            console.log(players),
             players.map((player, index) => (
               <span key={player.id}>
                 {player.name}

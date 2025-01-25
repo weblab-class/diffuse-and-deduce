@@ -13,8 +13,10 @@ const getSocketFromSocketID = (socketid) => io.sockets.sockets.get(socketid);
 
 const addUser = (user, socket) => {
   const oldSocket = userToSocketMap[user._id];
+  console.log("User id:", user._id);
   if (oldSocket && oldSocket.id !== socket.id) {
     // there was an old tab open for this user, force it to disconnect
+    console.log("Old socket:", oldSocket.id);
     oldSocket.disconnect();
     delete socketToUserMap[oldSocket.id];
   }
@@ -73,9 +75,9 @@ function startRoundTimer(roomCode) {
 const cleanupRooms = async () => {
   try {
     // Only clean up rooms that are:
-    // 1. More than 24 hours old OR
+    // 1. More than 3 hours old OR
     // 2. Have no players and are more than 1 hour old
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const oneDayAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
     const oldRooms = await Room.find({
@@ -353,6 +355,7 @@ module.exports = {
           const existingPlayer = room.players.find((player) => player.name === playerName);
           if (existingPlayer) {
             // Update the existing player's socket ID if needed
+            console.log("Player already exists in room:", existingPlayer);
             const oldSocketId = existingPlayer.id;
             existingPlayer.id = socket.id;
             if (room.hostId === oldSocketId) {
@@ -389,6 +392,7 @@ module.exports = {
           io.to(roomCode).emit("roomData", {
             players: room.players,
             hostId: room.hostId,
+            where: "New Player joined",
           });
 
           callback({ success: true });
@@ -485,6 +489,26 @@ module.exports = {
           console.error("Error starting game:", err);
         }
       });
+
+      // socket.on("disconnect", async (reason) => {
+      //   console.log(`Socket disconnected: ${socket.id}`);
+      //   const rooms = await Room.find({ "players.id": socket.id });
+      //   for (const room of rooms) { // TODO FIX THIS SO DON'T HAVE MANY OLD ROOMS
+      //     if (room.hostId === socket.id) {
+      //       // Options are to either delete the room or assign a new host (if there are other players left) 
+      //       await Room.deleteOne({ code: room.code });
+      //       socket.leave(room.code);
+      //       return;
+      //     }
+      //     room.players = room.players.filter(player => player.id !== socket.id);
+      //     await room.save();
+      //     socket.leave(room.code);  
+      //     io.to(room.code).emit("roomData", {
+      //       players: room.players,
+      //       hostId: room.hostId,
+      //     });
+      //   }
+      // }); // TODO FIX THIS SO DON'T HAVE MANY OLD ROOMS
 
       // Handle socket disconnects
       //   socket.on("disconnect", async (reason) => {

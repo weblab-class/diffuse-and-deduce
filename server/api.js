@@ -21,6 +21,8 @@ const router = express.Router();
 //initialize socket
 const socketManager = require("./server-socket");
 
+const Round = require("./models/round");
+
 // Generating temporary IDs for guests
 const { v4: uuidv4 } = require("uuid");
 
@@ -32,12 +34,15 @@ function guestLogin(req, res) {
 
   // Create a guest user object
   const guestUser = {
-    guest_id: guestId,
+    _id: guestId,
     name: `Guest-${guestId.substring(0, 5)}`, // Optional: create a display name
     is_guest: true, // Flag to indicate this is a guest user
   };
 
   // Store the guest user in the session
+  console.log("Guest login");
+  console.log(req.session.user);
+  console.log(guestUser);
   req.session.user = guestUser;
 
   // Respond with the guest user data
@@ -58,9 +63,17 @@ router.get("/whoami", (req, res) => {
 
 router.post("/initsocket", (req, res) => {
   // do nothing if user not logged in
-  if (req.user)
+  if (req.user) {
+    console.log("User id", req.user._id, "Socket id", req.body.socketid);
     socketManager.addUser(req.user, socketManager.getSocketFromSocketID(req.body.socketid));
+  }
   res.send({});
+});
+
+router.get("/gameState", (req, res) => {
+  Round.findOne({ roomCode: req.query.roomCode }).then((round) => {
+    res.send(round);
+  });
 });
 
 // |------------------------------|

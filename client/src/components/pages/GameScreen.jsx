@@ -7,6 +7,7 @@ import Button from "../modules/Button";
 import Header from "../modules/Header";
 import "../../utilities.css";
 import "./GameScreen.css";
+import { get } from "../../utilities";
 
 export default function GameScreen() {
   const { roomCode } = useParams();
@@ -30,6 +31,16 @@ export default function GameScreen() {
   const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`); // default image
 
   const timePerRound = location.state?.timePerRound || 30;
+
+  useEffect(() => {
+    get("/api/gameState", { roomCode }).then(({ startTime, totalTime, imagePath: serverImagePath }) => {
+      console.log("Round started with image:", serverImagePath);
+      setTimeElapsed(0);
+      setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
+      setNoiseLevel(initialNoise); // Reset noise
+      setImgLoaded(false); // Trigger image loading
+    });
+  }, []);
 
   // Load the image whenever imagePath changes
   useEffect(() => {
@@ -103,13 +114,13 @@ export default function GameScreen() {
     });
 
     // Handle 'roundStarted' to receive the new image
-    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath }) => {
-      console.log("Round started with image:", serverImagePath);
-      setTimeElapsed(0);
-      setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
-      setNoiseLevel(initialNoise); // Reset noise
-      setImgLoaded(false); // Trigger image loading
-    });
+    // socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath }) => {
+    //   console.log("Round started with image:", serverImagePath);
+    //   setTimeElapsed(0);
+    //   setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
+    //   setNoiseLevel(initialNoise); // Reset noise
+    //   setImgLoaded(false); // Trigger image loading
+    // });
 
     socket.on("roundOver", ({ scores, socketToUserMap }) => {
       console.log("Round over!");
