@@ -1,12 +1,13 @@
 // GameScreen.jsx
 
 import React, { useRef, useEffect, useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import socket from "../../client-socket";
 import Button from "../modules/Button";
 import Header from "../modules/Header";
 import "../../utilities.css";
 import "./GameScreen.css";
+import { get } from "../../utilities";
 
 export default function GameScreen() {
   const { roomCode } = useParams();
@@ -18,10 +19,11 @@ export default function GameScreen() {
 
   const initialNoise = 6.0;
   const canvasRef = useRef(null);
-  const location = useLocation();
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [timePerRound, setTimePerRound] = useState(30);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [isShaking, setIsShaking] = useState(false);
 
   // Retrieve server URL from Vite environment variables
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
@@ -29,7 +31,30 @@ export default function GameScreen() {
   // Initialize imagePath state with the backend server URL
   const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`); // default image
 
-  const timePerRound = location.state?.timePerRound || 30;
+  // useEffect(() => {
+  //   get("/api/gameState", { roomCode }).then(({ imagePath: serverImagePath }) => {
+  //     console.log("Round started with image:", serverImagePath);
+  //     setTimeElapsed(0);
+  //     setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
+  //     setNoiseLevel(initialNoise); // Reset noise
+  //     setImgLoaded(false); // Trigger image loading
+  //   });
+  // }, []);
+
+  useEffect(() => {
+    get("/api/gameState", { roomCode })
+      .then(({ imagePath: serverImagePath, startTime, totalTime }) => {
+        console.log("Round started with image:", serverImagePath);
+        setTimeElapsed(0);
+        setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
+        setNoiseLevel(initialNoise); // Reset noise
+        setImgLoaded(false); // Trigger image loading
+        setTimePerRound(totalTime);
+      })
+      .catch((error) => {
+        console.error("GET request to /api/gameState failed with error:", error);
+      });
+  }, []);
 
   // Load the image whenever imagePath changes
   useEffect(() => {
@@ -83,6 +108,14 @@ export default function GameScreen() {
       setTimeElapsed(timeElapsed);
       const fraction = timeElapsed / timePerRound;
 
+      // Add shake effect when time is less than 5 seconds
+      const timeRemaining = timePerRound - timeElapsed;
+      if (timeRemaining < 5) {
+        setIsShaking(true);
+        // Remove shake class after animation completes
+        setTimeout(() => setIsShaking(false), 2000);
+      }
+
       let easedFraction;
       if (fraction < 0.3) {
         easedFraction = 0.3 * Math.pow(fraction / 0.3, 3);
@@ -101,19 +134,10 @@ export default function GameScreen() {
       setScores(scores);
     });
 
-    // Handle 'roundStarted' to receive the new image
-    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath }) => {
-      console.log("Round started with image:", serverImagePath);
-      setTimeElapsed(0);
-      setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
-      setNoiseLevel(initialNoise); // Reset noise
-      setImgLoaded(false); // Trigger image loading
-    });
-
     socket.on("roundOver", ({ scores, socketToUserMap }) => {
       console.log("Round over!");
       console.log("Mapping:", socketToUserMap);
-      navigate("/leaderboard", { state: { scores, socketToUserMap } });
+      navigate("/leaderboard", { state: { scores, socketToUserMap, roomCode } });
     });
 
     return () => {
@@ -138,15 +162,119 @@ export default function GameScreen() {
       }
     });
 
+    return () => {
+      socket.off("correctGuess");
+    };
+  }, []);
+
+  // Add a timeout effect for the wrong guess message
+  useEffect(() => {
+    let timeoutId;
+    if (guessedWrong) {
+      timeoutId = setTimeout(() => {
+        setGuessedWrong(false);
+      }, 2000);
+    }
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [guessedWrong]);
+
+  // Modify the socket event listener for wrong guesses
+  useEffect(() => {
     socket.on("wrongGuess", ({ playerId }) => {
       if (playerId === socket.id) {
-        setGuessedWrong(true);
+        // Reset guessedWrong first to ensure the animation triggers again
+        setGuessedWrong(false);
+        // Use setTimeout to ensure the state actually changes before setting to true
+        setTimeout(() => {
+          setGuessedWrong(true);
+        }, 10);
       }
     });
 
     return () => {
-      socket.off("correctGuess");
       socket.off("wrongGuess");
+    };
+  }, []);
+
+  // Add particle effect
+  useEffect(() => {
+    const canvas = document.createElement("canvas");
+    canvas.className = "particle-canvas";
+    canvas.style.position = "fixed";
+    canvas.style.top = "0";
+    canvas.style.left = "0";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.pointerEvents = "none";
+    canvas.style.zIndex = "-1";
+    document.body.appendChild(canvas);
+
+    const ctx = canvas.getContext("2d");
+    const particles = [];
+
+    // Resize handler
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    // Particle class
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = Math.random() * 2 - 1;
+        this.speedY = Math.random() * 2 - 1;
+        this.opacity = Math.random() * 0.5;
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+
+        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+          this.reset();
+        }
+      }
+
+      draw() {
+        ctx.fillStyle = `rgba(147, 51, 234, ${this.opacity})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Create particles
+    for (let i = 0; i < 50; i++) {
+      particles.push(new Particle());
+    }
+
+    // Animation loop
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((particle) => {
+        particle.update();
+        particle.draw();
+      });
+      requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      document.body.removeChild(canvas);
     };
   }, []);
 
@@ -165,39 +293,114 @@ export default function GameScreen() {
   };
 
   return (
-    <div className="game_screen-page-container">
+    <div className="h-screen flex flex-col overflow-hidden font-space-grotesk">
       <Header backNav="/room-actions" />
-      <div className="game_screen-text-container">
-        <p className="game_screen-text">
-          Time Remaining: <span style={{ fontWeight: 600 }}>{timePerRound - timeElapsed}</span>
-        </p>
-        {/* Display the dynamic image */}
-        <canvas ref={canvasRef} className="to-deduce" width="800" height="600" />
-        {guessedCorrectly ? (
-          <>
-            <div className="waiting-message">
-              <p>Congratulations! You scored {scores[socket.id] || 0} points.</p>
-              <p>Waiting for the round to end... </p>
+      {/* Background layers */}
+      <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#2a1a3a] to-[#0a0a1b] overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/background-images/background-tutorial.png')] bg-cover bg-center bg-no-repeat opacity-70 mix-blend-soft-light" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.25)_0%,transparent_70%)]" />
+      </div>
+
+      <div className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
+        <div className="flex-1 flex flex-col px-4">
+          <div className="max-w-4xl mx-auto w-full flex flex-col h-full">
+            {/* Time remaining display */}
+            <div className={`text-center pt-24 mb-2 ${isShaking ? "animate-violent-shake" : ""}`}>
+              <p
+                className={`text-lg ${
+                  timePerRound - timeElapsed <= 5 ? "text-red-200" : "text-purple-200"
+                } bg-white/5 backdrop-blur-xl inline-block px-4 py-1 rounded-full border border-white/10 glow mb-1 transition-colors duration-300`}
+              >
+                Time Remaining:{" "}
+                <span
+                  className={`font-semibold ${
+                    timePerRound - timeElapsed <= 5
+                      ? "text-red-300 animate-pulse"
+                      : "text-purple-300"
+                  } transition-colors duration-300`}
+                >
+                  {timePerRound - timeElapsed}
+                </span>
+              </p>
+              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 rounded-full ${
+                    timePerRound - timeElapsed <= 5
+                      ? "bg-gradient-to-r from-red-500 to-red-600 animate-pulse"
+                      : "bg-gradient-to-r from-purple-500 to-indigo-500"
+                  }`}
+                  style={{
+                    width: `${((timePerRound - timeElapsed) / timePerRound) * 100}%`,
+                    boxShadow:
+                      timePerRound - timeElapsed <= 5
+                        ? "0 0 20px rgba(239, 68, 68, 0.5)"
+                        : "0 0 20px rgba(147, 51, 234, 0.5)",
+                  }}
+                />
+              </div>
             </div>
-          </>
-        ) : (
-          <>
-            <div className="submission-container">
-              <input
-                className="enter-guess"
-                placeholder="Enter guess..."
-                value={guessText}
-                onChange={(e) => setGuessText(e.target.value)}
-              />
-              <Button text="Submit" extraClass="inverted-button" onClick={handleSubmitGuess} />
+
+            {/* Canvas container */}
+            <div className="relative flex-1 min-h-0 mb-2">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
+              <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
+                <canvas
+                  ref={canvasRef}
+                  className="w-full h-full object-contain rounded-xl"
+                  width="800"
+                  height="600"
+                />
+              </div>
             </div>
-          </>
-        )}
-        {guessedWrong && (
-          <div className="w-48 h-10 text-center bg-[#f0f3bd] border-[#675325] border-[1pt] text-[#675325] mt-10">
-            Wrong guess! Try again.
+
+            {/* Input section */}
+            <div className="mt-auto pb-2">
+              {guessedCorrectly ? (
+                <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-3 text-center border border-purple-500/20 shadow-lg">
+                  <p className="text-lg text-purple-200">
+                    Congratulations! You scored{" "}
+                    <span
+                      className={`font-semibold text-purple-300 ${
+                        guessedCorrectly ? "score-animate" : ""
+                      }`}
+                    >
+                      {scores[socket.id] || 0}
+                    </span>{" "}
+                    points.
+                  </p>
+                  <p className="text-sm text-gray-300">Waiting for the round to end... </p>
+                </div>
+              ) : (
+                <div
+                  className={`bg-white/5 backdrop-blur-2xl rounded-xl p-3 border border-purple-500/20 shadow-lg ${
+                    guessedWrong ? "animate-shake" : ""
+                  }`}
+                >
+                  <div className="flex gap-2 items-center justify-center">
+                    <input
+                      className="flex-1 bg-white/10 text-purple-100 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50"
+                      placeholder="Enter guess..."
+                      value={guessText}
+                      onChange={(e) => setGuessText(e.target.value)}
+                    />
+                    <button
+                      onClick={handleSubmitGuess}
+                      className="glow bg-gradient-to-r from-purple-600/80 to-indigo-600/80 text-white px-6 py-2 rounded-lg hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {guessedWrong && (
+                <div className="mt-2 bg-red-500/10 backdrop-blur-xl text-red-200 py-2 px-4 rounded-lg border border-red-500/20 text-center animate-shake">
+                  Wrong guess! Try again.
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

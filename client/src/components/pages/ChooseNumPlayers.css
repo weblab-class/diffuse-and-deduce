@@ -1,29 +1,114 @@
 .choose_num_players-page-container {
-  background: url("/background-images/background-choose_num_players.png") no-repeat center center;
-  background-size: cover;
-  overflow: hidden;
-
   min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  font-family: "Space Grotesk", sans-serif;
 }
 
-.choose_num_players-button-container {
+.choose_num_players-content {
   display: flex;
-  flex-direction: row;
-  gap: 20vw;
   align-items: center;
   justify-content: center;
-  padding-top: 25px;
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
+  padding: 2rem;
 }
 
-@media (max-width: 480px) {
-  .choose_num_players-button-container {
+.mode-cards-container {
+  display: flex;
+  gap: 3rem;
+  align-items: center;
+  justify-content: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.mode-card {
+  position: relative;
+  width: 300px;
+  height: 400px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border-radius: 24px;
+  padding: 2rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.card-blur-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at top right,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05) 30%,
+    transparent 70%
+  );
+  transform: translateZ(0);
+  z-index: 0;
+}
+
+.card-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+}
+
+.mode-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+}
+
+.mode-card h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #e94561, #9b2c3f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.mode-card p {
+  font-size: 1rem;
+  opacity: 0.8;
+  max-width: 80%;
+}
+
+.single-player {
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(155, 44, 63, 0.05));
+}
+
+.multi-player {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(79, 70, 229, 0.05));
+}
+
+@media (max-width: 768px) {
+  .mode-cards-container {
     flex-direction: column;
+    gap: 2rem;
+  }
+
+  .mode-card {
+    width: 100%;
+    max-width: 300px;
+    height: 300px;
   }
 }
 
-.choose_num_players-button-container .button-link {
-  font-size: 16px;
-  width: 229px;
-  height: 50px;
+@media (max-width: 480px) {
+  .mode-cards-container {
+    padding: 1rem;
+  }
 }

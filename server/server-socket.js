@@ -13,8 +13,10 @@ const getSocketFromSocketID = (socketid) => io.sockets.sockets.get(socketid);
 
 const addUser = (user, socket) => {
   const oldSocket = userToSocketMap[user._id];
+  console.log("User id:", user._id);
   if (oldSocket && oldSocket.id !== socket.id) {
     // there was an old tab open for this user, force it to disconnect
+    console.log("Old socket:", oldSocket.id);
     oldSocket.disconnect();
     delete socketToUserMap[oldSocket.id];
   }
@@ -64,18 +66,15 @@ function startRoundTimer(roomCode) {
       io.to(roomCode).emit("timeUpdate", timeUpdate);
     }
   }, 1000);
-
-  // Remember the interval so we could clear it if needed
-  rooms[roomCode] = { intervalId: interval };
 }
 
 // Clean up old rooms periodically
 const cleanupRooms = async () => {
   try {
     // Only clean up rooms that are:
-    // 1. More than 24 hours old OR
+    // 1. More than 3 hours old OR
     // 2. Have no players and are more than 1 hour old
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const oneDayAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
     const oldRooms = await Room.find({
@@ -139,28 +138,22 @@ module.exports = {
 
       socket.on("submitGuess", async ({ roomCode, guessText }) => {
         try {
+          console.log("Received guess:", { roomCode, guessText });
           const round = await Round.findOne({ roomCode });
           if (!round || !round.isActive) {
             return socket.emit("errorMessage", "No active round in this room");
           }
 
           const timeElapsed = Math.floor((Date.now() - round.startTime) / 1000);
-
-          // Check guess logic...
-
-          console.log("Guess received:", guessText);
-
           const isCorrect = checkGuess(guessText, round.correctAnswer);
 
-          const playerId = socket.id;
+          console.log("Guess check:", {
+            guessText,
+            correctAnswer: round.correctAnswer,
+            isCorrect,
+          }); // Debug: Guess checking
 
-          // Initialize room and scores if they don't exist
-          if (!rooms[roomCode]) {
-            rooms[roomCode] = { scores: {}, players: {} };
-          }
-          if (!rooms[roomCode].scores) {
-            rooms[roomCode].scores = {};
-          }
+          const playerId = socket.id;
 
           if (isCorrect) {
             const totalTime = round.totalTime;
@@ -172,12 +165,14 @@ module.exports = {
             rooms[roomCode].scores[playerId] = (rooms[roomCode].scores[playerId] || 0) - 100;
             io.to(roomCode).emit("wrongGuess", { playerId });
           }
+
+          // Score update
           io.to(roomCode).emit("scoreUpdate", { scores: rooms[roomCode].scores });
 
           await round.save();
         } catch (err) {
           console.error("Error in submitGuess:", err);
-          socket.emit("errorMessage", "Failed to process guess");
+          // console.error("Error in submitGuess:", err);
         }
       });
 
@@ -192,6 +187,7 @@ module.exports = {
           if (!round) {
             round = new Round({ roomCode });
           }
+          console.log("Created round in server with roomcode:", roomCode);
 
           // Set round details
           round.startTime = Date.now();
@@ -294,35 +290,18 @@ module.exports = {
           await cleanupRooms();
 
           const roomCode = generateRoomCode();
-          console.log("Generated new room code:", roomCode);
-
           const newRoom = new Room({
             code: roomCode,
             hostId: socket.id,
             players: [{ id: socket.id, name: playerName }],
           });
-
           await newRoom.save();
-          console.log("Room saved successfully:", {
-            code: newRoom.code,
-            hostId: newRoom.hostId,
-            players: newRoom.players,
-            _id: newRoom._id,
-          });
 
-          // Verify room was saved
-          const verifyRoom = await Room.findOne({ code: roomCode });
-          console.log(
-            "Verification - Found room in DB:",
-            verifyRoom
-              ? {
-                  code: verifyRoom.code,
-                  hostId: verifyRoom.hostId,
-                  players: verifyRoom.players,
-                  _id: verifyRoom._id,
-                }
-              : "Not found"
-          );
+          // In memory game state
+          rooms[roomCode] = {
+            players: { [socket.id]: playerName },
+            scores: { [socket.id]: 0 },
+          };
 
           socket.join(roomCode);
 
@@ -330,6 +309,7 @@ module.exports = {
           io.to(roomCode).emit("roomData", {
             players: newRoom.players,
             hostId: newRoom.hostId,
+            scores: rooms[roomCode].scores,
           });
 
           return callback({ roomCode: roomCode });
@@ -346,6 +326,7 @@ module.exports = {
             return callback({ error: "Room code and player name are required." });
           }
 
+          // Save in MONGODB
           const room = await Room.findOne({ code: roomCode });
           if (!room) {
             return callback({ error: "Room not found." });
@@ -354,19 +335,11 @@ module.exports = {
             return callback({ error: "Game has already started in this room." });
           }
 
-          console.log(`\n[Room ${roomCode}] Player attempting to join:`, {
-            name: playerName,
-            socketId: socket.id,
-          });
-          console.log(
-            `Current players in room:`,
-            room.players.map((p) => ({ name: p.name, id: p.id }))
-          );
-
           // Check if player is already in the room
           const existingPlayer = room.players.find((player) => player.name === playerName);
           if (existingPlayer) {
             // Update the existing player's socket ID if needed
+            console.log("Player already exists in room:", existingPlayer);
             const oldSocketId = existingPlayer.id;
             existingPlayer.id = socket.id;
             if (room.hostId === oldSocketId) {
@@ -376,33 +349,24 @@ module.exports = {
             // Add the player to room in database only if they're not already there
             room.players.push({ id: socket.id, name: playerName });
           }
+          await room.save();
 
-          // Add player to the in-memory room data
+          // Add player to the IN-MEMORY room data
           if (!rooms[roomCode]) {
             rooms[roomCode] = { players: {}, scores: {} };
           }
           rooms[roomCode].players[socket.id] = playerName;
+          rooms[roomCode].scores[socket.id] = 0;
 
-          if (!rooms[roomCode].scores[socket.id]) {
-            rooms[roomCode].scores[socket.id] = 0;
-          }
-
-          await room.save();
+          // SOCKETIO
           socket.join(roomCode);
-
-          console.log(
-            `\n[Room ${roomCode}] Updated player list:`,
-            room.players.map((p) => ({
-              name: p.name,
-              id: p.id,
-              isHost: p.id === room.hostId,
-            }))
-          );
 
           // Immediately emit room data to all clients in the room
           io.to(roomCode).emit("roomData", {
             players: room.players,
             hostId: room.hostId,
+            where: "New Player joined",
+            scores: rooms[roomCode].scores,
           });
 
           callback({ success: true });
@@ -419,41 +383,48 @@ module.exports = {
         }
 
         try {
+          // MONGODB cleanup
           const room = await Room.findOne({ code: roomCode });
           if (!room) {
             return callback({ error: "Room not found." });
           }
 
-          console.log(`\n[Room ${roomCode}] Player leaving:`, { socketId: socket.id });
-          console.log(
-            `Players before removal:`,
-            room.players.map((p) => ({ name: p.name, id: p.id }))
-          );
-
           room.players = room.players.filter((player) => player.id !== socket.id);
-
           if (room.hostId === socket.id) {
-            // Options are to either delete the room or assign a new host (if there are other players left)
-            await Room.deleteOne({ code: roomCode });
-            socket.leave(roomCode);
-            return callback({ success: true });
+            if (room.players.length > 0) {
+              // other players exist in room- assign new host
+              room.hostId = room.players[0].id;
+              await room.save();
+            } else {
+              // Host was last player - delete room
+              await Room.deleteOne({ code: roomCode });
+            }
+          } else {
+            // not host- just save player removal
+            await room.save();
           }
 
-          await room.save();
+          // In Memory game state cleanup
+          if (rooms[roomCode]) {
+            delete rooms[roomCode].players[socket.id];
+            if (rooms[roomCode].hostId === socket.id) {
+              const remainingPlayers = Object.keys(rooms[roomCode].players);
+              if (remainingPlayers.length > 0) {
+                rooms[roomCode].hostId = remainingPlayers[0];
+              } else {
+                delete rooms[roomCode];
+              }
+            }
+          }
+
+          // SOCKETIO cleanup
           socket.leave(roomCode);
 
-          console.log(
-            `\n[Room ${roomCode}] Updated player list:`,
-            room.players.map((p) => ({
-              name: p.name,
-              id: p.id,
-              isHost: p.id === room.hostId,
-            }))
-          );
-
+          // Notify all users in room of the leaving user
           io.to(roomCode).emit("roomData", {
             players: room.players,
             hostId: room.hostId,
+            scores: rooms[roomCode].scores,
           });
 
           callback({ success: true });
@@ -499,6 +470,26 @@ module.exports = {
           console.error("Error starting game:", err);
         }
       });
+
+      // socket.on("disconnect", async (reason) => {
+      //   console.log(`Socket disconnected: ${socket.id}`);
+      //   const rooms = await Room.find({ "players.id": socket.id });
+      //   for (const room of rooms) { // TODO FIX THIS SO DON'T HAVE MANY OLD ROOMS
+      //     if (room.hostId === socket.id) {
+      //       // Options are to either delete the room or assign a new host (if there are other players left)
+      //       await Room.deleteOne({ code: room.code });
+      //       socket.leave(room.code);
+      //       return;
+      //     }
+      //     room.players = room.players.filter(player => player.id !== socket.id);
+      //     await room.save();
+      //     socket.leave(room.code);
+      //     io.to(room.code).emit("roomData", {
+      //       players: room.players,
+      //       hostId: room.hostId,
+      //     });
+      //   }
+      // }); // TODO FIX THIS SO DON'T HAVE MANY OLD ROOMS
 
       // Handle socket disconnects
       //   socket.on("disconnect", async (reason) => {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import socket from "../client-socket";
 
 const useRoom = (roomCode, playerName) => {
@@ -7,6 +8,7 @@ const useRoom = (roomCode, playerName) => {
   const [hostId, setHostId] = useState(null);
   const [error, setError] = useState(null);
   const [hasJoined, setHasJoined] = useState(false); // Track if we've already joined
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Only join if we haven't joined yet
@@ -23,20 +25,29 @@ const useRoom = (roomCode, playerName) => {
         console.log("Successfully joined room:", roomCode);
       }
     });
+  }, [roomCode, playerName, hasJoined]);
 
-    // Listen for updates
-    socket.on("roomData", ({ players, hostId }) => {
-      console.log("Received room data:", { players, hostId });
-      setPlayers(players);
-      setIsHost(socket.id === hostId);
-      setHostId(hostId);
+  useEffect(() => {
+    if (!roomCode) return; // Don't fetch if no room code
+
+    socket.on("roomData", (data) => {
+      console.log("Inside useRoom, Received room data:", data);
+      setPlayers(data.players);
+      setIsHost(data.hostId === socket.id);
+      setHostId(data.hostId);
+    });
+
+    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath }) => {
+      navigate(`/game-screen/${roomCode}`, {
+        state: { startTime, totalTime, imagePath: serverImagePath },
+      });
     });
 
     return () => {
       console.log("Cleaning up room effect");
       socket.off("roomData");
     };
-  }, [roomCode, playerName]);
+  }, []);
 
   return {
     players,
