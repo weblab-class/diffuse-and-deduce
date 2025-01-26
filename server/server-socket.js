@@ -57,9 +57,17 @@ function startRoundTimer(roomCode) {
       await round.save();
       clearInterval(interval);
 
-      // Create id_to_name mapping
-      // const id_to_name = socketToUserMap;
-      io.to(roomCode).emit("roundOver", { scores: rooms[roomCode].scores, socketToUserMap });
+      // Convert players array to simple object mapping socket ID to name
+      const playersObject = {};
+      rooms[roomCode].players.forEach((player) => {
+        playersObject[player.id] = player.name;
+      });
+
+      // Use room-specific player map instead of global socketToUserMap
+      io.to(roomCode).emit("roundOver", {
+        scores: rooms[roomCode].scores,
+        socketToUserMap: playersObject,
+      });
     } else {
       // Send time update (capped at total round time)
       const timeUpdate = { timeElapsed: Math.min(elapsed, round.totalTime) };
@@ -287,7 +295,7 @@ module.exports = {
 
           // In memory game state
           rooms[roomCode] = {
-            players: { [socket.id]: playerName },
+            players: [{ id: socket.id, name: playerName }],
             scores: { [socket.id]: 0 },
           };
 
@@ -341,9 +349,9 @@ module.exports = {
 
           // Add player to the IN-MEMORY room data
           if (!rooms[roomCode]) {
-            rooms[roomCode] = { players: {}, scores: {} };
+            rooms[roomCode] = { players: [], scores: {} };
           }
-          rooms[roomCode].players[socket.id] = playerName;
+          rooms[roomCode].players.push({ id: socket.id, name: playerName });
           rooms[roomCode].scores[socket.id] = 0;
 
           // SOCKETIO
@@ -394,14 +402,12 @@ module.exports = {
 
           // In Memory game state cleanup
           if (rooms[roomCode]) {
-            delete rooms[roomCode].players[socket.id];
-            if (rooms[roomCode].hostId === socket.id) {
-              const remainingPlayers = Object.keys(rooms[roomCode].players);
-              if (remainingPlayers.length > 0) {
-                rooms[roomCode].hostId = remainingPlayers[0];
-              } else {
-                delete rooms[roomCode];
-              }
+            rooms[roomCode].players = rooms[roomCode].players.filter(
+              (player) => player.id !== socket.id
+            );
+            delete rooms[roomCode].scores[socket.id];
+            if (rooms[roomCode].players.length === 0) {
+              delete rooms[roomCode];
             }
           }
 

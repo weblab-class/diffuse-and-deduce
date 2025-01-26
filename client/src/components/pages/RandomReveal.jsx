@@ -33,7 +33,8 @@ const RandomReveal = () => {
   const [imagePath, setImagePath] = useState("");
 
   const handleSubmitGuess = () => {
-    // TO DO: implement guess submission logic
+    socket.emit("submitGuess", { roomCode, guessText });
+    setGuessText("");
   };
 
   return (

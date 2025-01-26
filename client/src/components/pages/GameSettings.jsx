@@ -88,6 +88,13 @@ const GameSettings = () => {
       topic: selectedTopic,
       revealMode: settings.revealMode, // Only pass the reveal mode, not all settings
     });
+
+    // Navigate to the correct game component based on reveal mode
+    if (settings.revealMode === "diffusion") {
+      navigate(`/game-screen/${roomCode}`);
+    } else {
+      navigate(`/random-reveal/${roomCode}`);
+    }
   };
 
   return (

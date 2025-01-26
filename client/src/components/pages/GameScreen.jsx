@@ -28,28 +28,20 @@ export default function GameScreen() {
   // Retrieve server URL from Vite environment variables
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
 
-  // Initialize imagePath state with the backend server URL
-  const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`); // default image
-
-  // useEffect(() => {
-  //   get("/api/gameState", { roomCode }).then(({ imagePath: serverImagePath }) => {
-  //     console.log("Round started with image:", serverImagePath);
-  //     setTimeElapsed(0);
-  //     setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
-  //     setNoiseLevel(initialNoise); // Reset noise
-  //     setImgLoaded(false); // Trigger image loading
-  //   });
-  // }, []);
+  // Initialize imagePath state with the default image (without server URL)
+  const [imagePath, setImagePath] = useState(`/game-images/Animals/lion.jpg`); // default image
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
       .then(({ imagePath: serverImagePath, startTime, totalTime }) => {
-        console.log("Round started with image:", serverImagePath);
-        setTimeElapsed(0);
-        setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
-        setNoiseLevel(initialNoise); // Reset noise
-        setImgLoaded(false); // Trigger image loading
-        setTimePerRound(totalTime);
+        if (serverImagePath) {
+          console.log("Got game state with image:", serverImagePath);
+          setTimeElapsed(0);
+          setImagePath(`${SERVER_URL}${serverImagePath}`);
+          setNoiseLevel(initialNoise);
+          setImgLoaded(false);
+          setTimePerRound(totalTime);
+        }
       })
       .catch((error) => {
         console.error("GET request to /api/gameState failed with error:", error);
@@ -103,6 +95,15 @@ export default function GameScreen() {
 
   useEffect(() => {
     // Handle various socket events
+    socket.on("roundStarted", ({ startTime, totalTime, imagePath }) => {
+      console.log("Diffusion: Round started with image:", imagePath);
+      setTimeElapsed(0);
+      setImagePath(`${SERVER_URL}${imagePath}`);
+      setNoiseLevel(initialNoise);
+      setImgLoaded(false);
+      setTimePerRound(totalTime);
+    });
+
     socket.on("timeUpdate", ({ timeElapsed }) => {
       console.log("Received time update:", timeElapsed);
       setTimeElapsed(timeElapsed);
@@ -141,12 +142,12 @@ export default function GameScreen() {
     });
 
     return () => {
+      socket.off("roundStarted");
       socket.off("timeUpdate");
       socket.off("scoreUpdate");
-      socket.off("roundStarted");
       socket.off("roundOver");
     };
-  }, [timePerRound, navigate, SERVER_URL]);
+  }, [timePerRound, navigate, SERVER_URL, initialNoise]);
 
   const handleSubmitGuess = () => {
     socket.emit("submitGuess", { roomCode, guessText });
