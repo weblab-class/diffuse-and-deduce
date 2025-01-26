@@ -15,14 +15,6 @@ const Header = (props) => {
   const { roomCode } = useParams();
 
   const handleBack = () => {
-    console.log("Navigation Debug:", {
-      currentPath: location.pathname,
-      roomCode: roomCode,
-      backNav: props.backNav,
-      gameMode: location.state?.gameMode,
-      fullLocation: location,
-    });
-
     // If we're in a room-based page (lobby or game settings), clean up
     if (roomCode) {
       console.log("Leaving room before navigation");
