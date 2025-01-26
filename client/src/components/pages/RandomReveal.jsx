@@ -32,6 +32,36 @@ const RandomReveal = () => {
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
   const [imagePath, setImagePath] = useState("");
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.width = 600; // Set appropriate width
+    canvas.height = 400; // Set appropriate height
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    // Enable CORS for the image
+    img.crossOrigin = "Anonymous";
+    img.src = imagePath;
+
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      setImgLoaded(true);
+    };
+
+    img.onerror = (err) => {
+      console.error(`Failed to load image at path: ${imagePath}`, err);
+      setImgLoaded(false);
+      // Display a placeholder or error message
+      ctx.fillStyle = "#CCCCCC";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#000000";
+      ctx.font = "20px Arial";
+      ctx.fillText("Image failed to load.", 10, 50);
+    };
+  }, [imagePath]);
+
   const handleSubmitGuess = () => {
     socket.emit("submitGuess", { roomCode, guessText });
     setGuessText("");
@@ -89,12 +119,7 @@ const RandomReveal = () => {
             <div className="relative flex-1 min-h-0 mb-2">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
               <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
-                <canvas
-                  ref={canvasRef}
-                  className="w-full h-full object-contain rounded-xl"
-                  width="800"
-                  height="600"
-                />
+                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-contain" />
               </div>
             </div>
 
