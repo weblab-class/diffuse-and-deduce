@@ -214,8 +214,8 @@ const GameSettings = () => {
                     <div className="w-48 flex gap-4 justify-end">
                       <input
                         type="range"
-                        min="30"
-                        max="120"
+                        min="15"
+                        max="60"
                         value={settings.timePerRound}
                         onChange={(e) =>
                           handleSliderChange("timePerRound", parseInt(e.target.value))
