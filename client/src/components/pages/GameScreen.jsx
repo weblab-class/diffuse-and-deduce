@@ -1,7 +1,7 @@
 // GameScreen.jsx
 
 import React, { useRef, useEffect, useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import socket from "../../client-socket";
 import Button from "../modules/Button";
 import Header from "../modules/Header";
@@ -19,9 +19,9 @@ export default function GameScreen() {
 
   const initialNoise = 8.0;
   const canvasRef = useRef(null);
-  const location = useLocation();
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [timePerRound, setTimePerRound] = useState(30);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isShaking, setIsShaking] = useState(false);
 
@@ -30,8 +30,6 @@ export default function GameScreen() {
 
   // Initialize imagePath state with the backend server URL
   const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`); // default image
-
-  const timePerRound = location.state?.timePerRound || 30;
 
   // useEffect(() => {
   //   get("/api/gameState", { roomCode }).then(({ imagePath: serverImagePath }) => {
@@ -51,7 +49,7 @@ export default function GameScreen() {
         setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
         setNoiseLevel(initialNoise); // Reset noise
         setImgLoaded(false); // Trigger image loading
-        // Handle other properties like startTime and totalTime if needed
+        setTimePerRound(totalTime);
       })
       .catch((error) => {
         console.error("GET request to /api/gameState failed with error:", error);
@@ -127,7 +125,6 @@ export default function GameScreen() {
         const endFraction = (fraction - 0.7) / 0.3;
         easedFraction = 0.7 + 0.3 * (1 - Math.pow(1 - endFraction, 3));
       }
-
 
       setNoiseLevel(Math.max(initialNoise * (1 - easedFraction), 0));
     });
@@ -294,7 +291,6 @@ export default function GameScreen() {
     }
     ctx.putImageData(imageData, 0, 0);
   };
-
 
   return (
     <div className="h-screen flex flex-col overflow-hidden font-space-grotesk">
