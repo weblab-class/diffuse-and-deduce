@@ -72,7 +72,7 @@ const RandomReveal = () => {
     const handleRoundOver = ({ scores: newScores, socketToUserMap }) => {
       console.log("Round over with scores:", newScores);
       setScores(newScores);
-      navigate(`/leaderboard/${roomCode}`, {
+      navigate(`/leaderboard`, {
         state: { scores: newScores, socketToUserMap },
       });
     };
