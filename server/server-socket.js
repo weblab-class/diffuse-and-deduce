@@ -166,7 +166,7 @@ module.exports = {
         }
       });
 
-      socket.on("startRound", async ({ roomCode, totalTime, topic }) => {
+      socket.on("startRound", async ({ roomCode, totalTime, topic, revealMode }) => {
         try {
           let round = await Round.findOne({ roomCode });
           if (!round) {
@@ -178,6 +178,7 @@ module.exports = {
           round.startTime = Date.now();
           round.totalTime = totalTime;
           round.isActive = true;
+          round.revealMode = revealMode;
 
           // Define the directory containing images for the selected topic
           const imagesDir = path.join(__dirname, "public", "game-images", topic);
@@ -216,6 +217,7 @@ module.exports = {
             startTime: round.startTime,
             totalTime,
             imagePath, // Ensure this path is correct
+            revealMode,
           });
         } catch (err) {
           console.error("Error starting round:", err);

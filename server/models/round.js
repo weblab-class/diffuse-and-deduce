@@ -9,6 +9,7 @@ const RoundSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: false },
   correctAnswer: { type: String, required: true },
   imagePath: { type: String, required: true }, // New field
+  revealMode: { type: String, enum: ["diffusion", "random"], default: "diffusion" }, // Add reveal mode
   players: [
     {
       socketId: String,

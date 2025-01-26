@@ -81,10 +81,13 @@ const GameSettings = () => {
   const handleStartGame = () => {
     if (!selectedTopic) return; // Early return if no topic selected
 
-    const totalTime = settings.timePerRound;
-
-    // useRoom handles the navigation
-    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic });
+    // Only pass the essential data
+    socket.emit("startRound", {
+      roomCode,
+      totalTime: settings.timePerRound,
+      topic: selectedTopic,
+      revealMode: settings.revealMode, // Only pass the reveal mode, not all settings
+    });
   };
 
   return (

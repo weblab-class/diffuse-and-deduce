@@ -37,11 +37,22 @@ const useRoom = (roomCode, playerName) => {
       setHostId(data.hostId);
     });
 
-    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath }) => {
-      navigate(`/game-screen/${roomCode}`, {
-        state: { startTime, totalTime, imagePath: serverImagePath },
-      });
-    });
+    socket.on(
+      "roundStarted",
+      ({ startTime, totalTime, imagePath: serverImagePath, revealMode }) => {
+        // Use revealMode directly to determine the target path
+        const targetPath =
+          revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
+
+        navigate(targetPath, {
+          state: {
+            startTime,
+            totalTime,
+            imagePath: serverImagePath,
+          },
+        });
+      }
+    );
 
     return () => {
       console.log("Cleaning up room effect");
