@@ -77,14 +77,21 @@ const RandomReveal = () => {
       });
     };
 
+    const handleScoreUpdate = ({ scores: newScores }) => {
+      console.log("Received score update:", newScores);
+      setScores(newScores);
+    };
+
     socket.on("timeUpdate", handleTimeUpdate);
     socket.on("roundStarted", handleRoundStarted);
     socket.on("roundOver", handleRoundOver);
+    socket.on("scoreUpdate", handleScoreUpdate);
 
     return () => {
       socket.off("timeUpdate", handleTimeUpdate);
       socket.off("roundStarted", handleRoundStarted);
       socket.off("roundOver", handleRoundOver);
+      socket.off("scoreUpdate", handleScoreUpdate);
     };
   }, [roomCode, navigate, timePerRound]);
 
@@ -117,6 +124,50 @@ const RandomReveal = () => {
       ctx.fillText("Image failed to load.", 10, 50);
     };
   }, [imagePath]);
+
+  useEffect(() => {
+    socket.on("correctGuess", ({ playerId }) => {
+      if (playerId === socket.id) {
+        setGuessedCorrectly(true);
+        setGuessedWrong(false);
+      }
+    });
+
+    return () => {
+      socket.off("correctGuess");
+    };
+  }, []);
+
+  useEffect(() => {
+    let timeoutId;
+    if (guessedWrong) {
+      timeoutId = setTimeout(() => {
+        setGuessedWrong(false);
+      }, 2000);
+    }
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [guessedWrong]);
+
+  useEffect(() => {
+    socket.on("wrongGuess", ({ playerId }) => {
+      if (playerId === socket.id) {
+        // Reset guessedWrong first to ensure the animation triggers again
+        setGuessedWrong(false);
+        // Use setTimeout to ensure the state actually changes before setting to true
+        setTimeout(() => {
+          setGuessedWrong(true);
+        }, 10);
+      }
+    });
+
+    return () => {
+      socket.off("wrongGuess");
+    };
+  }, []);
 
   const handleSubmitGuess = () => {
     socket.emit("submitGuess", { roomCode, guessText });
