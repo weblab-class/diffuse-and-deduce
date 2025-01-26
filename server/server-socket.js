@@ -125,9 +125,11 @@ function objectIdFromDate(date) {
 // Clean up rooms every 5 minutes
 setInterval(cleanupRooms, 5 * 60 * 1000);
 
-function checkGuess(guessText, correctAnswer) {
-  // Implement your guess checking logic here
-  return guessText.toLowerCase() === correctAnswer.toLowerCase();
+function checkGuess(guessText, correctAnswers) {
+  if (!guessText || !correctAnswers) return false;
+  const normalizedGuess = guessText.trim().toLowerCase().replace(/\s+/g, "");
+  console.log(normalizedGuess);
+  return correctAnswers.includes(normalizedGuess);
 }
 
 module.exports = {
@@ -155,13 +157,7 @@ module.exports = {
           }
 
           const timeElapsed = Math.floor((Date.now() - round.startTime) / 1000);
-          const isCorrect = checkGuess(guessText, round.correctAnswer);
-
-          console.log("Guess check:", {
-            guessText,
-            correctAnswer: round.correctAnswer,
-            isCorrect,
-          }); // Debug: Guess checking
+          const isCorrect = checkGuess(guessText, round.correctAnswers);
 
           const playerId = socket.id;
 
@@ -215,15 +211,13 @@ module.exports = {
           const randomIndex = Math.floor(Math.random() * files.length);
           const selectedImage = files[randomIndex];
 
-          // Derive the correct answer from the image filename (without extension)
-          const correctAnswer = path.parse(selectedImage).name.toLowerCase();
+          round.correctAnswers = path.parse(selectedImage).name.split("-");
+          round.primaryAnswer = round.correctAnswers[0]; // use the first label for hints
 
           // Set the image path accessible by the frontend
           const imagePath = `/game-images/${topic}/${selectedImage}`;
           console.log(`Selected image path: ${imagePath}`);
 
-          // Update the round with the selected image and answer
-          round.correctAnswer = correctAnswer;
           round.imagePath = imagePath;
           round.scores = new Map();
           await round.save();
@@ -238,6 +232,7 @@ module.exports = {
             totalTime,
             imagePath, // Ensure this path is correct
             revealMode,
+            primaryAnswer: round.primaryAnswer,
           });
         } catch (err) {
           console.error("Error starting round:", err);
