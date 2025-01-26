@@ -76,26 +76,29 @@ router.post("/initsocket", (req, res) => {
 //   });
 // });
 
-router.get("/gameState", (req, res) => { // fix for single user case
+router.get("/gameState", (req, res) => {
+  // fix for single user case
   const { roomCode } = req.query;
   console.log(`Received request for game state with roomCode: ${roomCode}`);
 
-  Round.findOne({ roomCode }).then((round) => {
-    if (!round) {
-      console.log(`No round found for roomCode: ${roomCode}`);
-      return res.status(404).json({ error: "Round not found" });
-    }
-    console.log(`Found round for roomCode: ${roomCode}`);
-    res.json({
-      imagePath: round.imagePath,
-      startTime: round.startTime,
-      totalTime: round.totalTime,
-      // Add any other properties that might be needed by the client
+  Round.findOne({ roomCode })
+    .then((round) => {
+      if (!round) {
+        console.log(`No round found for roomCode: ${roomCode}`);
+        return res.status(404).json({ error: "Round not found" });
+      }
+      console.log(`Found round for roomCode: ${roomCode}`);
+      res.json({
+        imagePath: round.imagePath,
+        startTime: round.startTime,
+        totalTime: round.totalTime,
+        // Add any other properties that might be needed by the client
+      });
+    })
+    .catch((error) => {
+      console.error("Error fetching game state:", error);
+      res.status(500).json({ error: "Internal server error" });
     });
-  }).catch((error) => {
-    console.error("Error fetching game state:", error);
-    res.status(500).json({ error: "Internal server error" });
-  });
 });
 
 // |------------------------------|

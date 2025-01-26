@@ -21,9 +21,7 @@ function getOrCreateUser(user) {
   // the "sub" field means "subject", which is a unique identifier for each user
   return User.findOne({ googleid: user.sub }).then((existingUser) => {
     if (existingUser) {
-      const userWithId = existingUser.toObject();
-      userWithId.user_id = userWithId._id;
-      return userWithId;
+      return existingUser.toObject();
     }
 
     const newUser = new User({
@@ -32,11 +30,7 @@ function getOrCreateUser(user) {
     });
 
     // Saves the new user to MongoDB
-    return newUser.save().then((savedUser) => {
-      const userWithId = savedUser.toObject();
-      userWithId.user_id = userWithId._id;
-      return userWithId;
-    });
+    return newUser.save().then((savedUser) => savedUser.toObject());
   });
 }
 
