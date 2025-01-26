@@ -11,6 +11,7 @@ import Tutorial from "./components/pages/Tutorial";
 // import Game from "./components/pages/Game";
 import GameScreen from "./components/pages/GameScreen";
 import Leaderboard from "./components/pages/Leaderboard";
+import RandomReveal from "./components/pages/RandomReveal";
 
 import {
   createBrowserRouter,
@@ -31,9 +32,9 @@ const router = createBrowserRouter(
       <Route path="/room-actions" element={<RoomActions />} />
       <Route path="/lobby/:roomCode" element={<Lobby />} />
       <Route path="/game-settings/:roomCode" element={<GameSettings />} />
-      {/* <Route path="/game/:roomCode" element={<Game />} /> */}
       <Route path="/tutorial" element={<Tutorial />} />
       <Route path="/game-screen/:roomCode" element={<GameScreen />} />
+      <Route path="/random-reveal/:roomCode" element={<RandomReveal />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
     </Route>
   )

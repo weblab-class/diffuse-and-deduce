@@ -92,6 +92,7 @@ router.get("/gameState", (req, res) => {
         imagePath: round.imagePath,
         startTime: round.startTime,
         totalTime: round.totalTime,
+        primaryAnswer: round.primaryAnswer,
         // Add any other properties that might be needed by the client
       });
     })

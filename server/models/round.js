@@ -7,8 +7,10 @@ const RoundSchema = new mongoose.Schema({
   startTime: { type: Number, default: 0 }, // store in ms (Date.now())
   totalTime: { type: Number, default: 30 }, // how many seconds
   isActive: { type: Boolean, default: false },
-  correctAnswer: { type: String, required: true },
+  correctAnswers: { type: [String], required: true },
+  primaryAnswer: { type: String, default: "" },
   imagePath: { type: String, required: true }, // New field
+  revealMode: { type: String, enum: ["diffusion", "random"], default: "diffusion" }, // Add reveal mode
   players: [
     {
       socketId: String,

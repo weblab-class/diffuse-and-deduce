@@ -45,7 +45,7 @@ const Leaderboard = () => {
           <div className="p-6 space-y-3">
             {Object.entries(socketToUserMap)
               .sort(([id1], [id2]) => (scores[id2] || 0) - (scores[id1] || 0))
-              .map(([playerId, player], index) => (
+              .map(([playerId, playerName], index) => (
                 <div
                   key={playerId}
                   className="group flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:border-purple-500/30 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-purple-500/10"
@@ -54,7 +54,7 @@ const Leaderboard = () => {
                     <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/20 text-white/90 font-medium">
                       {index + 1}
                     </span>
-                    <span className="text-lg text-white/90 font-medium">{player.name}</span>
+                    <span className="text-lg text-white/90 font-medium">{playerName}</span>
                   </div>
                   <div className="px-4 py-1 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
                     <span className="text-white/90 font-semibold">{scores[playerId] || 0}</span>
