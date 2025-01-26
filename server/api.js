@@ -29,25 +29,18 @@ const { v4: uuidv4 } = require("uuid");
 router.post("/login", auth.login);
 
 function guestLogin(req, res) {
-  // Generate a unique temporary ID
   const guestId = uuidv4();
 
-  // Create a guest user object
   const guestUser = {
-    _id: guestId,
-    name: `Guest-${guestId.substring(0, 5)}`, // Optional: create a display name
-    is_guest: true, // Flag to indicate this is a guest user
+    guest_id: guestId,
+    name: `Guest-${guestId.substring(0, 5)}`,
+    is_guest: true,
   };
 
-  // Store the guest user in the session
-  console.log("Guest login");
-  console.log(req.session.user);
-  console.log(guestUser);
   req.session.user = guestUser;
-
-  // Respond with the guest user data
   res.send(guestUser);
 }
+
 router.post("/guest-login", guestLogin);
 
 router.post("/logout", auth.logout);
@@ -76,26 +69,29 @@ router.post("/initsocket", (req, res) => {
 //   });
 // });
 
-router.get("/gameState", (req, res) => { // fix for single user case
+router.get("/gameState", (req, res) => {
+  // fix for single user case
   const { roomCode } = req.query;
   console.log(`Received request for game state with roomCode: ${roomCode}`);
 
-  Round.findOne({ roomCode }).then((round) => {
-    if (!round) {
-      console.log(`No round found for roomCode: ${roomCode}`);
-      return res.status(404).json({ error: "Round not found" });
-    }
-    console.log(`Found round for roomCode: ${roomCode}`);
-    res.json({
-      imagePath: round.imagePath,
-      startTime: round.startTime,
-      totalTime: round.totalTime,
-      // Add any other properties that might be needed by the client
+  Round.findOne({ roomCode })
+    .then((round) => {
+      if (!round) {
+        console.log(`No round found for roomCode: ${roomCode}`);
+        return res.status(404).json({ error: "Round not found" });
+      }
+      console.log(`Found round for roomCode: ${roomCode}`);
+      res.json({
+        imagePath: round.imagePath,
+        startTime: round.startTime,
+        totalTime: round.totalTime,
+        // Add any other properties that might be needed by the client
+      });
+    })
+    .catch((error) => {
+      console.error("Error fetching game state:", error);
+      res.status(500).json({ error: "Internal server error" });
     });
-  }).catch((error) => {
-    console.error("Error fetching game state:", error);
-    res.status(500).json({ error: "Internal server error" });
-  });
 });
 
 // |------------------------------|
