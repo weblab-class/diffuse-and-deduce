@@ -33,6 +33,62 @@ const RandomReveal = () => {
   const [imagePath, setImagePath] = useState("");
 
   useEffect(() => {
+    get("/api/gameState", { roomCode })
+      .then(({ imagePath: serverImagePath, startTime, totalTime }) => {
+        if (serverImagePath) {
+          console.log("Got game state with image:", serverImagePath);
+          setTimeElapsed(0); // Let server timeUpdate events handle the time
+          setImagePath(`${SERVER_URL}${serverImagePath}`);
+          setTimePerRound(totalTime);
+        }
+      })
+      .catch((error) => {
+        console.error("GET request to /api/gameState failed with error:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    const handleTimeUpdate = ({ timeElapsed }) => {
+      console.log("Received time update:", timeElapsed);
+      setTimeElapsed(timeElapsed);
+
+      // Add shake effect when time is less than 5 seconds
+      const timeRemaining = timePerRound - timeElapsed;
+      if (timeRemaining < 5) {
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 2000);
+      }
+    };
+
+    const handleRoundStarted = ({ startTime, totalTime, imagePath }) => {
+      console.log("Random Reveal: Round started with image:", imagePath);
+      setTimeElapsed(0);
+      setImagePath(`${SERVER_URL}${imagePath}`);
+      setTimePerRound(totalTime);
+      setRevealCircles([]); // Reset reveal circles for new round
+      setLastRevealTime(Date.now());
+    };
+
+    const handleRoundOver = ({ scores: newScores, socketToUserMap }) => {
+      console.log("Round over with scores:", newScores);
+      setScores(newScores);
+      navigate(`/leaderboard/${roomCode}`, {
+        state: { scores: newScores, socketToUserMap },
+      });
+    };
+
+    socket.on("timeUpdate", handleTimeUpdate);
+    socket.on("roundStarted", handleRoundStarted);
+    socket.on("roundOver", handleRoundOver);
+
+    return () => {
+      socket.off("timeUpdate", handleTimeUpdate);
+      socket.off("roundStarted", handleRoundStarted);
+      socket.off("roundOver", handleRoundOver);
+    };
+  }, [roomCode, navigate, timePerRound]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
