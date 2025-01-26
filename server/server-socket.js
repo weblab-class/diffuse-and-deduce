@@ -66,9 +66,6 @@ function startRoundTimer(roomCode) {
       io.to(roomCode).emit("timeUpdate", timeUpdate);
     }
   }, 1000);
-
-  // Remember the interval so we could clear it if needed
-  rooms[roomCode] = { intervalId: interval };
 }
 
 // Clean up old rooms periodically
@@ -131,28 +128,22 @@ module.exports = {
 
       socket.on("submitGuess", async ({ roomCode, guessText }) => {
         try {
+          console.log("Received guess:", { roomCode, guessText });
           const round = await Round.findOne({ roomCode });
           if (!round || !round.isActive) {
             return socket.emit("errorMessage", "No active round in this room");
           }
 
           const timeElapsed = Math.floor((Date.now() - round.startTime) / 1000);
-
-          // Check guess logic...
-
-          console.log("Guess received:", guessText);
-
           const isCorrect = checkGuess(guessText, round.correctAnswer);
 
-          const playerId = socket.id;
+          console.log("Guess check:", {
+            guessText,
+            correctAnswer: round.correctAnswer,
+            isCorrect,
+          }); // Debug: Guess checking
 
-          // Initialize room and scores if they don't exist
-          if (!rooms[roomCode]) {
-            rooms[roomCode] = { scores: {}, players: {} };
-          }
-          if (!rooms[roomCode].scores) {
-            rooms[roomCode].scores = {};
-          }
+          const playerId = socket.id;
 
           if (isCorrect) {
             const totalTime = round.totalTime;
@@ -164,12 +155,14 @@ module.exports = {
             rooms[roomCode].scores[playerId] = (rooms[roomCode].scores[playerId] || 0) - 100;
             io.to(roomCode).emit("wrongGuess", { playerId });
           }
+
+          // Score update
           io.to(roomCode).emit("scoreUpdate", { scores: rooms[roomCode].scores });
 
           await round.save();
         } catch (err) {
           console.error("Error in submitGuess:", err);
-          socket.emit("errorMessage", "Failed to process guess");
+          // console.error("Error in submitGuess:", err);
         }
       });
 
@@ -302,6 +295,7 @@ module.exports = {
           io.to(roomCode).emit("roomData", {
             players: newRoom.players,
             hostId: newRoom.hostId,
+            scores: rooms[roomCode].scores,
           });
 
           return callback({ roomCode: roomCode });
@@ -358,6 +352,7 @@ module.exports = {
             players: room.players,
             hostId: room.hostId,
             where: "New Player joined",
+            scores: rooms[roomCode].scores,
           });
 
           callback({ success: true });
@@ -415,6 +410,7 @@ module.exports = {
           io.to(roomCode).emit("roomData", {
             players: room.players,
             hostId: room.hostId,
+            scores: rooms[roomCode].scores,
           });
 
           callback({ success: true });
