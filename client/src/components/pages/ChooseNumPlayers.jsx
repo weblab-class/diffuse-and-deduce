@@ -20,7 +20,6 @@ const ChooseNumPlayers = () => {
         { playerName: "Single Player", isSinglePlayer: true },
         (response) => {
           const { roomCode } = response;
-          console.log("Single Player Room created with code:", roomCode);
           navigate(`/game-settings/${roomCode}`, {
             state: {
               gameMode: "single",
