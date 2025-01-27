@@ -1,7 +1,7 @@
 // GameScreen.jsx
 
 import React, { useRef, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import socket from "../../client-socket";
 import Button from "../modules/Button";
 import Header from "../modules/Header";
@@ -12,10 +12,19 @@ import { get } from "../../utilities";
 export default function GameScreen() {
   const { roomCode } = useParams();
   const [scores, setScores] = useState({});
+  const [diff, setDiff] = useState({});
   const [guessText, setGuessText] = useState("");
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
   const [guessedWrong, setGuessedWrong] = useState(false);
   const navigate = useNavigate();
+
+  // const [currentRound, setCurrentRound] = useState(1);
+  // const [totalRounds, setTotalRounds] = useState(1);
+  const { state } = useLocation();
+  const currentRound = state?.currentRound || 1;
+  const totalRounds = state?.totalRounds || 1;
+
+  const [topic, setTopic] = useState("Animals");
 
   const initialNoise = 8.0;
   const canvasRef = useRef(null);
@@ -31,29 +40,22 @@ export default function GameScreen() {
   // Initialize imagePath state with the backend server URL
   const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`); // default image
 
-  // useEffect(() => {
-  //   get("/api/gameState", { roomCode }).then(({ imagePath: serverImagePath }) => {
-  //     console.log("Round started with image:", serverImagePath);
-  //     setTimeElapsed(0);
-  //     setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
-  //     setNoiseLevel(initialNoise); // Reset noise
-  //     setImgLoaded(false); // Trigger image loading
-  //   });
-  // }, []);
-
   useEffect(() => {
     get("/api/gameState", { roomCode })
-      .then(({ imagePath: serverImagePath, startTime, totalTime }) => {
+      .then(({ imagePath: serverImagePath, startTime, totalTime}) => {
         console.log("Round started with image:", serverImagePath);
         setTimeElapsed(0);
         setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
         setNoiseLevel(initialNoise); // Reset noise
         setImgLoaded(false); // Trigger image loading
         setTimePerRound(totalTime);
+        // setTotalRounds(totalRounds);
+        // setCurrentRound(currentRound);
+        setTopic(serverImagePath.split("/")[2]);
       })
       .catch((error) => {
         console.error("GET request to /api/gameState failed with error:", error);
-      });
+      }); 
   }, []);
 
   // Load the image whenever imagePath changes
@@ -109,6 +111,8 @@ export default function GameScreen() {
       const fraction = timeElapsed / timePerRound;
 
       // Add shake effect when time is less than 5 seconds
+      // console.log("Time per round:", timePerRound);
+      // console.log("Time remaining:", timePerRound - timeElapsed);
       const timeRemaining = timePerRound - timeElapsed;
       if (timeRemaining < 5) {
         setIsShaking(true);
@@ -129,15 +133,38 @@ export default function GameScreen() {
       setNoiseLevel(Math.max(initialNoise * (1 - easedFraction), 0));
     });
 
-    socket.on("scoreUpdate", ({ scores }) => {
-      console.log("Received score update:", scores);
+    socket.on("scoreUpdate", ({ scores, diff }) => {
+      console.log("Received score update:", scores, diff);
+      setDiff(diff);
       setScores(scores);
     });
 
-    socket.on("roundOver", ({ scores, socketToUserMap }) => {
+    socket.on("roundOver", ({ scores, socketToUserMap}) => {
       console.log("Round over!");
       console.log("Mapping:", socketToUserMap);
-      navigate("/leaderboard", { state: { scores, socketToUserMap, roomCode } });
+      console.log("Round info from server:", { currentRound, totalRounds });
+
+      // Fetch the host's socket ID from the server
+      get("/api/hostSocketId", { roomCode }).then(({ hostSocketId }) => {
+        console.log("Current socket: ", socket.id);
+        console.log("Host socket: ", hostSocketId);
+        const isHost = socket.id === hostSocketId;
+        console.log("After get request, Is host value:", isHost);
+        navigate("/leaderboard", { 
+          state: { 
+            scores, 
+            socketToUserMap, 
+            roomCode, 
+            isHost, 
+            currentRound,
+            totalRounds,
+            imagePath,
+            totalTime: timePerRound  // Pass the current round's time to use for next round
+          } 
+        });
+      }).catch((error) => {
+        console.error("GET request to /api/hostSocketId failed with error:", error);
+      }); // TODO somewhat iffy
     });
 
     return () => {
@@ -364,7 +391,7 @@ export default function GameScreen() {
                         guessedCorrectly ? "score-animate" : ""
                       }`}
                     >
-                      {scores[socket.id] || 0}
+                      {diff[socket.id] || 0}
                     </span>{" "}
                     points.
                   </p>

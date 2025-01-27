@@ -34,7 +34,8 @@ const GameSettings = () => {
   }, [roomCode, gameMode, state]);
 
   const [settings, setSettings] = React.useState({
-    rounds: 1,
+    totalRounds: 1,
+    currentRound: 1,
     timePerRound: 30,
     sabotage: false,
     hints: false,
@@ -83,8 +84,11 @@ const GameSettings = () => {
 
     const totalTime = settings.timePerRound;
 
+    const totalRounds = settings.totalRounds;
+    const currentRound = settings.currentRound;
+
     // useRoom handles the navigation
-    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic });
+    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic, totalRounds, currentRound }); 
   };
 
   return (
@@ -198,11 +202,11 @@ const GameSettings = () => {
                         type="range"
                         min="1"
                         max="10"
-                        value={settings.rounds}
-                        onChange={(e) => handleSliderChange("rounds", parseInt(e.target.value))}
+                        value={settings.totalRounds}
+                        onChange={(e) => handleSliderChange("totalRounds", parseInt(e.target.value))}
                         className="w-32 cursor-pointer accent-[#E94560] hover:accent-[#0F3460]"
                       />
-                      <span className="w-8 text-right text-white/90">{settings.rounds}</span>
+                      <span className="w-8 text-right text-white/90">{settings.totalRounds}</span>
                     </div>
                   </div>
 

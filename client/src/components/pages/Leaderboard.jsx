@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 import socket from "../../client-socket";
+import useRoom from "../../hooks/useRoom";
 
 import Button from "../modules/Button";
 import Header from "../modules/Header";
@@ -13,12 +14,26 @@ const Leaderboard = () => {
   const scores = state?.scores || {};
   const socketToUserMap = state?.socketToUserMap || {};
   const roomCode = state?.roomCode;
+  const isHost = state?.isHost || false; 
+  const currentRound = state?.currentRound || 1;
+  const totalRounds = state?.totalRounds || 1;
+  const totalTime = state?.totalTime || 0;
+  const imagePath = state?.imagePath || "";
+  const navigate = useNavigate();
 
-  // Sort socketToUserMap by score
+  useRoom(roomCode);
+
   const entries = Object.entries(socketToUserMap).filter(([socketId]) => socketId in scores);
   entries.sort((a, b) => scores[b[0]] - scores[a[0]]);
   const sortedSocketToUserMap = new Map(entries);
 
+  const handleNextRound = () => {
+    console.log("Next Round button clicked");
+    console.log("Leaderboard's Image Path: ", imagePath);
+    const topic = imagePath.split('/')[4];
+    console.log("New current round being sent to server from Leaderboard: ", currentRound + 1);
+    socket.emit("startRound", { roomCode, totalTime, topic, totalRounds, currentRound: currentRound + 1}); 
+  };
 
   return (
     <div className="min-h-screen relative">
@@ -36,6 +51,9 @@ const Leaderboard = () => {
             <h1 className="relative text-3xl font-semibold text-white/90 tracking-wide">
               Leaderboard
             </h1>
+            <p className="relative text-lg text-white/60 mt-1">
+              On round: {currentRound}/{totalRounds}
+            </p>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(147,51,234,0.2)_0%,transparent_60%)]" />
           </div>
 
@@ -44,8 +62,7 @@ const Leaderboard = () => {
 
           {/* Scores list with hover effects */}
           <div className="p-6 space-y-3">
-            {Object.entries(socketToUserMap)
-              .sort(([id1], [id2]) => (scores[id2] || 0) - (scores[id1] || 0))
+            {Array.from(sortedSocketToUserMap.entries())
               .map(([playerId, player], index) => (
                 <div
                   key={playerId}
@@ -63,9 +80,40 @@ const Leaderboard = () => {
                   </div>
                 </div>
               ))}
+              <div>
+                {currentRound === totalRounds ? (
+                  <div className="flex justify-center mt-4">  
+                    <div className="text-white px-4 py-2">
+                      Game Over!
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {isHost ? (
+                      <div className="flex justify-center mt-4">
+                        {console.log("Next Round button rendered")}
+                        <button
+                          className="text-white px-4 py-2 rounded rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300"
+                          onClick={handleNextRound}
+                        >
+                          Next Round
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-center mt-4">
+                        {console.log("Next Round button not rendered")}
+                        <div className="text-white px-4 py-2">
+                          Waiting for next round...
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
           </div>
         </div>
       </div>
+
     </div>
   );
 };

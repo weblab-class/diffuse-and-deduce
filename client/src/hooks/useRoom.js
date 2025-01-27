@@ -7,7 +7,7 @@ const useRoom = (roomCode, playerName) => {
   const [isHost, setIsHost] = useState(null);
   const [hostId, setHostId] = useState(null);
   const [error, setError] = useState(null);
-  const [hasJoined, setHasJoined] = useState(false); // Track if we've already joined
+  const [hasJoined, setHasJoined] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,9 +37,9 @@ const useRoom = (roomCode, playerName) => {
       setHostId(data.hostId);
     });
 
-    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath }) => {
+    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound }) => {
       navigate(`/game-screen/${roomCode}`, {
-        state: { startTime, totalTime, imagePath: serverImagePath },
+        state: { startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound },
       });
     });
 
