@@ -63,7 +63,7 @@ const Lobby = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{
-                scale: 1.3,
+                scale: 1.05,
                 boxShadow: "0 8px 16px rgba(0,0,0,0.2)",
               }}
             >

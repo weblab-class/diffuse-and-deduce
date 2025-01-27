@@ -57,6 +57,8 @@ const Intro = () => {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
         ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+
+        // setImgLoaded(true);
       };
     };
 
@@ -87,11 +89,13 @@ const Intro = () => {
 
       if (progress < 1) {
         requestAnimationFrame(animate);
+      } else {
+        setIsFirstVisit(false); // Update the state after animation
       }
     };
 
     requestAnimationFrame(animate);
-  }, [imgLoaded]);
+  }, [imgLoaded, isFirstVisit]);
 
   // Re-apply noise whenever noiseLevel changes
   useEffect(() => {
@@ -122,7 +126,7 @@ const Intro = () => {
   // Add static noise effect
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !imgLoaded) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
     const staticPoints = [];

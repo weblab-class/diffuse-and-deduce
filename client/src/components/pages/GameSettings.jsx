@@ -335,7 +335,14 @@ const GameSettings = () => {
           <div className="p-10 flex justify-center items-center relative">
             {/* Help Button (Left) */}
             <button
-              onClick={() => navigate("/tutorial")}
+              onClick={() =>
+                navigate("/tutorial", {
+                  state: {
+                    roomCode: roomCode,
+                    playerName: playerName,
+                  },
+                })
+              }
               className="absolute left-8 w-12 h-12 
                        bg-white/10 backdrop-blur-md
                        hover:bg-gradient-to-r hover:from-[#E94560] hover:to-[#0F3460]
