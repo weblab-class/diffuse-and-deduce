@@ -41,6 +41,8 @@ const GameSettings = () => {
   });
 
   const [selectedTopic, setSelectedTopic] = React.useState(null);
+  const [uploadStatus, setUploadStatus] = React.useState({ loading: false, error: null });
+  const fileInputRef = React.useRef(null);
 
   const topics = [
     "Animals",
@@ -51,6 +53,11 @@ const GameSettings = () => {
     "Landmarks",
     "Sports",
   ];
+
+  // Add Import Images only for multiplayer
+  if (gameMode === "multi") {
+    topics.push("Import_Images");
+  }
 
   const displayTopic = (topic) => {
     return topic.replace(/_/g, " ");
