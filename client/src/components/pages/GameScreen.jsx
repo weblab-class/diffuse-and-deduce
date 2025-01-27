@@ -21,6 +21,7 @@ export default function GameScreen() {
   const { state } = useLocation();
   const currentRound = state?.currentRound || 1;
   const totalRounds = state?.totalRounds || 1;
+  const gameMode = state?.gameMode || "single";
 
   const [topic, setTopic] = useState("Animals");
 
@@ -157,7 +158,8 @@ export default function GameScreen() {
             currentRound,
             totalRounds,
             imagePath,
-            totalTime: timePerRound  // Pass the current round's time to use for next round
+            totalTime: timePerRound,  // Pass the current round's time to use for next round
+            gameMode,
           } 
         });
       }).catch((error) => {

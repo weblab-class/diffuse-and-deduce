@@ -324,6 +324,7 @@ module.exports = {
             imagePath,
             totalRounds: round.totalRounds,  // Use the saved totalRounds
             currentRound: round.currentRound,
+            gameMode: rooms[roomCode].gameMode,
           });
 
           // Start the timer after everything is set up

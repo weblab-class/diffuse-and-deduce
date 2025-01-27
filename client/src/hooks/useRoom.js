@@ -37,9 +37,9 @@ const useRoom = (roomCode, playerName) => {
       setHostId(data.hostId);
     });
 
-    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound }) => {
+    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode }) => {
       navigate(`/game-screen/${roomCode}`, {
-        state: { startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound },
+        state: { startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode },
       });
     });
 
