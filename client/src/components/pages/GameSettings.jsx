@@ -108,7 +108,7 @@ const GameSettings = () => {
     <>
       {/* Fixed header - highest layer */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-transparent">
-        <Header backNav={gameMode === "single" ? "choose-num-players" : "room-actions"} />
+        <Header backNav={gameMode === "single" ? "choose-num-players" : `lobby/${roomCode}`} />
       </div>
       {/* Background container - lowest layer */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#0A0A1B] to-[#1A1A2E] overflow-hidden">
@@ -340,6 +340,7 @@ const GameSettings = () => {
                   state: {
                     roomCode: roomCode,
                     playerName: playerName,
+                    gameMode: gameMode,
                   },
                 })
               }

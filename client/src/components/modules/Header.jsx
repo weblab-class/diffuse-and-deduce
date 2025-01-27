@@ -17,9 +17,9 @@ const Header = (props) => {
   const handleBack = () => {
     // If we're in a room-based page (lobby or game settings), clean up
     if (roomCode) {
-      console.log("Leaving room before navigation");
       navigate(`/${props.backNav}`, { state: props.backState });
-      if (props.backNav !== "tutorial") {
+      if (props.backNav !== "tutorial" && props.backNav !== `lobby/${roomCode}`) {
+        console.log("Leaving room before navigation");
         socket.emit("leaveRoom", { roomCode }, (response) => {
           if (response.error) {
             console.error(response.error);
