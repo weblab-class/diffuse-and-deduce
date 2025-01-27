@@ -210,7 +210,6 @@ export default function GameScreen() {
         setTimeout(() => {
           setGuessedWrong(true);
         }, 10);
-        console.log(hintsEnabled, primaryAnswer);
         if (hintsEnabled && primaryAnswer) {
           setRevealedHint((prev) => {
             // Reveal one more letter
@@ -322,7 +321,7 @@ export default function GameScreen() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden font-space-grotesk">
+    <div className="h-screen flex flex-col font-space-grotesk">
       <Header backNav="/room-actions" />
       {/* Background layers */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#2a1a3a] to-[#0a0a1b] overflow-hidden">
@@ -383,7 +382,7 @@ export default function GameScreen() {
             </div>
 
             {/* Input section */}
-            <div className="mt-auto pb-2">
+            <div className="mt-auto pb-8">
               {guessedCorrectly ? (
                 <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-3 text-center border border-purple-500/20 shadow-lg">
                   <p className="text-lg text-purple-200">
