@@ -1,9 +1,8 @@
 // GameScreen.jsx
 
 import React, { useRef, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import socket from "../../client-socket";
-import Button from "../modules/Button";
 import Header from "../modules/Header";
 import "../../utilities.css";
 import "./GameScreen.css";
@@ -16,6 +15,11 @@ export default function GameScreen() {
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
   const [guessedWrong, setGuessedWrong] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [primaryAnswer, setPrimaryAnswer] = useState("");
+  const [hintsEnabled, setHintsEnabled] = useState(location.state?.hintsEnabled ?? false);
+  const [revealedHint, setRevealedHint] = useState("");
 
   const initialNoise = 8.0;
   const canvasRef = useRef(null);
@@ -33,16 +37,24 @@ export default function GameScreen() {
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
-      .then(({ imagePath: serverImagePath, startTime, totalTime }) => {
-        if (serverImagePath) {
-          console.log("Got game state with image:", serverImagePath);
-          setTimeElapsed(0);
-          setImagePath(`${SERVER_URL}${serverImagePath}`);
-          setNoiseLevel(initialNoise);
-          setImgLoaded(false);
-          setTimePerRound(totalTime);
+      .then(
+        ({
+          imagePath: serverImagePath,
+          startTime,
+          totalTime,
+          primaryAnswer: serverPrimaryAnswer,
+        }) => {
+          if (serverImagePath) {
+            console.log("Got game state with image:", serverImagePath);
+            setTimeElapsed(0);
+            setImagePath(`${SERVER_URL}${serverImagePath}`);
+            setNoiseLevel(initialNoise);
+            setImgLoaded(false);
+            setTimePerRound(totalTime);
+            setPrimaryAnswer(serverPrimaryAnswer);
+          }
         }
-      })
+      )
       .catch((error) => {
         console.error("GET request to /api/gameState failed with error:", error);
       });
@@ -95,14 +107,19 @@ export default function GameScreen() {
 
   useEffect(() => {
     // Handle various socket events
-    socket.on("roundStarted", ({ startTime, totalTime, imagePath }) => {
-      console.log("Diffusion: Round started with image:", imagePath);
-      setTimeElapsed(0);
-      setImagePath(`${SERVER_URL}${imagePath}`);
-      setNoiseLevel(initialNoise);
-      setImgLoaded(false);
-      setTimePerRound(totalTime);
-    });
+    socket.on(
+      "roundStarted",
+      ({ startTime, totalTime, imagePath, primaryAnswer: serverPrimaryAnswer }) => {
+        console.log("Diffusion: Round started with image:", imagePath);
+        setTimeElapsed(0);
+        setImagePath(`${SERVER_URL}${imagePath}`);
+        setNoiseLevel(initialNoise);
+        setImgLoaded(false);
+        setTimePerRound(totalTime);
+        setPrimaryAnswer(serverPrimaryAnswer);
+        setRevealedHint("");
+      }
+    );
 
     socket.on("timeUpdate", ({ timeElapsed }) => {
       console.log("Received time update:", timeElapsed);
@@ -193,13 +210,24 @@ export default function GameScreen() {
         setTimeout(() => {
           setGuessedWrong(true);
         }, 10);
+        console.log(hintsEnabled, primaryAnswer);
+        if (hintsEnabled && primaryAnswer) {
+          setRevealedHint((prev) => {
+            // Reveal one more letter
+            const nextIndex = prev.length;
+            if (nextIndex < primaryAnswer.length) {
+              return primaryAnswer.substring(0, nextIndex + 1);
+            }
+            return prev; // No change if we already revealed everything
+          });
+        }
       }
     });
 
     return () => {
       socket.off("wrongGuess");
     };
-  }, []);
+  }, [socket.id, hintsEnabled, primaryAnswer]);
 
   // Add particle effect
   useEffect(() => {
@@ -397,6 +425,11 @@ export default function GameScreen() {
               {guessedWrong && (
                 <div className="mt-2 bg-red-500/10 backdrop-blur-xl text-red-200 py-2 px-4 rounded-lg border border-red-500/20 text-center animate-shake">
                   Wrong guess! Try again.
+                  {hintsEnabled && revealedHint && (
+                    <div className="hint-message">
+                      Hint so far: <span style={{ fontWeight: "bold" }}>{revealedHint}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -4,7 +4,6 @@ import useRoom from "../../hooks/useRoom";
 
 import Header from "../modules/Header";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import Button from "../modules/Button";
 import { motion } from "framer-motion";
 
 const GameSettings = () => {
@@ -91,7 +90,11 @@ const GameSettings = () => {
 
     // Navigate to the correct game component based on reveal mode
     if (settings.revealMode === "diffusion") {
-      navigate(`/game-screen/${roomCode}`);
+      navigate(`/game-screen/${roomCode}`, {
+        state: {
+          hintsEnabled: settings.hints, // <-- add this
+        },
+      });
     } else {
       navigate(`/random-reveal/${roomCode}`);
     }
