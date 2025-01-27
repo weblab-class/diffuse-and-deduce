@@ -17,33 +17,58 @@ const Intro = () => {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(true);
 
-  // Load the image
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = "/background-images/background-intro.png";
+    const resizeCanvas = () => {
+      if (!canvas) return;
 
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      setImgLoaded(true);
+      const ctx = canvas.getContext("2d");
+
+      // Update canvas dimensions
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      // Draw the image scaled to the new dimensions
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = "/background-images/background-intro.png";
+
+      img.onload = () => {
+        // Scale the image to fit the canvas
+        const aspectRatio = img.width / img.height;
+        const canvasRatio = canvas.width / canvas.height;
+
+        let drawWidth, drawHeight, offsetX, offsetY;
+
+        if (aspectRatio > canvasRatio) {
+          // Image is wider than the canvas
+          drawWidth = canvas.height * aspectRatio;
+          drawHeight = canvas.height;
+          offsetX = (canvas.width - drawWidth) / 2;
+          offsetY = 0;
+        } else {
+          // Image is taller than the canvas
+          drawWidth = canvas.width;
+          drawHeight = canvas.width / aspectRatio;
+          offsetX = 0;
+          offsetY = (canvas.height - drawHeight) / 2;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
+        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+      };
     };
-  }, []);
 
-  // Check if this is the user's first visit
-  useEffect(() => {
-    const hasVisited = sessionStorage.getItem("hasVisitedIntro");
-    if (hasVisited) {
-      setIsFirstVisit(false);
-      setNoiseLevel(0); // skip noise effect for returning visitors
-    } else {
-      sessionStorage.setItem("hasVisitedIntro", true);
-    }
+    // Set initial size
+    resizeCanvas();
+
+    // Handle resize events
+    window.addEventListener("resize", resizeCanvas);
+
+    return () => {
+      window.removeEventListener("resize", resizeCanvas);
+    };
   }, []);
 
   // Gradually reduce noise over time
@@ -101,7 +126,7 @@ const Intro = () => {
 
     const ctx = canvas.getContext("2d");
     const staticPoints = [];
-    const pointCount = 200; // More points for static effect
+    const pointCount = 20; // More points for static effect
 
     // Create static points
     for (let i = 0; i < pointCount; i++) {
@@ -173,11 +198,11 @@ const Intro = () => {
         <div style={{ width: "100%", textAlign: "center" }}>
           <svg
             className="responsive-svg"
-            viewBox="0 0 500 125"
+            viewBox="0 0 520 145"
             preserveAspectRatio="xMidYMid meet"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path id="arcPath" d="M 0,125 A 500,500 0 0 1 500,125" fill="none" />
+            <path id="arcPath" d="M 0,145 A 520,520 0 0 1 520,145" fill="none" />
             <text className="title-text">
               <textPath xlinkHref="#arcPath" startOffset="50%" textAnchor="middle">
                 Diffuse &amp; Deduce

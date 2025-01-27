@@ -4,7 +4,6 @@ import useRoom from "../../hooks/useRoom";
 
 import Header from "../modules/Header";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import Button from "../modules/Button";
 import { motion } from "framer-motion";
 
 const GameSettings = () => {
@@ -82,13 +81,37 @@ const GameSettings = () => {
   const handleStartGame = () => {
     if (!selectedTopic) return; // Early return if no topic selected
 
-    const totalTime = settings.timePerRound;
+    // Only pass the essential data
+    // socket.emit("startRound", {
+    //   roomCode,
+    //   totalTime: settings.timePerRound,
+    //   topic: selectedTopic,
+    //   revealMode: settings.revealMode, // Only pass the reveal mode, not all settings
+    // });
 
     const totalRounds = settings.totalRounds;
     const currentRound = settings.currentRound;
+    const revealMode = settings.revealMode;
+    const hintsEnabled = settings.hints;
+    const totalTime = settings.timePerRound;
 
     // useRoom handles the navigation
-    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic, totalRounds, currentRound }); 
+    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic, totalRounds, currentRound, revealMode, hintsEnabled }); 
+    
+    // // Navigate to the correct game component based on reveal mode
+    // if (settings.revealMode === "diffusion") {
+    //   navigate(`/game-screen/${roomCode}`, {
+    //     state: {
+    //       hintsEnabled: settings.hints,
+    //     },
+    //   });
+    // } else {
+    //   navigate(`/random-reveal/${roomCode}`, {
+    //     state: {
+    //       hintsEnabled: settings.hints,
+    //     },
+    //   });
+    // }
   };
 
   return (

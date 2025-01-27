@@ -37,9 +37,12 @@ const useRoom = (roomCode, playerName) => {
       setHostId(data.hostId);
     });
 
-    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode }) => {
-      navigate(`/game-screen/${roomCode}`, {
-        state: { startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode },
+    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode, revealMode, hintsEnabled }) => {
+      const targetPath =
+          revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
+      
+      navigate(targetPath, {
+        state: { startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode, revealMode, hintsEnabled },
       });
     });
 

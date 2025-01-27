@@ -96,6 +96,7 @@ router.get("/gameState", (req, res) => {
         totalTime: round.totalTime,
         // totalRounds: round.totalRounds,
         // currentRound: round.currentRound,
+        primaryAnswer: round.primaryAnswer,
         // Add any other properties that might be needed by the client
       });
     })

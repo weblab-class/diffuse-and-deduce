@@ -20,6 +20,8 @@ const Leaderboard = () => {
   const totalTime = state?.totalTime || 0;
   const imagePath = state?.imagePath || "";
   const gameMode = state?.gameMode || "single";
+  const revealMode = state?.revealMode || "diffusion";
+  const hintsEnabled = state?.hintsEnabled || false;
   const navigate = useNavigate();
 
   useRoom(roomCode);
@@ -33,7 +35,7 @@ const Leaderboard = () => {
     console.log("Leaderboard's Image Path: ", imagePath);
     const topic = imagePath.split('/')[4];
     console.log("New current round being sent to server from Leaderboard: ", currentRound + 1);
-    socket.emit("startRound", { roomCode, totalTime, topic, totalRounds, currentRound: currentRound + 1}); 
+    socket.emit("startRound", { roomCode, totalTime, topic, totalRounds, currentRound: currentRound + 1, revealMode, hintsEnabled }); 
   };
 
   return (
