@@ -18,8 +18,6 @@ export default function GameScreen() {
   const [guessedWrong, setGuessedWrong] = useState(false);
   const navigate = useNavigate();
 
-  // const [currentRound, setCurrentRound] = useState(1);
-  // const [totalRounds, setTotalRounds] = useState(1);
   const { state } = useLocation();
   const currentRound = state?.currentRound || 1;
   const totalRounds = state?.totalRounds || 1;
@@ -408,6 +406,11 @@ export default function GameScreen() {
                       className="flex-1 bg-white/10 text-purple-100 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50"
                       placeholder="Enter guess..."
                       value={guessText}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSubmitGuess();
+                        }
+                      }}
                       onChange={(e) => setGuessText(e.target.value)}
                     />
                     <button
