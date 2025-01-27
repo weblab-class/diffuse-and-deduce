@@ -57,6 +57,8 @@ const Intro = () => {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
         ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+
+        // setImgLoaded(true);
       };
     };
 
@@ -87,11 +89,13 @@ const Intro = () => {
 
       if (progress < 1) {
         requestAnimationFrame(animate);
+      } else {
+        setIsFirstVisit(false); // Update the state after animation
       }
     };
 
     requestAnimationFrame(animate);
-  }, [imgLoaded]);
+  }, [imgLoaded, isFirstVisit]);
 
   // Re-apply noise whenever noiseLevel changes
   useEffect(() => {
@@ -122,7 +126,7 @@ const Intro = () => {
   // Add static noise effect
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !imgLoaded) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
     const staticPoints = [];
@@ -198,11 +202,11 @@ const Intro = () => {
         <div style={{ width: "100%", textAlign: "center" }}>
           <svg
             className="responsive-svg"
-            viewBox="0 0 500 125"
+            viewBox="0 0 520 145"
             preserveAspectRatio="xMidYMid meet"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path id="arcPath" d="M 0,125 A 500,500 0 0 1 500,125" fill="none" />
+            <path id="arcPath" d="M 0,145 A 520,520 0 0 1 520,145" fill="none" />
             <text className="title-text">
               <textPath xlinkHref="#arcPath" startOffset="50%" textAnchor="middle">
                 Diffuse &amp; Deduce
