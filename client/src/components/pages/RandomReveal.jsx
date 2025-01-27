@@ -31,6 +31,7 @@ const RandomReveal = () => {
 
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
   const [imagePath, setImagePath] = useState("");
+  const imageRef = useRef(null);
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
@@ -109,8 +110,11 @@ const RandomReveal = () => {
     img.src = imagePath;
 
     img.onload = () => {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       setImgLoaded(true);
+      // Initially draw the image completely covered in black
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
     };
 
     img.onerror = (err) => {
@@ -174,6 +178,245 @@ const RandomReveal = () => {
     setGuessText("");
   };
 
+  // Simplified reveal shape function with just spotlight
+  const drawRevealShape = (ctx, shape, x, y, size) => {
+    ctx.beginPath();
+
+    // Create gradient for spotlight effect
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+    gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+    gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = gradient;
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+
+    ctx.fill();
+  };
+
+  // Modify drawImageWithReveals to use the new shapes
+  const drawImageWithReveals = (ctx, img, reveals) => {
+    // First, draw the image
+    ctx.drawImage(img, 0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // Create a temporary canvas for the mask
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = ctx.canvas.width;
+    maskCanvas.height = ctx.canvas.height;
+    const maskCtx = maskCanvas.getContext("2d");
+
+    // Fill the mask with black
+    maskCtx.fillStyle = "black";
+    maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+
+    // Set composite operation to "destination-out" to create holes in the black overlay
+    maskCtx.globalCompositeOperation = "destination-out";
+
+    // Draw all reveal shapes
+    reveals.forEach((reveal) => {
+      drawRevealShape(maskCtx, reveal.shape, reveal.x, reveal.y, reveal.size);
+    });
+
+    // Draw the mask over the image
+    ctx.drawImage(maskCanvas, 0, 0);
+  };
+
+  // Calculate total number of reveals needed for full coverage
+  const calculateTotalReveals = (roundTime) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return 80; // fallback to default
+
+    // Use normalized time for initial calculation
+    const normalizedTime = Math.min(roundTime, 30);
+    const avgBaseSize =
+      Math.min(canvas.width, canvas.height) / (Math.sqrt(normalizedTime / 0.2) * 1.75);
+
+    // Apply the same size adjustments as in addRevealCircle
+    let adjustedBaseSize = avgBaseSize;
+    if (roundTime > 30) {
+      adjustedBaseSize = adjustedBaseSize * (1 + Math.log10(roundTime / 30) * 0.2);
+    }
+    const avgSize = adjustedBaseSize * 0.8;
+
+    // Calculate area of canvas and area of each reveal
+    const canvasArea = canvas.width * canvas.height;
+    const revealArea = Math.PI * avgSize * avgSize;
+
+    // Calculate base number of reveals needed
+    const effectiveRevealArea = revealArea * 0.7; // Assume 70% effectiveness due to overlap
+    const neededReveals = Math.ceil(canvasArea / effectiveRevealArea);
+
+    // For longer rounds, scale up the number of reveals with time
+    const baseReveals = Math.floor(roundTime / 0.25); // One reveal every 250ms
+    const scaledReveals =
+      roundTime > 30
+        ? baseReveals * (1 + Math.log10(roundTime / 30) * 0.3) // More reveals for longer rounds
+        : baseReveals;
+
+    return Math.max(10, Math.min(neededReveals, scaledReveals));
+  };
+
+  // Helper function to check if image is mostly revealed
+  const isImageMostlyRevealed = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return false;
+
+    // For longer rounds, don't stop reveals - let them continue throughout the round
+    if (timePerRound > 30) return false;
+
+    // Only check coverage for shorter rounds
+    const totalArea = canvas.width * canvas.height;
+    let coveredArea = 0;
+
+    revealCircles.forEach((circle) => {
+      const revealArea = Math.PI * circle.size * circle.size * 0.7;
+      coveredArea += revealArea;
+    });
+
+    return coveredArea >= totalArea * 0.95; // 95% coverage for short rounds
+  };
+
+  // Get a random point with bias towards center in final phase
+  const getRevealPoint = (canvas, progress) => {
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    // In final 30% of round, focus more on center
+    if (progress > 0.7) {
+      const angle = Math.random() * 2 * Math.PI;
+      // Square root of random gives more concentration towards center
+      const radius = Math.sqrt(Math.random()) * Math.min(canvas.width, canvas.height) * 0.3;
+
+      return {
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      };
+    }
+
+    // Regular random distribution for earlier phases
+    return {
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+    };
+  };
+
+  // Simplified addRevealCircle to use random positions
+  const addRevealCircle = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Stop adding reveals if image is mostly revealed
+    if (isImageMostlyRevealed()) return;
+
+    const now = Date.now();
+    const revealTiming = calculateRevealTiming();
+    if (now - lastRevealTime < revealTiming) return;
+
+    const progress = timeElapsed / timePerRound;
+    const point = getRevealPoint(canvas, progress);
+
+    // Cap the time factor to prevent circles from getting too small in longer rounds
+    const normalizedTime = Math.min(timePerRound, 30); // Cap at 30 seconds for size calculation
+    let baseSize = Math.min(canvas.width, canvas.height) / (Math.sqrt(normalizedTime / 0.2) * 1.75);
+
+    // For longer rounds, adjust reveal frequency instead of size
+    if (timePerRound > 30) {
+      baseSize = baseSize * (1 + Math.log10(timePerRound / 30) * 0.2); // Gradual size increase for longer rounds
+    }
+
+    // Make reveals significantly larger in final phase
+    if (progress > 0.7) {
+      // Increase base size by 20% in final phase
+      baseSize = baseSize * 1.2;
+      // Use larger multiplier range (80-150% of base size)
+      const sizeMultiplier = 0.8 + Math.random() * 0.5;
+      // Additional size boost for very central reveals
+      const distanceFromCenter = Math.sqrt(
+        Math.pow(point.x - canvas.width / 2, 2) + Math.pow(point.y - canvas.height / 2, 2)
+      );
+      const maxDistance = Math.min(canvas.width, canvas.height) * 0.3; // Same as in getRevealPoint
+      const centerBoost = 1 + 0.3 * (1 - distanceFromCenter / maxDistance); // Up to 30% larger for central points
+      const size = baseSize * sizeMultiplier * centerBoost;
+      setRevealCircles((prev) => [
+        ...prev,
+        {
+          x: point.x,
+          y: point.y,
+          size,
+          shape: "spotlight",
+        },
+      ]);
+    } else {
+      // Normal size for earlier phases (60-100% of base size)
+      const size = baseSize * (0.6 + Math.random() * 0.4);
+      setRevealCircles((prev) => [
+        ...prev,
+        {
+          x: point.x,
+          y: point.y,
+          size,
+          shape: "spotlight",
+        },
+      ]);
+    }
+    setLastRevealTime(now);
+  };
+
+  // Calculate when the next reveal should happen
+  const calculateRevealTiming = () => {
+    const totalReveals = calculateTotalReveals(timePerRound);
+    const progress = timeElapsed / timePerRound;
+
+    // Calculate coverage percentage
+    const coveragePercent = isImageMostlyRevealed()
+      ? 100
+      : (revealCircles.length / totalReveals) * 100;
+
+    // If we're in the last 30% of time and coverage is below 90%, speed up dramatically
+    if (progress > 0.6 && coveragePercent < 90) {
+      return 5; // Ultra-fast reveals (50ms) to catch up
+    }
+
+    // If we're behind schedule, reveal very quickly
+    const expectedReveals = Math.floor(progress * totalReveals);
+    if (revealCircles.length < expectedReveals) {
+      return 50; // Fast reveals (100ms) to catch up
+    }
+
+    // If we're on schedule, space reveals evenly but ensure we finish
+    const timePerReveal = (timePerRound * (1 - progress)) / (totalReveals - revealCircles.length);
+    return Math.min(timePerReveal * 1000, 500); // Cap at 500ms to maintain momentum
+  };
+
+  // Effect to handle periodic reveals
+  useEffect(() => {
+    if (!imgLoaded) return;
+
+    const checkInterval = setInterval(() => {
+      if (timePerRound - timeElapsed <= 0) return;
+      const timing = calculateRevealTiming();
+      const now = Date.now();
+      if (now - lastRevealTime >= timing) {
+        addRevealCircle();
+      }
+    }, 100); // Check more frequently (every 100ms)
+
+    return () => clearInterval(checkInterval);
+  }, [imgLoaded, timeElapsed, timePerRound]);
+
+  // Effect to redraw the canvas whenever reveals change
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imgLoaded) return;
+
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = imagePath;
+
+    img.onload = () => {
+      drawImageWithReveals(ctx, img, revealCircles);
+    };
+  }, [revealCircles, imagePath, imgLoaded]);
+
   return (
     <div className="h-screen flex flex-col overflow-hidden font-space-grotesk">
       <Header backNav="/room-actions" />
@@ -191,7 +434,7 @@ const RandomReveal = () => {
               <p
                 className={`text-lg ${
                   timePerRound - timeElapsed <= 5 ? "text-red-200" : "text-purple-200"
-                } bg-white/5 backdrop-blur-xl inline-block px-4 py-1 rounded-full border border-white/10 glow mb-1 transition-colors duration-300`}
+                } bg-white/5 backdrop-blur-xl inline-block px-4 py-1 rounded-full border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50`}
               >
                 Time Remaining:{" "}
                 <span
