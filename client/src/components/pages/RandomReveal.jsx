@@ -19,6 +19,9 @@ const RandomReveal = () => {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isShaking, setIsShaking] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [isRoundOver, setIsRoundOver] = useState(false);
+  const [finalScores, setFinalScores] = useState(null);
+  const [finalSocketMap, setFinalSocketMap] = useState(null);
 
   const canvasRef = useRef(null);
   const [revealCircles, setRevealCircles] = useState([]);
@@ -73,9 +76,12 @@ const RandomReveal = () => {
     const handleRoundOver = ({ scores: newScores, socketToUserMap }) => {
       console.log("Round over with scores:", newScores);
       setScores(newScores);
-      navigate(`/leaderboard`, {
-        state: { scores: newScores, socketToUserMap },
-      });
+      setIsRoundOver(true);
+      setFinalScores(newScores);
+      setFinalSocketMap(socketToUserMap);
+
+      // Clear all reveals to show full image
+      setRevealCircles([]);
     };
 
     const handleScoreUpdate = ({ scores: newScores }) => {
@@ -196,6 +202,9 @@ const RandomReveal = () => {
   const drawImageWithReveals = (ctx, img, reveals) => {
     // First, draw the image
     ctx.drawImage(img, 0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // If round is over, don't draw the mask
+    if (isRoundOver) return;
 
     // Create a temporary canvas for the mask
     const maskCanvas = document.createElement("canvas");
@@ -386,9 +395,9 @@ const RandomReveal = () => {
     return Math.min(timePerReveal * 1000, 500); // Cap at 500ms to maintain momentum
   };
 
-  // Effect to handle periodic reveals
+  // Effect to handle periodic reveals - stop when round is over
   useEffect(() => {
-    if (!imgLoaded) return;
+    if (!imgLoaded || isRoundOver) return;
 
     const checkInterval = setInterval(() => {
       if (timePerRound - timeElapsed <= 0) return;
@@ -397,10 +406,10 @@ const RandomReveal = () => {
       if (now - lastRevealTime >= timing) {
         addRevealCircle();
       }
-    }, 100); // Check more frequently (every 100ms)
+    }, 100);
 
     return () => clearInterval(checkInterval);
-  }, [imgLoaded, timeElapsed, timePerRound]);
+  }, [imgLoaded, timeElapsed, timePerRound, isRoundOver]);
 
   // Effect to redraw the canvas whenever reveals change
   useEffect(() => {
@@ -416,6 +425,19 @@ const RandomReveal = () => {
       drawImageWithReveals(ctx, img, revealCircles);
     };
   }, [revealCircles, imagePath, imgLoaded]);
+
+  // Effect to handle round over navigation
+  useEffect(() => {
+    if (isRoundOver && finalScores && finalSocketMap) {
+      const timer = setTimeout(() => {
+        navigate(`/leaderboard`, {
+          state: { scores: finalScores, socketToUserMap: finalSocketMap },
+        });
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isRoundOver, finalScores, finalSocketMap, navigate]);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden font-space-grotesk">
