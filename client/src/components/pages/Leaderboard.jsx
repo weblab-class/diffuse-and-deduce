@@ -70,12 +70,16 @@ const Leaderboard = () => {
                   className="group flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:border-purple-500/30 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-purple-500/10"
                 >
                   <div className="flex items-center space-x-4">
-                    {gameMode === "multi" && (
-                      <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/20 text-white/90 font-medium">
-                        {index + 1}
-                      </span>
+                    {gameMode === "single" ? (
+                      <span className="text-lg text-white/90 font-medium">Your score:</span>
+                    ) : (
+                      <>
+                        <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/20 text-white/90 font-medium">
+                          {index + 1}
+                        </span>
+                        <span className="text-lg text-white/90 font-medium">{player.name}</span>
+                      </>
                     )}
-                    <span className="text-lg text-white/90 font-medium">{player.name}</span>
                   </div>
                   <div className="px-4 py-1 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
                     <span className="text-white/90 font-semibold">{scores[playerId] || 0}</span>

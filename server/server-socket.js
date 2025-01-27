@@ -6,8 +6,10 @@ let io;
 const userToSocketMap = {}; // maps user ID to socket object
 const socketToUserMap = {}; // maps socket ID to user object
 
-
 const roomUsedImages = {};  // Track used images per room
+const roomTopics = {};  // Track the topic for each room
+
+const rooms = {}; // to store interval references for each room
 
 const getAllConnectedUsers = () => Object.values(socketToUserMap);
 const getSocketFromUserID = (userid) => userToSocketMap[userid];
@@ -40,8 +42,6 @@ function generateRoomCode() {
   // e.g., 4-digit alphanumeric or simple random code
   return Math.random().toString(36).substr(2, 5).toUpperCase();
 }
-
-const rooms = {}; // to store interval references for each room
 
 function startRoundTimer(roomCode) {
   // Clear any existing interval for this room
@@ -236,6 +236,14 @@ module.exports = {
 
       socket.on("startRound", async ({ roomCode, totalTime, topic, totalRounds, currentRound }) => {
         try {
+          // If this is a new round (not round 1), use the room's existing topic
+          if (currentRound > 1 && roomTopics[roomCode]) {
+            topic = roomTopics[roomCode];
+          } else {
+            // If this is round 1, store the topic for future rounds
+            roomTopics[roomCode] = topic;
+          }
+
           console.log("Starting new round with params:", { roomCode, totalTime, topic, totalRounds, currentRound });
           
           // First mark any existing rounds as inactive
@@ -248,14 +256,15 @@ module.exports = {
             isActive: true,
             totalRounds,
             currentRound,
-            startTime: Date.now()
+            startTime: Date.now(), 
           });
           
           console.log("Created round in server with roomcode:", roomCode);
           console.log("Round details:", { 
             totalTime: round.totalTime, 
             totalRounds: round.totalRounds, 
-            currentRound: round.currentRound 
+            currentRound: round.currentRound,
+            topic: topic  // Log the topic being used
           });
 
           // Initialize room if it doesn't exist
