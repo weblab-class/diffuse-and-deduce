@@ -101,7 +101,7 @@ const Intro = () => {
 
     const ctx = canvas.getContext("2d");
     const staticPoints = [];
-    const pointCount = 200; // More points for static effect
+    const pointCount = 20; // More points for static effect
 
     // Create static points
     for (let i = 0; i < pointCount; i++) {

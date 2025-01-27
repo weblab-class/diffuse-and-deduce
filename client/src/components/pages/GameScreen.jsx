@@ -322,7 +322,7 @@ export default function GameScreen() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden font-space-grotesk">
+    <div className="h-screen flex flex-col font-space-grotesk">
       <Header backNav="/room-actions" />
       {/* Background layers */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#2a1a3a] to-[#0a0a1b] overflow-hidden">
