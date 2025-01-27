@@ -174,7 +174,7 @@ const RoomActions = () => {
                       </h2>
                       <div className="flex flex-col space-y-4">
                         <input
-                          className={`gallery-input text-lg
+                          className={`gallery-input text-base
                             ${isRoomCodeValid ? "border-white/20 bg-white/10" : ""}`}
                           value={roomCode}
                           onChange={handleRoomCodeChange}
