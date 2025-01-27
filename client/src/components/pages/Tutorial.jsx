@@ -15,7 +15,7 @@ const Tutorial = () => {
 
   return (
     <div className="min-h-screen font-space-grotesk">
-      <Header backNav={state ? `game-settings/${roomCode}` : ""} backState={{ playerName }} />
+      <Header backNav={state ? `game-settings/${roomCode}` : ""} backState={state} />
       <div className="relative min-h-screen">
         {/* Background layers */}
         <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#2a1a3a] to-[#0a0a1b] overflow-hidden">
