@@ -17,23 +17,92 @@ const Intro = () => {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(true);
 
-  // Load the image
+  // Function to set up canvas size based on devicePixelRatio
+  const setupCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+
+    // Set the internal canvas size to the display size multiplied by DPR
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+
+    // Scale the context to account for DPR
+    ctx.scale(dpr, dpr);
+
+    // Adjust CSS size to match the window size
+    canvas.style.width = `${window.innerWidth}px`;
+    canvas.style.height = `${window.innerHeight}px`;
+  };
+
+  // Load the image and draw it on the canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    setupCanvas(); // Initial setup
+
     const ctx = canvas.getContext("2d");
     const img = new Image();
     img.crossOrigin = "Anonymous";
     img.src = "/background-images/background-intro.png";
 
     img.onload = () => {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      // Calculate aspect ratio
+      const canvasAspect = canvas.width / canvas.height;
+      const imgAspect = img.width / img.height;
+
+      let drawWidth, drawHeight, offsetX, offsetY;
+
+      if (imgAspect > canvasAspect) {
+        // Image is wider than canvas
+        drawHeight = canvas.height;
+        drawWidth = imgAspect * drawHeight;
+        offsetX = -(drawWidth - canvas.width) / (2 * (window.devicePixelRatio || 1));
+        offsetY = 0;
+      } else {
+        // Image is taller than canvas
+        drawWidth = canvas.width;
+        drawHeight = drawWidth / imgAspect;
+        offsetX = 0;
+        offsetY = -(drawHeight - canvas.height) / (2 * (window.devicePixelRatio || 1));
+      }
+
+      ctx.drawImage(
+        img,
+        offsetX,
+        offsetY,
+        drawWidth / (window.devicePixelRatio || 1),
+        drawHeight / (window.devicePixelRatio || 1)
+      );
       setImgLoaded(true);
     };
-  }, []);
+
+    img.onerror = (err) => {
+      console.error("Failed to load background image:", err);
+      setImgLoaded(false);
+      // Optionally, handle error (e.g., display a placeholder)
+    };
+
+    // Handle window resize
+    const handleResize = () => {
+      setupCanvas();
+      if (imgLoaded) {
+        // Redraw the image after resizing
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        img.onload(); // Redraw the image with new dimensions
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [imgLoaded]);
 
   // Check if this is the user's first visit
   useEffect(() => {
@@ -66,7 +135,7 @@ const Intro = () => {
     };
 
     requestAnimationFrame(animate);
-  }, [imgLoaded]);
+  }, [imgLoaded, isFirstVisit]);
 
   // Re-apply noise whenever noiseLevel changes
   useEffect(() => {
@@ -74,23 +143,54 @@ const Intro = () => {
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    const baseImage = new Image();
-    baseImage.crossOrigin = "Anonymous";
-    baseImage.src = "/background-images/background-intro.png";
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = "/background-images/background-intro.png";
 
-    baseImage.onload = () => {
-      ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+    img.onload = () => {
+      // Calculate aspect ratio
+      const canvasAspect = canvas.width / canvas.height;
+      const imgAspect = img.width / img.height;
+
+      let drawWidth, drawHeight, offsetX, offsetY;
+
+      if (imgAspect > canvasAspect) {
+        // Image is wider than canvas
+        drawHeight = canvas.height;
+        drawWidth = imgAspect * drawHeight;
+        offsetX = -(drawWidth - canvas.width) / (2 * (window.devicePixelRatio || 1));
+        offsetY = 0;
+      } else {
+        // Image is taller than canvas
+        drawWidth = canvas.width;
+        drawHeight = drawWidth / imgAspect;
+        offsetX = 0;
+        offsetY = -(drawHeight - canvas.height) / (2 * (window.devicePixelRatio || 1));
+      }
+
+      ctx.drawImage(
+        img,
+        offsetX,
+        offsetY,
+        drawWidth / (window.devicePixelRatio || 1),
+        drawHeight / (window.devicePixelRatio || 1)
+      );
+
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
 
       const amplitude = 255 * noiseLevel;
       for (let i = 0; i < data.length; i += 4) {
         const offset = (Math.random() - 0.5) * amplitude;
-        data[i] = Math.min(255, Math.max(0, data[i] + offset));
-        data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + offset));
-        data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + offset));
+        data[i] = Math.min(255, Math.max(0, data[i] + offset)); // R
+        data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + offset)); // G
+        data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + offset)); // B
       }
       ctx.putImageData(imageData, 0, 0);
+    };
+
+    img.onerror = (err) => {
+      console.error("Failed to load background image for noise:", err);
     };
   }, [noiseLevel, imgLoaded]);
 
@@ -122,7 +222,12 @@ const Intro = () => {
 
         // Draw static point
         ctx.fillStyle = `rgba(255, 255, 255, ${point.opacity})`;
-        ctx.fillRect(point.x, point.y, point.size, point.size);
+        ctx.fillRect(
+          point.x / (window.devicePixelRatio || 1),
+          point.y / (window.devicePixelRatio || 1),
+          point.size,
+          point.size
+        );
 
         // Randomly reposition some points
         if (Math.random() < 0.01) {

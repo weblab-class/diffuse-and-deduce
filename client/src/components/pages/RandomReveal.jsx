@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import socket from "../../client-socket";
-import Button from "../modules/Button";
 import Header from "../modules/Header";
 import "../../utilities.css";
 import { get } from "../../utilities";
@@ -23,6 +22,10 @@ const RandomReveal = () => {
   const [finalScores, setFinalScores] = useState(null);
   const [finalSocketMap, setFinalSocketMap] = useState(null);
 
+  const [primaryAnswer, setPrimaryAnswer] = useState("");
+  const [hintsEnabled, setHintsEnabled] = useState(state?.hintsEnabled ?? false);
+  const [revealedHint, setRevealedHint] = useState("");
+
   const canvasRef = useRef(null);
   const [revealCircles, setRevealCircles] = useState([]);
   const [lastRevealTime, setLastRevealTime] = useState(Date.now());
@@ -38,14 +41,22 @@ const RandomReveal = () => {
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
-      .then(({ imagePath: serverImagePath, startTime, totalTime }) => {
-        if (serverImagePath) {
-          console.log("Got game state with image:", serverImagePath);
-          setTimeElapsed(0); // Let server timeUpdate events handle the time
-          setImagePath(`${SERVER_URL}${serverImagePath}`);
-          setTimePerRound(totalTime);
+      .then(
+        ({
+          imagePath: serverImagePath,
+          startTime,
+          totalTime,
+          primaryAnswer: serverPrimaryAnswer,
+        }) => {
+          if (serverImagePath) {
+            console.log("Got game state with image:", serverImagePath);
+            setTimeElapsed(0); // Let server timeUpdate events handle the time
+            setImagePath(`${SERVER_URL}${serverImagePath}`);
+            setTimePerRound(totalTime);
+            setPrimaryAnswer(serverPrimaryAnswer);
+          }
         }
-      })
+      )
       .catch((error) => {
         console.error("GET request to /api/gameState failed with error:", error);
       });
@@ -71,6 +82,8 @@ const RandomReveal = () => {
       setTimePerRound(totalTime);
       setRevealCircles([]); // Reset reveal circles for new round
       setLastRevealTime(Date.now());
+      setPrimaryAnswer(serverPrimaryAnswer);
+      setRevealedHint("");
     };
 
     const handleRoundOver = ({ scores: newScores, socketToUserMap }) => {
@@ -171,13 +184,23 @@ const RandomReveal = () => {
         setTimeout(() => {
           setGuessedWrong(true);
         }, 10);
+        if (hintsEnabled && primaryAnswer) {
+          setRevealedHint((prev) => {
+            // Reveal one more letter
+            const nextIndex = prev.length;
+            if (nextIndex < primaryAnswer.length) {
+              return primaryAnswer.substring(0, nextIndex + 1);
+            }
+            return prev; // No change if we already revealed everything
+          });
+        }
       }
     });
 
     return () => {
       socket.off("wrongGuess");
     };
-  }, []);
+  }, [socket.id, hintsEnabled, primaryAnswer]);
 
   const handleSubmitGuess = () => {
     socket.emit("submitGuess", { roomCode, guessText });
@@ -440,7 +463,7 @@ const RandomReveal = () => {
   }, [isRoundOver, finalScores, finalSocketMap, navigate]);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden font-space-grotesk">
+    <div className="h-screen flex flex-col font-space-grotesk">
       <Header backNav="/room-actions" />
       {/* Background layers */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#2a1a3a] to-[#0a0a1b] overflow-hidden">
@@ -491,12 +514,12 @@ const RandomReveal = () => {
             <div className="relative flex-1 min-h-0 mb-2">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
               <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
-                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-contain" />
+                <canvas ref={canvasRef} className="w-full h-full object-contain rounded-xl" />
               </div>
             </div>
 
             {/* Input section */}
-            <div className="mt-auto pb-2">
+            <div className="mt-auto pb-8">
               {guessedCorrectly ? (
                 <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-3 text-center border border-purple-500/20 shadow-lg">
                   <p className="text-lg text-purple-200">
@@ -538,6 +561,11 @@ const RandomReveal = () => {
               {guessedWrong && (
                 <div className="mt-2 bg-red-500/10 backdrop-blur-xl text-red-200 py-2 px-4 rounded-lg border border-red-500/20 text-center animate-shake">
                   Wrong guess! Try again.
+                  {hintsEnabled && revealedHint && (
+                    <div className="hint-message">
+                      Hint so far: <span style={{ fontWeight: "bold" }}>{revealedHint}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

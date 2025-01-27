@@ -92,11 +92,15 @@ const GameSettings = () => {
     if (settings.revealMode === "diffusion") {
       navigate(`/game-screen/${roomCode}`, {
         state: {
-          hintsEnabled: settings.hints, // <-- add this
+          hintsEnabled: settings.hints,
         },
       });
     } else {
-      navigate(`/random-reveal/${roomCode}`);
+      navigate(`/random-reveal/${roomCode}`, {
+        state: {
+          hintsEnabled: settings.hints,
+        },
+      });
     }
   };
 
