@@ -19,13 +19,15 @@ export default function GameScreen() {
   const location = useLocation();
 
   const [primaryAnswer, setPrimaryAnswer] = useState("");
-  const [hintsEnabled, setHintsEnabled] = useState(location.state?.hintsEnabled ?? false);
+  // const [hintsEnabled, setHintsEnabled] = useState(location.state?.hintsEnabled ?? false);
   const [revealedHint, setRevealedHint] = useState("");
 
   const { state } = useLocation();
   const currentRound = state?.currentRound || 1;
   const totalRounds = state?.totalRounds || 1;
   const gameMode = state?.gameMode || "single";
+  const hintsEnabled = state?.hintsEnabled || false;
+  const revealMode = state?.revealMode || "diffusion";
 
   const [topic, setTopic] = useState("Animals");
 
@@ -179,11 +181,13 @@ export default function GameScreen() {
             imagePath,
             totalTime: timePerRound,  // Pass the current round's time to use for next round
             gameMode,
+            revealMode, 
+            hintsEnabled
           } 
         });
       }).catch((error) => {
         console.error("GET request to /api/hostSocketId failed with error:", error);
-      }); // TODO somewhat iffy
+      }); 
     });
 
     return () => {

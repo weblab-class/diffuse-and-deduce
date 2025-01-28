@@ -11,6 +11,7 @@ const RandomReveal = () => {
   const navigate = useNavigate();
 
   const [scores, setScores] = useState({});
+  const [diff, setDiff] = useState({});
   const [guessText, setGuessText] = useState("");
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
   const [guessedWrong, setGuessedWrong] = useState(false);
@@ -23,8 +24,14 @@ const RandomReveal = () => {
   const [finalSocketMap, setFinalSocketMap] = useState(null);
 
   const [primaryAnswer, setPrimaryAnswer] = useState("");
-  const [hintsEnabled, setHintsEnabled] = useState(state?.hintsEnabled ?? false);
+  // const [hintsEnabled, setHintsEnabled] = useState(state?.hintsEnabled ?? false);
   const [revealedHint, setRevealedHint] = useState("");
+
+  const hintsEnabled = state?.hintsEnabled || false;
+  const currentRound = state?.currentRound || 1;
+  const totalRounds = state?.totalRounds || 1;
+  const gameMode = state?.gameMode || "single";
+  const revealMode = state?.revealMode || "diffusion";
 
   const canvasRef = useRef(null);
   const [revealCircles, setRevealCircles] = useState([]);
@@ -86,20 +93,50 @@ const RandomReveal = () => {
       setRevealedHint("");
     };
 
-    const handleRoundOver = ({ scores: newScores, socketToUserMap }) => {
-      console.log("Round over with scores:", newScores);
-      setScores(newScores);
-      setIsRoundOver(true);
-      setFinalScores(newScores);
-      setFinalSocketMap(socketToUserMap);
+    const handleRoundOver = ({ scores, socketToUserMap }) => {
+      // console.log("Round over with scores:", newScores);
+      // setScores(newScores);
+      // setIsRoundOver(true);
+      // setFinalScores(newScores);
+      // setFinalSocketMap(socketToUserMap);
 
       // Clear all reveals to show full image
-      setRevealCircles([]);
+      // setRevealCircles([]);
+
+      console.log("Round over!");
+      console.log("Mapping:", socketToUserMap);
+      console.log("Round info from server:", { currentRound, totalRounds });
+
+      // Fetch the host's socket ID from the server
+      get("/api/hostSocketId", { roomCode }).then(({ hostSocketId }) => {
+        console.log("Current socket: ", socket.id);
+        console.log("Host socket: ", hostSocketId);
+        const isHost = socket.id === hostSocketId;
+        console.log("After get request, Is host value:", isHost);
+        navigate("/leaderboard", { 
+          state: { 
+            scores, 
+            socketToUserMap, 
+            roomCode, 
+            isHost, 
+            currentRound,
+            totalRounds,
+            imagePath,
+            totalTime: timePerRound,  // Pass the current round's time to use for next round
+            gameMode,
+            revealMode, 
+            hintsEnabled
+          } 
+        });
+      }).catch((error) => {
+        console.error("GET request to /api/hostSocketId failed with error:", error);
+      }); 
     };
 
-    const handleScoreUpdate = ({ scores: newScores }) => {
-      console.log("Received score update:", newScores);
+    const handleScoreUpdate = ({ scores: newScores, diff }) => {
+      console.log("Received score update:", newScores, diff);
       setScores(newScores);
+      setDiff(diff);
     };
 
     socket.on("timeUpdate", handleTimeUpdate);
@@ -445,22 +482,53 @@ const RandomReveal = () => {
     img.src = imagePath;
 
     img.onload = () => {
+      // Reveal image in the last 5 seconds
+      const timeRemaining = timePerRound - timeElapsed;
+      if (timeRemaining < 5) {
+        // Fully reveal the image in the last 5 seconds
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        return;
+      }
       drawImageWithReveals(ctx, img, revealCircles);
     };
-  }, [revealCircles, imagePath, imgLoaded]);
+  }, [revealCircles, imagePath, imgLoaded, timeElapsed, timePerRound]);
 
   // Effect to handle round over navigation
-  useEffect(() => {
-    if (isRoundOver && finalScores && finalSocketMap) {
-      const timer = setTimeout(() => {
-        navigate(`/leaderboard`, {
-          state: { scores: finalScores, socketToUserMap: finalSocketMap },
-        });
-      }, 2000);
+  // useEffect(() => {
+  //   if (isRoundOver && finalScores && finalSocketMap) {
+  //     // Fetch the host's socket ID from the server
+  //       get("/api/hostSocketId", { roomCode }).then(({ hostSocketId }) => {
+  //         console.log("Current socket: ", socket.id);
+  //         console.log("Host socket: ", hostSocketId);
+  //         const isHost = socket.id === hostSocketId;
+  //         console.log("After get request, Is host value:", isHost);
+  //         navigate("/leaderboard", { 
+  //           state: { 
+  //             scores, 
+  //             socketToUserMap: finalSocketMap, 
+  //             roomCode, 
+  //             isHost, 
+  //             currentRound,
+  //             totalRounds,
+  //             imagePath,
+  //             totalTime: timePerRound,  // Pass the current round's time to use for next round
+  //             gameMode,
+  //           } 
+  //         });
+  //       }).catch((error) => {
+  //         console.error("GET request to /api/hostSocketId failed with error:", error);
+  //       }); 
+      
+  //     // const timer = setTimeout(() => {
+  //     //   navigate(`/leaderboard`, {
+  //     //     state: { scores: finalScores, socketToUserMap: finalSocketMap, currentRound, totalRounds },
+  //     //   });
+  //     // }, 2000);
 
-      return () => clearTimeout(timer);
-    }
-  }, [isRoundOver, finalScores, finalSocketMap, navigate]);
+  //     // return () => clearTimeout(timer);
+  //   }
+  // }, [isRoundOver, finalScores, finalSocketMap]);
+  // }, [isRoundOver, finalScores, finalSocketMap, navigate]);
 
   return (
     <div className="h-screen flex flex-col font-space-grotesk">
@@ -529,7 +597,7 @@ const RandomReveal = () => {
                         guessedCorrectly ? "score-animate" : ""
                       }`}
                     >
-                      {scores[socket.id] || 0}
+                      {diff[socket.id] || 0}
                     </span>{" "}
                     points.
                   </p>
@@ -546,6 +614,11 @@ const RandomReveal = () => {
                       className="flex-1 bg-white/10 text-purple-100 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50"
                       placeholder="Enter guess..."
                       value={guessText}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSubmitGuess();
+                        }
+                      }}
                       onChange={(e) => setGuessText(e.target.value)}
                     />
                     <button

@@ -259,6 +259,8 @@ module.exports = {
             totalRounds,
             currentRound,
             startTime: Date.now(), 
+            revealMode,
+            hintsEnabled
           });
           
           console.log("Created round in server with roomcode:", roomCode);

@@ -14,6 +14,7 @@ const RoundSchema = new mongoose.Schema({
   totalRounds: { type: Number, default: 1 },  
   currentRound: { type: Number, default: 1 },
   revealMode: { type: String, enum: ["diffusion", "random"], default: "diffusion" }, // Add reveal mode
+  hintsEnabled: { type: Boolean, default: false },
   players: [
     {
       socketId: String,
