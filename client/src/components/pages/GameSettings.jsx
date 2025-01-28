@@ -4,7 +4,6 @@ import useRoom from "../../hooks/useRoom";
 
 import Header from "../modules/Header";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import Button from "../modules/Button";
 import { motion } from "framer-motion";
 
 const GameSettings = () => {
@@ -82,20 +81,29 @@ const GameSettings = () => {
   const handleStartGame = () => {
     if (!selectedTopic) return; // Early return if no topic selected
 
-    const totalTime = settings.timePerRound;
+    // // Only pass the essential data
+    // socket.emit("startRound", {
+    //   roomCode,
+    //   totalTime: settings.timePerRound,
+    //   topic: selectedTopic,
+    //   revealMode: settings.revealMode, // Only pass the reveal mode, not all settings
+    // });
 
     const totalRounds = settings.totalRounds;
     const currentRound = settings.currentRound;
+    const revealMode = settings.revealMode;
+    const hintsEnabled = settings.hints;
+    const totalTime = settings.timePerRound;
 
     // useRoom handles the navigation
-    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic, totalRounds, currentRound }); 
+    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic, totalRounds, currentRound, revealMode, hintsEnabled }); 
   };
 
   return (
     <>
       {/* Fixed header - highest layer */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-transparent">
-        <Header backNav={gameMode === "single" ? "choose-num-players" : "room-actions"} />
+        <Header backNav={gameMode === "single" ? "choose-num-players" : `lobby/${roomCode}`} />
       </div>
       {/* Background container - lowest layer */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#0A0A1B] to-[#1A1A2E] overflow-hidden">
@@ -322,7 +330,15 @@ const GameSettings = () => {
           <div className="p-10 flex justify-center items-center relative">
             {/* Help Button (Left) */}
             <button
-              onClick={() => navigate("/tutorial")}
+              onClick={() =>
+                navigate("/tutorial", {
+                  state: {
+                    roomCode: roomCode,
+                    playerName: playerName,
+                    gameMode: gameMode,
+                  },
+                })
+              }
               className="absolute left-8 w-12 h-12 
                        bg-white/10 backdrop-blur-md
                        hover:bg-gradient-to-r hover:from-[#E94560] hover:to-[#0F3460]

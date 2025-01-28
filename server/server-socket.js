@@ -67,8 +67,8 @@ function startRoundTimer(roomCode) {
       // Check if round exists and is active
       if (!round) {
         console.log(`No round found for room ${roomCode}, clearing timer`);
-        clearInterval(interval);
-        delete rooms[roomCode].interval;
+        // clearInterval(interval);
+        // delete rooms[roomCode].interval;
         return;
       }
 
@@ -149,9 +149,11 @@ function objectIdFromDate(date) {
 // Clean up rooms every 5 minutes
 setInterval(cleanupRooms, 5 * 60 * 1000);
 
-function checkGuess(guessText, correctAnswer) {
-  // Implement your guess checking logic here
-  return guessText.toLowerCase() === correctAnswer.toLowerCase();
+function checkGuess(guessText, correctAnswers) {
+  if (!guessText || !correctAnswers) return false;
+  const normalizedGuess = guessText.trim().toLowerCase().replace(/\s+/g, "");
+  console.log(normalizedGuess);
+  return correctAnswers.includes(normalizedGuess);
 }
 
 module.exports = {
@@ -183,11 +185,11 @@ module.exports = {
 
           // Calculate elapsed time from the timer's start time
           const timeElapsed = Math.floor((Date.now() - rooms[roomCode].timerStartTime) / 1000);
-          const isCorrect = checkGuess(guessText, round.correctAnswer);
+          const isCorrect = checkGuess(guessText, round.correctAnswers);
 
           console.log("Guess check:", {
             guessText,
-            correctAnswer: round.correctAnswer,
+            correctAnswer: round.correctAnswers,
             isCorrect,
             timeElapsed,
             totalTime: round.totalTime
@@ -234,7 +236,7 @@ module.exports = {
         }
       });
 
-      socket.on("startRound", async ({ roomCode, totalTime, topic, totalRounds, currentRound }) => {
+      socket.on("startRound", async ({ roomCode, totalTime, topic, totalRounds, currentRound, revealMode, hintsEnabled }) => {
         try {
           // If this is a new round (not round 1), use the room's existing topic
           if (currentRound > 1 && roomTopics[roomCode]) {
@@ -305,15 +307,13 @@ module.exports = {
           
           console.log(`Selected image for room ${roomCode}: ${selectedImage} (${roomUsedImages[roomCode].size}/${files.length} used)`);
 
-          // Derive the correct answer from the image filename (without extension)
-          const correctAnswer = path.parse(selectedImage).name.toLowerCase();
+          round.correctAnswers = path.parse(selectedImage).name.split("-");
+          round.primaryAnswer = round.correctAnswers[0]; // use the first label for hints
 
           // Set the image path accessible by the frontend
           const imagePath = `/game-images/${topic}/${selectedImage}`;
           console.log(`Selected image path: ${imagePath}`);
 
-          // Update the round with the selected image and answer
-          round.correctAnswer = correctAnswer;
           round.imagePath = imagePath;
 
           await round.save();
@@ -334,6 +334,9 @@ module.exports = {
             totalRounds: round.totalRounds,  // Use the saved totalRounds
             currentRound: round.currentRound,
             gameMode: rooms[roomCode].gameMode,
+            revealMode: round.revealMode,
+            primaryAnswer: round.primaryAnswer,
+            hintsEnabled: round.hintsEnabled
           });
 
           // Start the timer after everything is set up
@@ -406,7 +409,7 @@ module.exports = {
 
           // In memory game state
           rooms[roomCode] = {
-            players: { [socket.id]: playerName },
+            players: [{ id: socket.id, name: playerName }],
             scores: { [socket.id]: 0 },
           };
 
@@ -460,9 +463,9 @@ module.exports = {
 
           // Add player to the IN-MEMORY room data
           if (!rooms[roomCode]) {
-            rooms[roomCode] = { players: {}, scores: {} };
+            rooms[roomCode] = { players: [], scores: {} };
           }
-          rooms[roomCode].players[socket.id] = playerName;
+          rooms[roomCode].players.push({ id: socket.id, name: playerName });
           rooms[roomCode].scores[socket.id] = 0;
 
           // SOCKETIO
@@ -503,8 +506,13 @@ module.exports = {
               room.hostId = room.players[0].id;
               await room.save();
             } else {
-              // Host was last player - delete room
-              await Room.deleteOne({ code: roomCode });
+              // Host was last player - delete room and all associated rounds
+              console.log(`Last player leaving room ${roomCode}, cleaning up...`);
+              await Promise.all([
+                Room.deleteOne({ code: roomCode }),
+                Round.deleteMany({ roomCode }), // Delete all rounds for this room
+              ]);
+              console.log(`Deleted room ${roomCode} and its rounds`);
             }
           } else {
             // not host- just save player removal
@@ -513,28 +521,29 @@ module.exports = {
 
           // In Memory game state cleanup
           if (rooms[roomCode]) {
-            delete rooms[roomCode].players[socket.id];
-            if (rooms[roomCode].hostId === socket.id) {
-              const remainingPlayers = Object.keys(rooms[roomCode].players);
-              if (remainingPlayers.length > 0) {
-                rooms[roomCode].hostId = remainingPlayers[0];
-              } else {
-                delete rooms[roomCode];
-              }
+            // Store scores before cleanup for final emit
+            const finalScores = { ...rooms[roomCode].scores };
+
+            rooms[roomCode].players = rooms[roomCode].players.filter(
+              (player) => player.id !== socket.id
+            );
+            delete rooms[roomCode].scores[socket.id];
+
+            // Notify all users in room of the leaving user before potential room deletion
+            io.to(roomCode).emit("roomData", {
+              players: room.players,
+              hostId: room.hostId,
+              scores: finalScores,
+            });
+
+            if (rooms[roomCode].players.length === 0) {
+              delete rooms[roomCode];
             }
           }
 
           // SOCKETIO cleanup
           socket.leave(roomCode);
-
-          // Notify all users in room of the leaving user
-          io.to(roomCode).emit("roomData", {
-            players: room.players,
-            hostId: room.hostId,
-            scores: rooms[roomCode].scores,
-          });
-
-          callback({ success: true });
+          callback({ error: null });
         } catch (err) {
           console.error("Error in leaveRoom:", err);
           callback({ error: "Failed to leave room: " + err.message });

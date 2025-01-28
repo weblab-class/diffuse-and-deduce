@@ -1,33 +1,32 @@
-import React from "react";
+import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import Button from "../modules/Button";
 import Header from "../modules/Header";
 import socket from "../../client-socket";
+import { UserContext } from "../App";
 
 import "../../utilities.css";
 import "./ChooseNumPlayers.css";
 
 const ChooseNumPlayers = () => {
   const navigate = useNavigate();
+  const { userName } = useContext(UserContext);
 
   const handleGameMode = (mode) => {
     if (mode === "single") {
       // create a single player room
-      socket.emit(
-        "createRoom",
-        { playerName: "Single Player", isSinglePlayer: true },
-        (response) => {
-          const { roomCode } = response;
-          navigate(`/game-settings/${roomCode}`, {
-            state: {
-              gameMode: "single",
-              isSinglePlayer: true,
-            },
-          });
-        }
-      );
+      socket.emit("createRoom", { playerName: userName, isSinglePlayer: true }, (response) => {
+        const { roomCode } = response;
+        navigate(`/game-settings/${roomCode}`, {
+          state: {
+            gameMode: "single",
+            isSinglePlayer: true,
+            playerName: userName,
+          },
+        });
+      });
     } else {
       navigate("/room-actions");
     }

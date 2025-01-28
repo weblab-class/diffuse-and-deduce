@@ -3,7 +3,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import socket from "../../client-socket";
-import Button from "../modules/Button";
 import Header from "../modules/Header";
 import "../../utilities.css";
 import "./GameScreen.css";
@@ -17,6 +16,11 @@ export default function GameScreen() {
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
   const [guessedWrong, setGuessedWrong] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [primaryAnswer, setPrimaryAnswer] = useState("");
+  const [hintsEnabled, setHintsEnabled] = useState(location.state?.hintsEnabled ?? false);
+  const [revealedHint, setRevealedHint] = useState("");
 
   const { state } = useLocation();
   const currentRound = state?.currentRound || 1;
@@ -41,7 +45,7 @@ export default function GameScreen() {
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
-      .then(({ imagePath: serverImagePath, startTime, totalTime}) => {
+      .then(({ imagePath: serverImagePath, startTime, totalTime, primaryAnswer: serverPrimaryAnswer}) => {
         console.log("Round started with image:", serverImagePath);
         setTimeElapsed(0);
         setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
@@ -51,6 +55,7 @@ export default function GameScreen() {
         // setTotalRounds(totalRounds);
         // setCurrentRound(currentRound);
         setTopic(serverImagePath.split("/")[2]);
+        setPrimaryAnswer(serverPrimaryAnswer);
       })
       .catch((error) => {
         console.error("GET request to /api/gameState failed with error:", error);
@@ -104,6 +109,20 @@ export default function GameScreen() {
 
   useEffect(() => {
     // Handle various socket events
+    socket.on(
+      "roundStarted",
+      ({ startTime, totalTime, imagePath, primaryAnswer: serverPrimaryAnswer }) => {
+        console.log("Diffusion: Round started with image:", imagePath);
+        setTimeElapsed(0);
+        setImagePath(`${SERVER_URL}${imagePath}`);
+        setNoiseLevel(initialNoise);
+        setImgLoaded(false);
+        setTimePerRound(totalTime);
+        setPrimaryAnswer(serverPrimaryAnswer);
+        setRevealedHint("");
+      }
+    );
+
     socket.on("timeUpdate", ({ timeElapsed }) => {
       console.log("Received time update:", timeElapsed);
       setTimeElapsed(timeElapsed);
@@ -168,12 +187,12 @@ export default function GameScreen() {
     });
 
     return () => {
+      socket.off("roundStarted");
       socket.off("timeUpdate");
       socket.off("scoreUpdate");
-      socket.off("roundStarted");
       socket.off("roundOver");
     };
-  }, [timePerRound, navigate, SERVER_URL]);
+  }, [timePerRound, navigate, SERVER_URL, initialNoise]);
 
   const handleSubmitGuess = () => {
     socket.emit("submitGuess", { roomCode, guessText });
@@ -219,13 +238,23 @@ export default function GameScreen() {
         setTimeout(() => {
           setGuessedWrong(true);
         }, 10);
+        if (hintsEnabled && primaryAnswer) {
+          setRevealedHint((prev) => {
+            // Reveal one more letter
+            const nextIndex = prev.length;
+            if (nextIndex < primaryAnswer.length) {
+              return primaryAnswer.substring(0, nextIndex + 1);
+            }
+            return prev; // No change if we already revealed everything
+          });
+        }
       }
     });
 
     return () => {
       socket.off("wrongGuess");
     };
-  }, []);
+  }, [socket.id, hintsEnabled, primaryAnswer]);
 
   // Add particle effect
   useEffect(() => {
@@ -320,7 +349,7 @@ export default function GameScreen() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden font-space-grotesk">
+    <div className="h-screen flex flex-col font-space-grotesk">
       <Header backNav="/room-actions" />
       {/* Background layers */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#2a1a3a] to-[#0a0a1b] overflow-hidden">
@@ -381,7 +410,7 @@ export default function GameScreen() {
             </div>
 
             {/* Input section */}
-            <div className="mt-auto pb-2">
+            <div className="mt-auto pb-8">
               {guessedCorrectly ? (
                 <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-3 text-center border border-purple-500/20 shadow-lg">
                   <p className="text-lg text-purple-200">
@@ -428,6 +457,11 @@ export default function GameScreen() {
               {guessedWrong && (
                 <div className="mt-2 bg-red-500/10 backdrop-blur-xl text-red-200 py-2 px-4 rounded-lg border border-red-500/20 text-center animate-shake">
                   Wrong guess! Try again.
+                  {hintsEnabled && revealedHint && (
+                    <div className="hint-message">
+                      Hint so far: <span style={{ fontWeight: "bold" }}>{revealedHint}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
