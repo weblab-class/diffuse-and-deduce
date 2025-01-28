@@ -87,6 +87,9 @@ function startRoundTimer(roomCode) {
         clearInterval(interval);
         delete rooms[roomCode].interval;
 
+        // Update prev scores
+        rooms[roomCode].previousScores = { ...rooms[roomCode].scores };
+
         // Notify clients that round is over with round information
         io.to(roomCode).emit("roundOver", { 
           scores: rooms[roomCode].scores, 
@@ -205,28 +208,42 @@ module.exports = {
             rooms[roomCode].scores = {};
           }
 
-          previousScores = rooms[roomCode].scores[playerId] || 0;
+          // Save a snapshot of scores before any updates
+          // Ensure a previousScores object exists for this room (persists between rounds)
+          if (!rooms[roomCode].previousScores) {
+            rooms[roomCode].previousScores = { ...rooms[roomCode].scores }; // Copy current scores at the start of the game
+          }
+
+          // Initialize the player's score if it doesn't exist
+          if (!rooms[roomCode].scores[playerId]) {
+            rooms[roomCode].scores[playerId] = 0;
+          }
 
           if (isCorrect) {
             const totalTime = round.totalTime;
             const score = Math.round(((totalTime - timeElapsed) / totalTime) * 1000);
             console.log(`Score calculation: (${totalTime} - ${timeElapsed}) / ${totalTime} * 1000 = ${score}`);
             
-            rooms[roomCode].scores[playerId] = (rooms[roomCode].scores[playerId] || 0) + score;
+            rooms[roomCode].scores[playerId] += score;
             console.log(`Player ${playerId} scored ${score} points. Total: ${rooms[roomCode].scores[playerId]}`);
 
             io.to(roomCode).emit("correctGuess", { playerId });
           } else {
             const score = -100;
-            rooms[roomCode].scores[playerId] = (rooms[roomCode].scores[playerId] || 0) + score;
+            rooms[roomCode].scores[playerId] += score;
             console.log(`Player ${playerId} lost 100 points. Total: ${rooms[roomCode].scores[playerId]}`);
             io.to(roomCode).emit("wrongGuess", { playerId });
           }
 
+          // Calculate the difference in scores based on previousScores (changes since last round)
           const diff = {};
           Object.keys(rooms[roomCode].scores).forEach((playerId) => {
-            diff[playerId] = rooms[roomCode].scores[playerId] - previousScores;
-          });
+            const currentScore = rooms[roomCode].scores[playerId] || 0;
+            const previousScore = rooms[roomCode].previousScores[playerId] || 0;
+            diff[playerId] = currentScore - previousScore; // Net change since the last round
+          }); 
+
+          console.log("Diff:", diff);
 
           // Score update
           io.to(roomCode).emit("scoreUpdate", { scores: rooms[roomCode].scores, diff });
