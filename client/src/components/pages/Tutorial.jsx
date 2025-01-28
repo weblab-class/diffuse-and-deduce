@@ -1,10 +1,21 @@
 import React from "react";
+import { useLocation } from "react-router-dom";
+
 import Header from "../modules/Header";
+import useRoom from "../../hooks/useRoom";
 
 const Tutorial = () => {
+  const { state } = useLocation();
+  const roomCode = state?.roomCode;
+  const playerName = state?.playerName;
+
+  if (roomCode && playerName) {
+    useRoom(roomCode, playerName);
+  }
+
   return (
     <div className="min-h-screen font-space-grotesk">
-      <Header backNav="" />
+      <Header backNav={state ? `game-settings/${roomCode}` : ""} backState={state} />
       <div className="relative min-h-screen">
         {/* Background layers */}
         <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#2a1a3a] to-[#0a0a1b] overflow-hidden">
@@ -82,7 +93,7 @@ const Tutorial = () => {
               <div className="bg-white/8 backdrop-blur-2xl rounded-lg p-4 mb-4 border border-purple-500/10">
                 <h3 className="text-lg font-semibold text-indigo-400 mb-2">Hints</h3>
                 <p className="text-gray-200">
-                  Reveals a few letters of the word representing the image.
+                  One letter from the correct guess is revealed each time you guess incorrectly.
                 </p>
               </div>
 
@@ -108,8 +119,8 @@ const Tutorial = () => {
             <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-6 hover:-translate-y-1 hover:bg-white/10 transition-all duration-300 border border-purple-500/20 shadow-lg">
               <h2 className="text-xl font-semibold text-purple-400 mb-2">Scoring</h2>
               <p className="text-gray-200">
-                Score up to 1000 points per round. Guesses after X% of time is done earn (100-X)% of
-                1000 points. Penalty of 100 points for every wrong guess.
+                Score up to 1000 points per round. Guesses after X% of time has elapsed earn
+                (100-X)% of 1000 points. Penalty of 100 points for every wrong guess.
               </p>
             </div>
           </div>
