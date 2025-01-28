@@ -42,7 +42,7 @@ const useRoom = (roomCode, playerName) => {
           revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
       
       navigate(targetPath, {
-        state: { startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode, revealMode, hintsEnabled },
+        state: { startTime, timePerRound: totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode, revealMode, hintsEnabled },
       });
     });
 

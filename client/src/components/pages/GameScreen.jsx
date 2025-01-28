@@ -28,6 +28,7 @@ export default function GameScreen() {
   const gameMode = state?.gameMode || "single";
   const hintsEnabled = state?.hintsEnabled || false;
   const revealMode = state?.revealMode || "diffusion";
+  const timePerRound = state?.timePerRound || 30;
 
   const [topic, setTopic] = useState("Animals");
 
@@ -35,8 +36,9 @@ export default function GameScreen() {
   const canvasRef = useRef(null);
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [timePerRound, setTimePerRound] = useState(30);
+  // const [timePerRound, setTimePerRound] = useState(30);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  // const [recievedTime, setRecievedTime] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
   // Retrieve server URL from Vite environment variables
@@ -53,7 +55,8 @@ export default function GameScreen() {
         setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
         setNoiseLevel(initialNoise); // Reset noise
         setImgLoaded(false); // Trigger image loading
-        setTimePerRound(totalTime);
+        // setTimePerRound(totalTime);
+        // setRecievedTime(true);
         // setTotalRounds(totalRounds);
         // setCurrentRound(currentRound);
         setTopic(serverImagePath.split("/")[2]);
@@ -119,7 +122,7 @@ export default function GameScreen() {
         setImagePath(`${SERVER_URL}${imagePath}`);
         setNoiseLevel(initialNoise);
         setImgLoaded(false);
-        setTimePerRound(totalTime);
+        // setTimePerRound(totalTime);
         setPrimaryAnswer(serverPrimaryAnswer);
         setRevealedHint("");
       }

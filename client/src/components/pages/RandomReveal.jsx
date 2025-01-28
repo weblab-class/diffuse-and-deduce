@@ -15,7 +15,7 @@ const RandomReveal = () => {
   const [guessText, setGuessText] = useState("");
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
   const [guessedWrong, setGuessedWrong] = useState(false);
-  const [timePerRound, setTimePerRound] = useState(30);
+  // const [timePerRound, setTimePerRound] = useState(30);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isShaking, setIsShaking] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -32,6 +32,7 @@ const RandomReveal = () => {
   const totalRounds = state?.totalRounds || 1;
   const gameMode = state?.gameMode || "single";
   const revealMode = state?.revealMode || "diffusion";
+  const timePerRound = state?.timePerRound || 30;
 
   const canvasRef = useRef(null);
   const [revealCircles, setRevealCircles] = useState([]);
@@ -59,7 +60,7 @@ const RandomReveal = () => {
             console.log("Got game state with image:", serverImagePath);
             setTimeElapsed(0); // Let server timeUpdate events handle the time
             setImagePath(`${SERVER_URL}${serverImagePath}`);
-            setTimePerRound(totalTime);
+            // setTimePerRound(totalTime);
             setPrimaryAnswer(serverPrimaryAnswer);
           }
         }
@@ -86,7 +87,7 @@ const RandomReveal = () => {
       console.log("Random Reveal: Round started with image:", imagePath);
       setTimeElapsed(0);
       setImagePath(`${SERVER_URL}${imagePath}`);
-      setTimePerRound(totalTime);
+      // setTimePerRound(totalTime);
       setRevealCircles([]); // Reset reveal circles for new round
       setLastRevealTime(Date.now());
       setPrimaryAnswer(serverPrimaryAnswer);
