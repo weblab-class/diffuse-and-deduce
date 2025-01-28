@@ -94,9 +94,10 @@ const GameSettings = () => {
     const revealMode = settings.revealMode;
     const hintsEnabled = settings.hints;
     const totalTime = settings.timePerRound;
+    
 
     // useRoom handles the navigation
-    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic, totalRounds, currentRound, revealMode, hintsEnabled }); 
+    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic, totalRounds, currentRound, revealMode, hintsEnabled, gameMode }); 
     
     // // Navigate to the correct game component based on reveal mode
     // if (settings.revealMode === "diffusion") {

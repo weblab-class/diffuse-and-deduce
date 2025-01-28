@@ -236,7 +236,7 @@ module.exports = {
         }
       });
 
-      socket.on("startRound", async ({ roomCode, totalTime, topic, totalRounds, currentRound, revealMode, hintsEnabled }) => {
+      socket.on("startRound", async ({ roomCode, totalTime, topic, totalRounds, currentRound, revealMode, hintsEnabled, gameMode }) => {
         try {
           // If this is a new round (not round 1), use the room's existing topic
           if (currentRound > 1 && roomTopics[roomCode]) {
@@ -246,7 +246,7 @@ module.exports = {
             roomTopics[roomCode] = topic;
           }
 
-          console.log("Starting new round with params:", { roomCode, totalTime, topic, totalRounds, currentRound, revealMode, hintsEnabled });
+          console.log("Starting new round with params:", { roomCode, totalTime, topic, totalRounds, currentRound, revealMode, hintsEnabled, gameMode });
           
           // First mark any existing rounds as inactive
           await Round.updateMany({ roomCode }, { isActive: false });
@@ -337,7 +337,7 @@ module.exports = {
             imagePath,
             totalRounds: round.totalRounds,  // Use the saved totalRounds
             currentRound: round.currentRound,
-            gameMode: rooms[roomCode].gameMode,
+            gameMode,
             revealMode: round.revealMode,
             primaryAnswer: round.primaryAnswer,
             hintsEnabled: round.hintsEnabled

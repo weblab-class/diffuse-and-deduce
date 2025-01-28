@@ -35,7 +35,7 @@ const Leaderboard = () => {
     console.log("Leaderboard's Image Path: ", imagePath);
     const topic = imagePath.split('/')[4];
     console.log("New current round being sent to server from Leaderboard: ", currentRound + 1);
-    socket.emit("startRound", { roomCode, totalTime, topic, totalRounds, currentRound: currentRound + 1, revealMode, hintsEnabled }); 
+    socket.emit("startRound", { roomCode, totalTime, topic, totalRounds, currentRound: currentRound + 1, revealMode, hintsEnabled, gameMode }); 
   };
 
   return (
