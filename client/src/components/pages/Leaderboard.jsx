@@ -66,34 +66,44 @@ const Leaderboard = () => {
           {/* Scores list with hover effects */}
           <div className="p-6 space-y-3">
             {Array.from(sortedSocketToUserMap.entries())
-              .map(([playerId, player], index) => (
-                <div
-                  key={playerId}
-                  className="group flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:border-purple-500/30 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-purple-500/10"
-                >
-                  <div className="flex items-center space-x-4">
-                    {gameMode === "single" ? (
-                      <span className="text-lg text-white/90 font-medium">Your score:</span>
-                    ) : (
-                      <>
-                        <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/20 text-white/90 font-medium">
-                          {index + 1}
-                        </span>
-                        <span className="text-lg text-white/90 font-medium">{player.name}</span>
-                      </>
-                    )}
+              .map(([playerId, player], index) => {
+                const bgColor = 
+                  index === 0
+                  ? "bg-[#CC9900] hover:bg-[#B38600] backdrop-blur-md border-yellow-500/30" // Gold with darker hover
+                  : index === 1
+                  ? "bg-gray-500 hover:bg-gray-600 backdrop-blur-md border-gray-400/30" // Silver with darker hover
+                  : index === 2
+                  ? "bg-amber-700 hover:bg-amber-800 backdrop-blur-md border-amber-600/30" // Bronze with darker hover
+                  : "bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md"; // Default
+                return (
+                  <div
+                    key={playerId}
+                    className={`group flex items-center justify-between p-4 rounded-xl ${bgColor} transition-all duration-300 hover:border-purple-500/30 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-purple-500/10`}
+                  >
+                    <div className="flex items-center space-x-4">
+                      {gameMode === "single" ? (
+                        <span className="text-lg text-white/90 font-medium">Your score:</span>
+                      ) : (
+                        <>
+                          <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/20 text-white/90 font-medium">
+                            {index + 1}
+                          </span>
+                          <span className="text-lg text-white/90 font-medium">{player.name}</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="px-4 py-1 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
+                      <span className="text-white/90 font-semibold">{scores[playerId] || 0}</span>
+                      <span className="text-white/70 ml-1">pts</span>
+                    </div>
                   </div>
-                  <div className="px-4 py-1 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
-                    <span className="text-white/90 font-semibold">{scores[playerId] || 0}</span>
-                    <span className="text-white/70 ml-1">pts</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               <div>
                 {currentRound === totalRounds ? (
                   <div className="flex justify-center mt-4">  
                     <div className="text-white px-4 py-2">
-                      Game Over!
+                      Game Finished!
                     </div>
                   </div>
                 ) : (

@@ -178,7 +178,8 @@ const RandomReveal = () => {
       console.error(`Failed to load image at path: ${imagePath}`, err);
       setImgLoaded(false);
       // Display a placeholder or error message
-      ctx.fillStyle = "#CCCCCC";
+      // ctx.fillStyle = "#CCCCCC";
+      ctx.fillStyle = "black"; 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "#000000";
       ctx.font = "20px Arial";
