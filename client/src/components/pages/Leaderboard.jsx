@@ -39,7 +39,8 @@ const Leaderboard = () => {
   };
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative flex flex-col">
+      <Header backNav="/room-actions" />
       {/* Background layers */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#1a1a2e] to-[#0a0a1b] overflow-hidden">
         <div className="absolute inset-0 bg-[url('/background-images/background-leaderboard.png')] bg-cover bg-center bg-no-repeat opacity-60 mix-blend-overlay" />
@@ -68,11 +69,11 @@ const Leaderboard = () => {
             {Array.from(sortedSocketToUserMap.entries())
               .map(([playerId, player], index) => {
                 const bgColor = 
-                  index === 0
+                  gameMode === "multiplayer" && index === 0
                   ? "bg-[#CC9900] hover:bg-[#B38600] backdrop-blur-md border-yellow-500/30" // Gold with darker hover
-                  : index === 1
+                  : gameMode === "multiplayer" && index === 1
                   ? "bg-gray-500 hover:bg-gray-600 backdrop-blur-md border-gray-400/30" // Silver with darker hover
-                  : index === 2
+                  : gameMode === "multiplayer" && index === 2
                   ? "bg-amber-700 hover:bg-amber-800 backdrop-blur-md border-amber-600/30" // Bronze with darker hover
                   : "bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md"; // Default
                 return (
