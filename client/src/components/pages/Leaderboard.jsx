@@ -69,11 +69,11 @@ const Leaderboard = () => {
             {Array.from(sortedSocketToUserMap.entries())
               .map(([playerId, player], index) => {
                 const bgColor = 
-                  gameMode === "multiplayer" && index === 0
+                  gameMode === "multi" && index === 0
                   ? "bg-[#CC9900] hover:bg-[#B38600] backdrop-blur-md border-yellow-500/30" // Gold with darker hover
-                  : gameMode === "multiplayer" && index === 1
+                  : gameMode === "multi" && index === 1
                   ? "bg-gray-500 hover:bg-gray-600 backdrop-blur-md border-gray-400/30" // Silver with darker hover
-                  : gameMode === "multiplayer" && index === 2
+                  : gameMode === "multi" && index === 2
                   ? "bg-amber-700 hover:bg-amber-800 backdrop-blur-md border-amber-600/30" // Bronze with darker hover
                   : "bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md"; // Default
                 return (
