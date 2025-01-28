@@ -96,7 +96,7 @@ const GameSettings = () => {
     const totalTime = settings.timePerRound;
 
     // useRoom handles the navigation
-    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic, totalRounds, currentRound, revealMode, hintsEnabled }); 
+    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic, totalRounds, currentRound, revealMode, hintsEnabled, gameMode }); 
   };
 
   return (
