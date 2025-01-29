@@ -44,6 +44,23 @@ export default function GameScreen() {
 
   const { players, isHost, hostId, error } = useRoom(roomCode, playerName);
 
+  // Debug logs
+  console.log("Current socket ID:", socket.id);
+  console.log("All players:", players);
+
+  // Filter out current player by comparing with the id field in the player object
+  const otherPlayers = Object.entries(players || {}).reduce((acc, [key, player]) => {
+    console.log("Checking player:", key, player);
+    if (player.id !== socket.id) {
+      acc[key] = player;
+    } else {
+      console.log("Filtering out current player:", player.id);
+    }
+    return acc;
+  }, {});
+
+  console.log("Filtered players:", otherPlayers);
+
   const [selectedOpponent, setSelectedOpponent] = useState(null); // Currently selected opponent for sabotage
   const [guessDisabled, setGuessDisabled] = useState(false); // Disable guess input during stall sabotage
   const [notifications, setNotifications] = useState([]);
@@ -344,7 +361,7 @@ export default function GameScreen() {
 
   useEffect(() => {
     // Handle navigation and reload
-    const handleUnload = (e) => {
+    const handleUnload = () => {
       // Emit leave room event
       socket.emit("leaveRoom", { roomCode });
 
@@ -667,31 +684,28 @@ export default function GameScreen() {
                                 <span className="mr-2">⚡</span> Select Opponent
                               </h4>
                               <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar">
-                                {Object.entries(players || {}).map(([id, player]) => {
-                                  if (id === socket.id) return null;
-                                  return (
-                                    <div
-                                      key={id}
-                                      onClick={() => setSelectedOpponent({ id, name: player.name })}
-                                      className={`group cursor-pointer p-2.5 rounded-lg border transition-all duration-300 hover-scale ${
-                                        selectedOpponent?.id === id
-                                          ? "border-purple-500/50 bg-purple-500/20 text-purple-200 shadow-lg shadow-purple-500/20"
-                                          : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10"
-                                      }`}
-                                    >
-                                      <div className="flex items-center">
-                                        <div
-                                          className={`w-2 h-2 rounded-full mr-3 transition-all duration-300 ${
-                                            selectedOpponent?.id === id
-                                              ? "bg-purple-400"
-                                              : "bg-white/30 group-hover:bg-purple-400/50"
-                                          }`}
-                                        ></div>
-                                        <span className="font-medium">{player.name}</span>
-                                      </div>
+                                {Object.entries(otherPlayers || {}).map(([id, player]) => (
+                                  <div
+                                    key={id}
+                                    onClick={() => setSelectedOpponent({ id, name: player.name })}
+                                    className={`group cursor-pointer p-2.5 rounded-lg border transition-all duration-300 hover-scale ${
+                                      selectedOpponent?.id === id
+                                        ? "border-purple-500/50 bg-purple-500/20 text-purple-200 shadow-lg shadow-purple-500/20"
+                                        : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10"
+                                    }`}
+                                  >
+                                    <div className="flex items-center">
+                                      <div
+                                        className={`w-2 h-2 rounded-full mr-3 transition-all duration-300 ${
+                                          selectedOpponent?.id === id
+                                            ? "bg-purple-400"
+                                            : "bg-white/30 group-hover:bg-purple-400/50"
+                                        }`}
+                                      ></div>
+                                      <span className="font-medium">{player.name}</span>
                                     </div>
-                                  );
-                                })}
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           </div>
