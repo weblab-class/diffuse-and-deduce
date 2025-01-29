@@ -12,6 +12,30 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
   const [uploadStatus, setUploadStatus] = React.useState({ loading: false, error: null });
   const [uploadError, setUploadError] = React.useState("");
   const fileInputRef = React.useRef(null);
+  const errorTimeoutRef = React.useRef(null);
+
+  // Clear timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showError = (message) => {
+    // Clear any existing timeout
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+
+    setUploadError(message);
+
+    // Set new timeout to clear error after 3 seconds
+    errorTimeoutRef.current = setTimeout(() => {
+      setUploadError("");
+    }, 3000);
+  };
 
   const handleFileSelection = (event) => {
     const newFiles = Array.from(event.target.files);
@@ -19,7 +43,7 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
 
     // Check if adding these new files would exceed the 10 image limit
     if (selectedFiles.length + newFiles.length > 10) {
-      setUploadError(
+      showError(
         `Cannot add ${newFiles.length} more images. Maximum 10 images allowed (${selectedFiles.length} already selected)`
       );
       return;
@@ -54,14 +78,14 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
 
   const handleUploadImages = async () => {
     if (!selectedFiles.length) {
-      setUploadError("Please select images first");
+      showError("Please select images first");
       return;
     }
 
     // Check if all images have primary labels
     const emptyLabelIndex = labels.findIndex((label) => !label.primary.trim());
     if (emptyLabelIndex !== -1) {
-      setUploadError(`Please add a primary label for image ${emptyLabelIndex + 1}`);
+      showError(`Please add a primary label for image ${emptyLabelIndex + 1}`);
       return;
     }
 
@@ -69,7 +93,7 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
     selectedFiles.forEach((file, index) => {
       formData.append("images", file);
       formData.append("primaryLabels", labels[index].primary);
-      formData.append("secondaryLabels", labels[index].secondary || ""); // Send empty string if no secondary label
+      formData.append("secondaryLabels", labels[index].secondary || "");
     });
 
     try {
@@ -88,7 +112,7 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
       onClose();
     } catch (error) {
       setUploadStatus({ loading: false, error: error.message });
-      setUploadError("Failed to upload images. Please try again.");
+      showError("Failed to upload images. Please try again.");
     }
   };
 
@@ -125,7 +149,11 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
             </label>
           </div>
 
-          {uploadError && <div className="text-red-500 text-sm mt-2">{uploadError}</div>}
+          {uploadError && (
+            <div className="text-red-500 text-lg font-semibold p-4 bg-red-500/10 rounded-lg border border-red-500/20 text-center animate-shake">
+              {uploadError}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {selectedFiles.map((file, index) => (
