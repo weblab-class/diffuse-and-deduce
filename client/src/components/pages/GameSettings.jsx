@@ -5,11 +5,15 @@ import Header from "../modules/Header";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
+const FileUploadModal = ({ isOpen, onClose, onUploadComplete, totalUploadedImages = 0 }) => {
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [previews, setPreviews] = React.useState([]);
   const [labels, setLabels] = React.useState([]); // Array of {primary: string, secondary: string}
-  const [uploadStatus, setUploadStatus] = React.useState({ loading: false, error: null });
+  const [uploadStatus, setUploadStatus] = React.useState({
+    loading: false,
+    error: null,
+    uploaded: false,
+  });
   const [uploadError, setUploadError] = React.useState("");
   const fileInputRef = React.useRef(null);
   const errorTimeoutRef = React.useRef(null);
@@ -42,9 +46,11 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
     setUploadError("");
 
     // Check if adding these new files would exceed the 10 image limit
-    if (selectedFiles.length + newFiles.length > 10) {
+    if (totalUploadedImages + selectedFiles.length + newFiles.length > 10) {
       showError(
-        `Cannot add ${newFiles.length} more images. Maximum 10 images allowed (${selectedFiles.length} already selected)`
+        `Cannot add ${newFiles.length} more images. Maximum 10 images allowed (${
+          totalUploadedImages + selectedFiles.length
+        } already selected)`
       );
       return;
     }
@@ -97,7 +103,7 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
     });
 
     try {
-      setUploadStatus({ loading: true, error: null });
+      setUploadStatus({ loading: true, error: null, uploaded: false });
       const response = await fetch("/api/upload-images", {
         method: "POST",
         body: formData,
@@ -108,10 +114,33 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
       }
 
       const result = await response.json();
+
+      // Show success message
+      setUploadError(""); // Clear any existing errors
+      showError("Images uploaded successfully!"); // Reusing error display for success
+
+      // Call onUploadComplete with the new image IDs
       onUploadComplete(result.imageIds);
-      onClose();
+
+      // Set upload status to uploaded
+      setUploadStatus({ loading: false, error: null, uploaded: true });
+
+      // Reset the form state for the next upload
+      setSelectedFiles([]);
+      setPreviews([]);
+      setLabels([]);
+
+      // Reset the upload button state after 2 seconds
+      setTimeout(() => {
+        setUploadStatus({ loading: false, error: null, uploaded: false });
+      }, 2000);
+
+      // Close after showing success
+      setTimeout(() => {
+        onClose();
+      }, 1500);
     } catch (error) {
-      setUploadStatus({ loading: false, error: error.message });
+      setUploadStatus({ loading: false, error: error.message, uploaded: false });
       showError("Failed to upload images. Please try again.");
     }
   };
@@ -201,10 +230,16 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
             </button>
             <button
               onClick={handleUploadImages}
-              disabled={uploadStatus.loading}
-              className="px-4 py-2 bg-[#E94560] hover:bg-[#E94560]/80 rounded-lg transition-all disabled:opacity-50"
+              disabled={uploadStatus.loading || selectedFiles.length === 0}
+              className={`px-4 py-2 ${
+                uploadStatus.uploaded
+                  ? "bg-green-500 cursor-default"
+                  : selectedFiles.length === 0
+                  ? "bg-[#E94560]/50 cursor-not-allowed"
+                  : "bg-[#E94560] hover:bg-[#E94560]/80"
+              } rounded-lg transition-all`}
             >
-              {uploadStatus.loading ? "Uploading..." : "Upload Images"}
+              {uploadStatus.uploaded ? "Uploaded" : "Upload Images"}
             </button>
           </div>
         </div>
@@ -305,8 +340,16 @@ const GameSettings = () => {
 
   const handleTopicClick = (topic) => {
     if (topic === "Import_Images") {
+      if (uploadedImages.length >= 10) {
+        // Show error message that max images reached
+        const errorMessage = document.createElement("div");
+        errorMessage.textContent = "Maximum of 10 images already uploaded";
+        errorMessage.className = "text-red-500 text-sm mt-2";
+        // Remove after 3 seconds
+        setTimeout(() => errorMessage.remove(), 3000);
+        return;
+      }
       setIsUploadModalOpen(true);
-      // Don't set the topic yet, wait for successful upload
     } else {
       setSelectedTopic(topic);
     }
@@ -326,7 +369,8 @@ const GameSettings = () => {
 
   const handleUploadComplete = (imageIds) => {
     console.log("Upload complete with imageIds:", imageIds);
-    setUploadedImages(imageIds);
+    // Append new images to existing ones instead of replacing
+    setUploadedImages((prevImages) => [...prevImages, ...imageIds]);
     setSelectedTopic("Import_Images"); // Only set the topic after successful upload
   };
 
@@ -397,7 +441,7 @@ const GameSettings = () => {
                         stiffness: 100,
                       }}
                       whileHover={{
-                        scale: 1.03,
+                        scale: topic === "Import_Images" && uploadedImages.length >= 10 ? 1 : 1.03,
                         transition: {
                           type: "spring",
                           stiffness: 400,
@@ -405,7 +449,7 @@ const GameSettings = () => {
                         },
                       }}
                       whileTap={{
-                        scale: 0.97,
+                        scale: topic === "Import_Images" && uploadedImages.length >= 10 ? 1 : 0.97,
                         transition: {
                           type: "spring",
                           stiffness: 400,
@@ -413,18 +457,26 @@ const GameSettings = () => {
                         },
                       }}
                       onClick={() => handleTopicClick(topic)}
-                      className={`relative p-4 rounded-xl font-medium cursor-pointer w-full
+                      className={`relative p-4 rounded-xl font-medium ${
+                        topic === "Import_Images" && uploadedImages.length >= 10
+                          ? "cursor-not-allowed opacity-50"
+                          : "cursor-pointer"
+                      } w-full
                         transform transition-all duration-500 ease-out
                         before:absolute before:inset-0 before:rounded-xl before:transition-all before:duration-500
                         before:opacity-0 before:bg-gradient-to-r before:from-[#E94560]/20 before:to-[#0F3460]/20
-                        hover:before:opacity-100 hover:shadow-[0_0_30px_rgba(233,69,96,0.3)]
+                        ${
+                          topic === "Import_Images" && uploadedImages.length >= 10
+                            ? ""
+                            : "hover:before:opacity-100 hover:shadow-[0_0_30px_rgba(233,69,96,0.3)]"
+                        }
                         ${
                           selectedTopic === topic
                             ? "bg-gradient-to-r from-[#E94560] to-[#0F3460] text-white scale-[1.02] shadow-lg hover:shadow-xl ring-4 ring-[#E94560]/20"
                             : "bg-white/5 text-white/90 hover:bg-gradient-to-r hover:from-white/10 hover:to-white/5"
                         }`}
                     >
-                      <div className="relative flex items-center w-full min-h-[3rem]">
+                      <div className="relative flex items-center w-full min-h-[3rem] flex-col">
                         <div className="w-full flex justify-center items-center">
                           <span className="text-2xl relative">
                             {displayTopic(topic)}
@@ -453,6 +505,17 @@ const GameSettings = () => {
                             </motion.svg>
                           </span>
                         </div>
+                        {topic === "Import_Images" && (
+                          <div className="text-sm mt-2 text-white/70">
+                            {uploadedImages.length === 0
+                              ? "No images uploaded yet"
+                              : uploadedImages.length >= 10
+                              ? "Maximum 10 images uploaded"
+                              : `${uploadedImages.length} image${
+                                  uploadedImages.length === 1 ? "" : "s"
+                                } uploaded (max 10)`}
+                          </div>
+                        )}
                       </div>
                     </motion.li>
                   ))}
@@ -650,6 +713,7 @@ const GameSettings = () => {
           isOpen={isUploadModalOpen}
           onClose={handleModalClose}
           onUploadComplete={handleUploadComplete}
+          totalUploadedImages={uploadedImages.length}
         />
       </AnimatePresence>
     </>
