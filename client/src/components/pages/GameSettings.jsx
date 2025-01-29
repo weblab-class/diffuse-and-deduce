@@ -424,7 +424,7 @@ const GameSettings = () => {
                             : "bg-white/5 text-white/90 hover:bg-gradient-to-r hover:from-white/10 hover:to-white/5"
                         }`}
                     >
-                      <div className="relative inline-block">
+                      <div className="relative inline-flex items-center">
                         {displayTopic(topic)}
                         <motion.svg
                           initial={{ scale: 0, opacity: 0 }}
@@ -437,7 +437,7 @@ const GameSettings = () => {
                             stiffness: 500,
                             damping: 25,
                           }}
-                          className="absolute -right-8 top-1/2 -translate-y-1/2 w-5 h-5 text-white/90"
+                          className="ml-2 w-5 h-5 text-white/90"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
