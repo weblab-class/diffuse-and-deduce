@@ -6,9 +6,10 @@ let sharedImageStorage;
 
 const userToSocketMap = {}; // maps user ID to socket object
 const socketToUserMap = {}; // maps socket ID to user object
-
 const roomUsedImages = {}; // Track used images per room
 const roomTopics = {}; // Track the topic for each room
+const roomHosts = {}; // Track the host for each room
+const roomGameModes = {}; // Track if room is using imported images
 
 const rooms = {}; // to store interval references for each room
 
@@ -181,6 +182,17 @@ module.exports = {
 
       socket.on("submitGuess", async ({ roomCode, guessText }) => {
         try {
+          // Only block host from guessing if using imported images
+          const roomMode = roomGameModes[roomCode];
+          if (roomMode && roomMode.isImportedImages && roomMode.host === socket.id) {
+            socket.emit("guessResult", {
+              correct: false,
+              message: "As the host who imported the images, you cannot submit guesses",
+              isHost: true,
+            });
+            return;
+          }
+
           console.log("Received guess:", { roomCode, guessText });
           // Find the active round for this room
           const round = await Round.findOne({ roomCode, isActive: true });
@@ -277,6 +289,19 @@ module.exports = {
           uploadedImages,
         }) => {
           try {
+            // Store if the room is using imported images
+            roomGameModes[roomCode] = {
+              isImportedImages: topic === "Import_Images",
+              host: socket.id,
+            };
+
+            console.log("Received startRound event:", {
+              roomCode,
+              socketId: socket.id,
+              topic,
+              uploadedImages: uploadedImages ? uploadedImages.length : 0,
+            });
+
             // If this is a new round (not round 1), use the room's existing topic
             if (currentRound > 1 && roomTopics[roomCode]) {
               topic = roomTopics[roomCode];

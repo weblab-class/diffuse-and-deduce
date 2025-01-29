@@ -15,12 +15,9 @@ export default function GameScreen() {
   const [guessText, setGuessText] = useState("");
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
   const [guessedWrong, setGuessedWrong] = useState(false);
+  const [isSpectator, setIsSpectator] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const [primaryAnswer, setPrimaryAnswer] = useState("");
-  // const [hintsEnabled, setHintsEnabled] = useState(location.state?.hintsEnabled ?? false);
-  const [revealedHint, setRevealedHint] = useState("");
 
   const { state } = useLocation();
   const currentRound = state?.currentRound || 1;
@@ -29,8 +26,11 @@ export default function GameScreen() {
   const hintsEnabled = state?.hintsEnabled || false;
   const revealMode = state?.revealMode || "diffusion";
   const timePerRound = state?.timePerRound || 30;
-
-  const [topic, setTopic] = useState("Animals");
+  const topic = state?.topic || "Animals";
+  const [topicState, setTopic] = useState(topic);
+  const [primaryAnswer, setPrimaryAnswer] = useState("");
+  // const [hintsEnabled, setHintsEnabled] = useState(location.state?.hintsEnabled ?? false);
+  const [revealedHint, setRevealedHint] = useState("");
 
   const initialNoise = 8.0;
   const canvasRef = useRef(null);
@@ -49,22 +49,29 @@ export default function GameScreen() {
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
-      .then(({ imagePath: serverImagePath, startTime, totalTime, primaryAnswer: serverPrimaryAnswer}) => {
-        console.log("Round started with image:", serverImagePath);
-        setTimeElapsed(0);
-        setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
-        setNoiseLevel(initialNoise); // Reset noise
-        setImgLoaded(false); // Trigger image loading
-        // setTimePerRound(totalTime);
-        // setRecievedTime(true);
-        // setTotalRounds(totalRounds);
-        // setCurrentRound(currentRound);
-        setTopic(serverImagePath.split("/")[2]);
-        setPrimaryAnswer(serverPrimaryAnswer);
-      })
+      .then(
+        ({
+          imagePath: serverImagePath,
+          startTime,
+          totalTime,
+          primaryAnswer: serverPrimaryAnswer,
+        }) => {
+          console.log("Round started with image:", serverImagePath);
+          setTimeElapsed(0);
+          setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
+          setNoiseLevel(initialNoise); // Reset noise
+          setImgLoaded(false); // Trigger image loading
+          // setTimePerRound(totalTime);
+          // setRecievedTime(true);
+          // setTotalRounds(totalRounds);
+          // setCurrentRound(currentRound);
+          setTopic(serverImagePath.split("/")[2]);
+          setPrimaryAnswer(serverPrimaryAnswer);
+        }
+      )
       .catch((error) => {
         console.error("GET request to /api/gameState failed with error:", error);
-      }); 
+      });
   }, []);
 
   // Load the image whenever imagePath changes
@@ -162,35 +169,37 @@ export default function GameScreen() {
       setScores(scores);
     });
 
-    socket.on("roundOver", ({ scores, socketToUserMap}) => {
+    socket.on("roundOver", ({ scores, socketToUserMap }) => {
       console.log("Round over!");
       console.log("Mapping:", socketToUserMap);
       console.log("Round info from server:", { currentRound, totalRounds });
 
       // Fetch the host's socket ID from the server
-      get("/api/hostSocketId", { roomCode }).then(({ hostSocketId }) => {
-        console.log("Current socket: ", socket.id);
-        console.log("Host socket: ", hostSocketId);
-        const isHost = socket.id === hostSocketId;
-        console.log("After get request, Is host value:", isHost);
-        navigate("/leaderboard", { 
-          state: { 
-            scores, 
-            socketToUserMap, 
-            roomCode, 
-            isHost, 
-            currentRound,
-            totalRounds,
-            imagePath,
-            totalTime: timePerRound,  // Pass the current round's time to use for next round
-            gameMode,
-            revealMode, 
-            hintsEnabled
-          } 
+      get("/api/hostSocketId", { roomCode })
+        .then(({ hostSocketId }) => {
+          console.log("Current socket: ", socket.id);
+          console.log("Host socket: ", hostSocketId);
+          const isHost = socket.id === hostSocketId;
+          console.log("After get request, Is host value:", isHost);
+          navigate("/leaderboard", {
+            state: {
+              scores,
+              socketToUserMap,
+              roomCode,
+              isHost,
+              currentRound,
+              totalRounds,
+              imagePath,
+              totalTime: timePerRound, // Pass the current round's time to use for next round
+              gameMode,
+              revealMode,
+              hintsEnabled,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error("GET request to /api/hostSocketId failed with error:", error);
         });
-      }).catch((error) => {
-        console.error("GET request to /api/hostSocketId failed with error:", error);
-      }); 
     });
 
     return () => {
@@ -201,9 +210,73 @@ export default function GameScreen() {
     };
   }, [timePerRound, navigate, SERVER_URL, initialNoise]);
 
+  useEffect(() => {
+    socket.on("guessResult", ({ correct, message, isHost }) => {
+      if (isHost) {
+        setIsSpectator(true);
+        if (message) {
+          // You could show this message in a toast or alert if desired
+          console.log(message);
+        }
+        return;
+      }
+
+      if (correct) {
+        setGuessedCorrectly(true);
+        setGuessedWrong(false);
+      } else {
+        setGuessedWrong(true);
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 500);
+      }
+    });
+
+    return () => {
+      socket.off("guessResult");
+    };
+  }, []);
+
   const handleSubmitGuess = () => {
     socket.emit("submitGuess", { roomCode, guessText });
     setGuessText("");
+  };
+
+  const renderGuessInput = () => {
+    if (isSpectator) {
+      return (
+        <div className="text-center p-4 bg-white/5 rounded-lg">
+          <p className="text-[#E94560] font-semibold">
+            You imported these images - watching in spectator mode
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex gap-4 items-center">
+        <input
+          type="text"
+          value={guessText}
+          onChange={(e) => setGuessText(e.target.value)}
+          placeholder="Enter your guess..."
+          className={`flex-1 p-3 rounded-lg bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#E94560] ${
+            isShaking ? "animate-shake" : ""
+          }`}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !guessedCorrectly) {
+              handleSubmitGuess();
+            }
+          }}
+        />
+        <button
+          onClick={handleSubmitGuess}
+          disabled={guessedCorrectly}
+          className="px-6 py-3 bg-[#E94560] text-white rounded-lg hover:bg-[#E94560]/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Submit
+        </button>
+      </div>
+    );
   };
 
   // Listen for correct guess event
@@ -434,31 +507,7 @@ export default function GameScreen() {
                   <p className="text-sm text-gray-300">Waiting for the round to end... </p>
                 </div>
               ) : (
-                <div
-                  className={`bg-white/5 backdrop-blur-2xl rounded-xl p-3 border border-purple-500/20 shadow-lg ${
-                    guessedWrong ? "animate-shake" : ""
-                  }`}
-                >
-                  <div className="flex gap-2 items-center justify-center">
-                    <input
-                      className="flex-1 bg-white/10 text-purple-100 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50"
-                      placeholder="Enter guess..."
-                      value={guessText}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleSubmitGuess();
-                        }
-                      }}
-                      onChange={(e) => setGuessText(e.target.value)}
-                    />
-                    <button
-                      onClick={handleSubmitGuess}
-                      className="glow bg-gradient-to-r from-purple-600/80 to-indigo-600/80 text-white px-6 py-2 rounded-lg hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10"
-                    >
-                      Submit
-                    </button>
-                  </div>
-                </div>
+                renderGuessInput()
               )}
 
               {guessedWrong && (
