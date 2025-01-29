@@ -166,8 +166,9 @@ setInterval(cleanupRooms, 5 * 60 * 1000);
 
 function checkGuess(guessText, correctAnswers) {
   if (!guessText || !correctAnswers) return false;
+  const normalizedCorrectAnswers = correctAnswers.map((answer) => answer.toLowerCase());
   const normalizedGuess = guessText.trim().toLowerCase();
-  return correctAnswers.includes(normalizedGuess);
+  return normalizedCorrectAnswers.includes(normalizedGuess);
 }
 
 module.exports = {
@@ -512,9 +513,6 @@ module.exports = {
 
               round.correctAnswers = path.parse(selectedImage).name.trim().split("-");
               round.primaryAnswer = round.correctAnswers[0];
-              for (i = 0; i < round.correctAnswers.length; i += 1) {
-                round.correctAnswers[i] = round.correctAnswers[i].toLowerCase();
-              }
               imagePath = `/game-images/${topic}/${selectedImage}`;
             }
 

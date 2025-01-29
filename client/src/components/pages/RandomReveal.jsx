@@ -690,13 +690,6 @@ const RandomReveal = () => {
     img.src = imagePath;
 
     img.onload = () => {
-      // Reveal image in the last 5 seconds
-      const timeRemaining = timePerRound - timeElapsed;
-      if (timeRemaining < 5) {
-        // Fully reveal the image in the last 5 seconds
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        return;
-      }
       drawImageWithReveals(ctx, img, revealCircles, noiseCircles);
     };
   }, [revealCircles, noiseCircles, imagePath, imgLoaded, timeElapsed, timePerRound]);
