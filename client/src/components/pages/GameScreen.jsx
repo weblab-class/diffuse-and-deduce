@@ -27,7 +27,6 @@ export default function GameScreen() {
   const totalRounds = state?.totalRounds || 1;
   const gameMode = state?.gameMode || "single";
   const hintsEnabled = state?.hintsEnabled || false;
-  const sabotageEnabled = state?.sabotageEnabled || false;
   const revealMode = state?.revealMode || "diffusion";
   const timePerRound = state?.timePerRound || 30;
   const importedImages = state?.importedImages || false;
@@ -44,22 +43,15 @@ export default function GameScreen() {
 
   const { players, isHost, hostId, error } = useRoom(roomCode, playerName);
 
+  const sabotageEnabled = (state?.sabotageEnabled && !(importedImages && isHost)) || false;
+
   // Debug logs
   console.log("Current socket ID:", socket.id);
   console.log("All players:", players);
 
-  // Filter out current player by comparing with the id field in the player object
-  const otherPlayers = Object.entries(players || {}).reduce((acc, [key, player]) => {
-    console.log("Checking player:", key, player);
-    if (player.id !== socket.id) {
-      acc[key] = player;
-    } else {
-      console.log("Filtering out current player:", player.id);
-    }
-    return acc;
-  }, {});
-
-  console.log("Filtered players:", otherPlayers);
+  const sabotagePlayers = players.filter(
+    (player) => player.id !== socket.id && !(importedImages && player.id === hostId)
+  );
 
   const [selectedOpponent, setSelectedOpponent] = useState(null); // Currently selected opponent for sabotage
   const [guessDisabled, setGuessDisabled] = useState(false); // Disable guess input during stall sabotage
@@ -439,6 +431,30 @@ export default function GameScreen() {
     );
   };
 
+  const renderSabotageOpponents = () => {
+    if (!sabotagePlayers.length) {
+      return <p className="text-white/60">No opponents available for sabotage.</p>;
+    }
+
+    return (
+      <ul className="list-disc list-inside">
+        {sabotagePlayers.map((player) => (
+          <li
+            key={player.id}
+            onClick={() => setSelectedOpponent(player)}
+            className={`cursor-pointer ${
+              selectedOpponent?.id === player.id
+                ? "text-yellow-400"
+                : "text-white/80 hover:text-yellow-300"
+            }`}
+          >
+            {player.name}
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   // Listen for correct guess event
   useEffect(() => {
     socket.on("correctGuess", ({ playerId, score }) => {
@@ -683,30 +699,7 @@ export default function GameScreen() {
                               <h4 className="text-lg font-medium mb-3 pl-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center">
                                 <span className="mr-2">⚡</span> Select Opponent
                               </h4>
-                              <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar">
-                                {Object.entries(otherPlayers || {}).map(([id, player]) => (
-                                  <div
-                                    key={id}
-                                    onClick={() => setSelectedOpponent({ id, name: player.name })}
-                                    className={`group cursor-pointer p-2.5 rounded-lg border transition-all duration-300 hover-scale ${
-                                      selectedOpponent?.id === id
-                                        ? "border-purple-500/50 bg-purple-500/20 text-purple-200 shadow-lg shadow-purple-500/20"
-                                        : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10"
-                                    }`}
-                                  >
-                                    <div className="flex items-center">
-                                      <div
-                                        className={`w-2 h-2 rounded-full mr-3 transition-all duration-300 ${
-                                          selectedOpponent?.id === id
-                                            ? "bg-purple-400"
-                                            : "bg-white/30 group-hover:bg-purple-400/50"
-                                        }`}
-                                      ></div>
-                                      <span className="font-medium">{player.name}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+                              {renderSabotageOpponents()}
                             </div>
                           </div>
 
