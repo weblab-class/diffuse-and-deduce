@@ -70,8 +70,6 @@ function startRoundTimer(roomCode) {
       // Check if round exists and is active
       if (!round) {
         console.log(`No round found for room ${roomCode}, clearing timer`);
-        // clearInterval(interval);
-        // delete rooms[roomCode].interval;
         return;
       }
 
@@ -97,8 +95,6 @@ function startRoundTimer(roomCode) {
         io.to(roomCode).emit("roundOver", {
           scores: rooms[roomCode].scores,
           socketToUserMap,
-          // currentRound: round.currentRound,
-          // totalRounds: round.totalRounds
         });
       } else {
         // Send time update (capped at total round time)
@@ -180,6 +176,77 @@ module.exports = {
       console.log(`socket has connected ${socket.id}`);
 
       const Round = require("./models/round");
+      const price = { stall: 50, addNoise: 50, deduct: 30 };
+
+      socket.on("sabotage", async ({ roomCode, type, targetId }) => {
+        try {
+          // Validate sabotage parameters
+          if (!roomCode || !type || !targetId) {
+            return socket.emit("errorMessage", "Invalid sabotage parameters.");
+          }
+
+          // Fetch the room from the database
+          const room = await Room.findOne({ code: roomCode });
+          if (!room) {
+            return socket.emit("errorMessage", "Room not found.");
+          }
+
+          // Find the acting player in the room
+          const actingPlayer = room.players.find((p) => p.id === socket.id);
+          if (!actingPlayer) {
+            return socket.emit("errorMessage", "You are not part of this room.");
+          }
+
+          // Prevent sabotaging oneself
+          if (actingPlayer.id === targetId) {
+            return socket.emit("errorMessage", "You cannot sabotage yourself.");
+          }
+
+          // Find the target player
+          const targetPlayer = room.players.find((p) => p.id === targetId);
+          if (!targetPlayer) {
+            return socket.emit("errorMessage", "Target player not found in the room.");
+          }
+
+          // Ensure the acting player has enough points
+          const actingScore = rooms[roomCode].scores[socket.id] || 0;
+          if (actingScore < price[type]) {
+            return socket.emit("errorMessage", "Not enough points to perform sabotage.");
+          }
+
+          // Deduct points from the acting player
+          rooms[roomCode].scores[socket.id] -= price[type];
+
+          // Initialize the difference object for score updates
+          const diff = {
+            [socket.id]: -price[type], // Acting player loses points
+          };
+
+          // Apply the sabotage effect based on the type
+          if (type === "addNoise") {
+            // Notify the target to add noise
+            io.to(targetId).emit("sabotageApplied", { type: "addNoise", from: socket.id });
+          } else if (type === "stall") {
+            // Notify the target to stall (disable guessing)
+            io.to(targetId).emit("sabotageApplied", { type: "stall", from: socket.id });
+          } else if (type === "deduct") {
+            // Deduct 50 points from the target player
+            rooms[roomCode].scores[targetId] = (rooms[roomCode].scores[targetId] || 0) - 60;
+            diff[targetId] = -60;
+
+            // Notify the target about the deduction
+            io.to(targetId).emit("sabotageApplied", { type: "deduct", from: socket.id });
+          } else {
+            return socket.emit("errorMessage", "Unknown sabotage type.");
+          }
+
+          // Emit updated scores to all players in the room
+          io.to(roomCode).emit("scoreUpdate", { scores: rooms[roomCode].scores, diff });
+        } catch (err) {
+          console.error("Error handling sabotage:", err);
+          socket.emit("errorMessage", "Failed to perform sabotage.");
+        }
+      });
 
       socket.on("submitGuess", async ({ roomCode, guessText }) => {
         try {
@@ -248,7 +315,7 @@ module.exports = {
               `Player ${playerId} scored ${score} points. Total: ${rooms[roomCode].scores[playerId]}`
             );
 
-            io.to(roomCode).emit("correctGuess", { playerId });
+            io.to(roomCode).emit("correctGuess", { playerId, score });
           } else {
             const score = -100;
             rooms[roomCode].scores[playerId] += score;
@@ -286,6 +353,7 @@ module.exports = {
           currentRound,
           revealMode,
           hintsEnabled,
+          sabotageEnabled,
           gameMode,
           uploadedImages,
         }) => {
@@ -350,6 +418,7 @@ module.exports = {
               startTime: Date.now(),
               revealMode,
               hintsEnabled,
+              sabotageEnabled,
             });
 
             let imagePath;
@@ -449,6 +518,13 @@ module.exports = {
             round.imagePath = imagePath;
 
             await round.save();
+            console.log("Round saved successfully with totalTime:", round.totalTime);
+            console.log("Round saved with totalRounds:", round.totalRounds);
+
+            // Clear any existing timer and start a new one
+            if (rooms[roomCode] && rooms[roomCode].interval) {
+              clearInterval(rooms[roomCode].interval);
+            }
 
             // Emit 'roundStarted' to all clients in the room with image information
             io.to(roomCode).emit("roundStarted", {
@@ -456,12 +532,20 @@ module.exports = {
               startTime: round.startTime,
               totalTime: round.totalTime,
               imagePath,
-              totalRounds: round.totalRounds,
+              totalRounds: round.totalRounds, // Use the saved totalRounds
               currentRound: round.currentRound,
               gameMode,
               revealMode: round.revealMode,
               primaryAnswer: round.primaryAnswer,
               hintsEnabled: round.hintsEnabled,
+              sabotageEnabled: round.sabotageEnabled,
+            });
+
+            const room = await Room.findOne({ code: roomCode });
+            io.to(roomCode).emit("roomData", {
+              players: room.players,
+              hostId: room.hostId,
+              scores: rooms[roomCode].scores,
             });
 
             // Start the timer after everything is set up
@@ -562,46 +646,45 @@ module.exports = {
             return callback({ error: "Room code and player name are required." });
           }
 
-          // Save in MONGODB
+          // Find the room
           const room = await Room.findOne({ code: roomCode });
           if (!room) {
             return callback({ error: "Room not found." });
           }
-          if (room.isGameStarted) {
-            return callback({ error: "Game has already started in this room." });
-          }
 
-          // Check if player is already in the room
+          // Check if player already exists
           const existingPlayer = room.players.find((player) => player.name === playerName);
           if (existingPlayer) {
-            // Update the existing player's socket ID if needed
-            console.log("Player already exists in room:", existingPlayer);
-            const oldSocketId = existingPlayer.id;
+            // Update the player's socket ID
             existingPlayer.id = socket.id;
-            if (room.hostId === oldSocketId) {
+            if (room.hostId === existingPlayer.id) {
               room.hostId = socket.id;
             }
           } else {
-            // Add the player to room in database only if they're not already there
+            // Add new player
             room.players.push({ id: socket.id, name: playerName });
           }
+
           await room.save();
 
-          // Add player to the IN-MEMORY room data
+          // Update in-memory room data
           if (!rooms[roomCode]) {
             rooms[roomCode] = { players: [], scores: {} };
           }
-          rooms[roomCode].players.push({ id: socket.id, name: playerName });
-          rooms[roomCode].scores[socket.id] = 0;
+          const playerIndex = rooms[roomCode].players.findIndex((p) => p.name === playerName);
+          if (playerIndex !== -1) {
+            rooms[roomCode].players[playerIndex].id = socket.id;
+          } else {
+            rooms[roomCode].players.push({ id: socket.id, name: playerName });
+            rooms[roomCode].scores[socket.id] = rooms[roomCode].scores[socket.id] || 0;
+          }
 
-          // SOCKETIO
           socket.join(roomCode);
 
-          // Immediately emit room data to all clients in the room
+          // Emit updated room data to all clients in the room
           io.to(roomCode).emit("roomData", {
             players: room.players,
             hostId: room.hostId,
-            where: "New Player joined",
             scores: rooms[roomCode].scores,
           });
 

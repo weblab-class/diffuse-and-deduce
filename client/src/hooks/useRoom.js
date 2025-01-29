@@ -4,15 +4,13 @@ import socket from "../client-socket";
 
 const useRoom = (roomCode, playerName) => {
   const [players, setPlayers] = useState([]);
-  const [isHost, setIsHost] = useState(null);
+  const [isHost, setIsHost] = useState(false);
   const [hostId, setHostId] = useState(null);
   const [error, setError] = useState(null);
-  const [hasJoined, setHasJoined] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Only join if we haven't joined yet
-    if (!roomCode || !playerName || hasJoined) return;
+    if (!roomCode || !playerName) return;
 
     console.log("Attempting to join room:", roomCode);
 
@@ -21,58 +19,64 @@ const useRoom = (roomCode, playerName) => {
         console.error("Join room error:", response.error);
         setError(response.error);
       } else {
-        setHasJoined(true); // Mark that we've successfully joined
         console.log("Successfully joined room:", roomCode);
       }
     });
-  }, [roomCode, playerName, hasJoined]);
+  }, [roomCode, playerName]);
 
   useEffect(() => {
-    if (!roomCode) return; // Don't fetch if no room code
+    if (!roomCode) return;
 
-    socket.on("roomData", (data) => {
-      console.log("Inside useRoom, Received room data:", data);
+    const handleRoomData = (data) => {
+      console.log("Received room data:", data);
       setPlayers(data.players);
       setIsHost(data.hostId === socket.id);
       setHostId(data.hostId);
-    });
+    };
 
-    socket.on("roundStarted", (data) => {
+    const handleRoundStarted = (data) => {
       console.log("Round started with data:", data);
       const {
         startTime,
         totalTime,
-        imagePath: serverImagePath,
+        imagePath,
+        primaryAnswer,
         totalRounds,
         currentRound,
         gameMode,
         revealMode,
         hintsEnabled,
+        sabotageEnabled,
       } = data;
 
       const targetPath =
         revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
 
+      revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
       navigate(targetPath, {
         state: {
+          playerName,
           startTime,
           timePerRound: totalTime,
-          imagePath: serverImagePath,
+          imagePath,
           totalRounds,
           currentRound,
           gameMode,
           revealMode,
           hintsEnabled,
+          sabotageEnabled,
         },
       });
-    });
+    };
+
+    socket.on("roomData", handleRoomData);
+    socket.on("roundStarted", handleRoundStarted);
 
     return () => {
-      console.log("Cleaning up room effect");
-      socket.off("roomData");
-      socket.off("roundStarted");
+      socket.off("roomData", handleRoomData);
+      socket.off("roundStarted", handleRoundStarted);
     };
-  }, [roomCode, navigate]);
+  }, [roomCode, navigate, playerName]);
 
   return {
     players,

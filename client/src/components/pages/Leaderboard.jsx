@@ -1,10 +1,9 @@
-import React, { useRef, useEffect, useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import socket from "../../client-socket";
 import useRoom from "../../hooks/useRoom";
 
-import Button from "../modules/Button";
 import Header from "../modules/Header";
 
 import "../../utilities.css";
@@ -22,6 +21,7 @@ const Leaderboard = () => {
   const gameMode = state?.gameMode || "single";
   const revealMode = state?.revealMode || "diffusion";
   const hintsEnabled = state?.hintsEnabled || false;
+  const sabotageEnabled = state?.sabotageEnabled || false;
   const navigate = useNavigate();
 
   useRoom(roomCode);
@@ -47,6 +47,7 @@ const Leaderboard = () => {
         currentRound: currentRound + 1,
         revealMode,
         hintsEnabled,
+        sabotageEnabled,
         gameMode,
       });
     } else {
@@ -60,6 +61,7 @@ const Leaderboard = () => {
         currentRound: currentRound + 1,
         revealMode,
         hintsEnabled,
+        sabotageEnabled,
         gameMode,
       });
     }
