@@ -23,23 +23,7 @@ const Leaderboard = () => {
   const importedImages = state?.importedImages || false;
   const navigate = useNavigate();
 
-  console.log("Recieved states:", {
-    scores,
-    socketToUserMap,
-    roomCode,
-    isHost,
-    currentRound,
-    totalRounds,
-    totalTime,
-    imagePath,
-    gameMode,
-    revealMode,
-    hintsEnabled,
-  });
-
   useRoom(roomCode);
-
-  console.log(socketToUserMap, scores);
 
   const entries = Object.entries(socketToUserMap).filter(([socketId]) => socketId in scores);
   entries.sort((a, b) => scores[b[0]] - scores[a[0]]);
@@ -409,9 +393,6 @@ const Leaderboard = () => {
   };
 
   const handleNextRound = () => {
-    console.log("Next Round button clicked");
-    console.log("Leaderboard's Image Path: ", imagePath);
-
     // Check if we're using imported images by checking the image path
     const isImportedImages = imagePath.includes("/api/get-game-image");
 
@@ -594,7 +575,6 @@ const Leaderboard = () => {
                         <>
                           {isHost ? (
                             <div className="flex justify-center mt-4">
-                              {console.log("Next Round button rendered")}
                               <button
                                 className="text-white px-4 py-2 rounded rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
                                 onClick={handleNextRound}
@@ -604,7 +584,6 @@ const Leaderboard = () => {
                             </div>
                           ) : (
                             <div className="flex justify-center mt-4">
-                              {console.log("Next Round button not rendered")}
                               <div className="text-white px-4 py-2">Waiting for next round...</div>
                             </div>
                           )}

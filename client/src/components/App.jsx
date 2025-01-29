@@ -34,7 +34,6 @@ const App = () => {
   const handleLogin = (credentialResponse) => {
     const userToken = credentialResponse.credential;
     const decodedCredential = jwt_decode(userToken);
-    console.log(`Logged in as ${decodedCredential.name}`);
     post("/api/login", { token: userToken }).then((user) => {
       setUserId(user._id);
       setUserName(user.name);
@@ -57,17 +56,14 @@ const App = () => {
     setUserId(undefined);
     setUserName(undefined);
     if (roomCode) {
-      console.log("Leaving room before navigation");
       navigate("/");
       socket.emit("leaveRoom", { roomCode }, (response) => {
         if (response.error) {
           console.error(response.error);
           return;
         }
-        console.log("Successfully left room");
       });
     } else {
-      console.log("Direct navigation");
       navigate("/");
     }
     post("/api/logout");

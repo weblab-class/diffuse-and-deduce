@@ -22,8 +22,6 @@ const RoomActions = () => {
     setRoomCode(userInput);
     setError("");
 
-    console.log("Room code input:", userInput);
-
     if (!userInput) {
       setIsRoomCodeValid(false);
       return;
@@ -31,9 +29,7 @@ const RoomActions = () => {
 
     // Only check if room exists if we have a complete room code
     if (userInput.length === 5) {
-      console.log("Checking if room exists:", userInput);
       socket.emit("checkRoomExists", { roomCode: userInput }, (response) => {
-        console.log("Check room response:", response);
         if (response.error) {
           setError(response.error);
           setIsRoomCodeValid(false);
@@ -42,7 +38,6 @@ const RoomActions = () => {
           if (!response.exists) {
             setError("Room not found");
           } else {
-            console.log("Room found:", response);
             setError(""); // Clear error if room exists
           }
         }
@@ -57,12 +52,9 @@ const RoomActions = () => {
       setError("Please log in first");
       return;
     }
-
-    console.log("Creating room with userName:", userName);
     setIsLoading(true);
     socket.emit("createRoom", { playerName: userName }, (response) => {
       setIsLoading(false);
-      console.log("Create room response:", response);
 
       if (response.error) {
         console.error("Room creation error:", response.error);
@@ -71,7 +63,6 @@ const RoomActions = () => {
         console.error("Invalid response:", response);
         setError("Failed to create room: Invalid server response");
       } else {
-        console.log("Room created with code:", response.roomCode);
         setError(""); // Clear any existing errors
         navigate(`/lobby/${response.roomCode}`);
       }
@@ -95,7 +86,6 @@ const RoomActions = () => {
       if (response.error) {
         setError(response.error);
       } else {
-        console.log("Joined room:", roomCode);
         navigate(`/lobby/${roomCode}`);
       }
     });

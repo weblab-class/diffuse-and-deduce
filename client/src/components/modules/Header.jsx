@@ -19,17 +19,14 @@ const Header = (props) => {
     if (roomCode) {
       navigate(`/${props.backNav}`, { state: props.backState });
       if (props.backNav !== "tutorial" && props.backNav !== `lobby/${roomCode}`) {
-        console.log("Leaving room before navigation");
         socket.emit("leaveRoom", { roomCode }, (response) => {
           if (response.error) {
             console.error(response.error);
             return;
           }
-          console.log("Successfully left room, navigating to:", props.backNav);
         });
       }
     } else {
-      console.log("Direct navigation to:", props.backNav);
       navigate(`/${props.backNav}`, { state: props.backState });
     }
   };

@@ -71,7 +71,6 @@ const RandomReveal = () => {
           primaryAnswer: serverPrimaryAnswer,
         }) => {
           if (serverImagePath) {
-            console.log("Got game state with image:", serverImagePath);
             setTimeElapsed(0); // Let server timeUpdate events handle the time
             setImagePath(`${SERVER_URL}${serverImagePath}`);
             setPrimaryAnswer(serverPrimaryAnswer);
@@ -184,7 +183,6 @@ const RandomReveal = () => {
 
   useEffect(() => {
     const handleTimeUpdate = ({ timeElapsed }) => {
-      console.log("Received time update:", timeElapsed);
       setTimeElapsed(timeElapsed);
 
       // Add shake effect when time is less than 5 seconds
@@ -196,7 +194,6 @@ const RandomReveal = () => {
     };
 
     const handleRoundStarted = ({ startTime, totalTime, imagePath }) => {
-      console.log("Random Reveal: Round started with image:", imagePath);
       setTimeElapsed(0);
       setImagePath(`${SERVER_URL}${imagePath}`);
       setRevealCircles([]); // Reset reveal circles for new round
@@ -206,7 +203,6 @@ const RandomReveal = () => {
     };
 
     const handleScoreUpdate = ({ scores: newScores, diff }) => {
-      console.log("Received score update:", newScores, diff);
       setScores(newScores);
       setDiff(diff);
     };
@@ -216,10 +212,6 @@ const RandomReveal = () => {
     socket.on("scoreUpdate", handleScoreUpdate);
 
     socket.on("roundOver", async ({ scores, socketToUserMap }) => {
-      console.log("Round over!");
-      console.log("Mapping:", socketToUserMap);
-      console.log("Round info from server:", { currentRound, totalRounds });
-
       const [showingAnswer, setShowingAnswer] = useState(false);
 
       setShowingAnswer(true);
@@ -231,10 +223,7 @@ const RandomReveal = () => {
       // Fetch the host's socket ID from the server
       get("/api/hostSocketId", { roomCode })
         .then(({ hostSocketId }) => {
-          console.log("Current socket: ", socket.id);
-          console.log("Host socket: ", hostSocketId);
           const isHost = socket.id === hostSocketId;
-          console.log("After get request, Is host value:", isHost);
           navigate("/leaderboard", {
             state: {
               scores,
@@ -739,7 +728,6 @@ const RandomReveal = () => {
 
   useEffect(() => {
     socket.on("roundOver", async ({ scores, socketToUserMap }) => {
-      console.log("Round over!");
       setShowingAnswer(true);
 
       // Show answer for 3 seconds before transitioning
@@ -749,10 +737,7 @@ const RandomReveal = () => {
       // Fetch the host's socket ID from the server
       get("/api/hostSocketId", { roomCode })
         .then(({ hostSocketId }) => {
-          console.log("Current socket: ", socket.id);
-          console.log("Host socket: ", hostSocketId);
           const isHost = socket.id === hostSocketId;
-          console.log("After get request, Is host value:", isHost);
           navigate("/leaderboard", {
             state: {
               scores,

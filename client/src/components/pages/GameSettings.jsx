@@ -268,16 +268,6 @@ const GameSettings = () => {
 
   const gameMode = state?.gameMode;
 
-  useEffect(() => {
-    // Log for debugging
-    console.log("GameSettings state:", {
-      roomCode,
-      gameMode,
-      locationState: state,
-      backNavValue: gameMode === "single" ? "choose-num-players" : "room-actions",
-    });
-  }, [roomCode, gameMode, state]);
-
   const [settings, setSettings] = React.useState({
     totalRounds: 1,
     currentRound: 1,
@@ -359,10 +349,6 @@ const GameSettings = () => {
   };
 
   const handleModalClose = () => {
-    console.log("Modal closing with state:", {
-      selectedTopic,
-      uploadedImages,
-    });
     setIsUploadModalOpen(false);
     // If Import_Images was selected but no images were uploaded, deselect it
     if (selectedTopic === "Import_Images" && uploadedImages.length === 0) {
@@ -371,7 +357,6 @@ const GameSettings = () => {
   };
 
   const handleUploadComplete = (imageIds) => {
-    console.log("Upload complete with imageIds:", imageIds);
     // Append new images to existing ones instead of replacing
     setUploadedImages((prevImages) => [...prevImages, ...imageIds]);
     setSelectedTopic("Import_Images"); // Only set the topic after successful upload
@@ -379,13 +364,11 @@ const GameSettings = () => {
 
   const handleStartGame = () => {
     if (!selectedTopic) {
-      console.log("No topic selected, returning");
       return;
     }
 
     // Additional validation for Import_Images
     if (selectedTopic === "Import_Images" && uploadedImages.length === 0) {
-      console.log("Import Images selected but no images uploaded, returning");
       return;
     }
 
@@ -401,8 +384,6 @@ const GameSettings = () => {
       gameMode,
       uploadedImages: selectedTopic === "Import_Images" ? uploadedImages : null,
     };
-
-    console.log("Emitting startRound with data:", gameData);
     socket.emit("startRound", gameData);
   };
 

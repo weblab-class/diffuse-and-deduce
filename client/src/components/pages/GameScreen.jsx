@@ -46,10 +46,6 @@ export default function GameScreen() {
 
   const sabotageEnabled = (state?.sabotageEnabled && !(importedImages && isHost)) || false;
 
-  // Debug logs
-  console.log("Current socket ID:", socket.id);
-  console.log("All players:", players);
-
   const sabotagePlayers = players.filter(
     (player) => player.id !== socket.id && !(importedImages && player.id === hostId)
   );
@@ -70,7 +66,6 @@ export default function GameScreen() {
   useEffect(() => {
     // Check if we have valid state from navigation
     if (!state) {
-      console.log("No valid game state found, redirecting to home");
       socket.emit("leaveRoom", { roomCode });
       navigate("/");
       return;
@@ -101,7 +96,6 @@ export default function GameScreen() {
           totalTime,
           primaryAnswer: serverPrimaryAnswer,
         }) => {
-          console.log("Round started with image:", serverImagePath);
           setTimeElapsed(0);
           setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
           setNoiseLevel(initialNoise); // Reset noise
@@ -302,7 +296,6 @@ export default function GameScreen() {
   useEffect(() => {
     // Handle various socket events
     socket.on("timeUpdate", ({ timeElapsed }) => {
-      console.log("Received time update:", timeElapsed);
       setTimeElapsed(timeElapsed);
       const fraction = timeElapsed / timePerRound;
 
@@ -328,16 +321,11 @@ export default function GameScreen() {
     });
 
     socket.on("scoreUpdate", ({ scores, diff }) => {
-      console.log("Received score update:", scores, diff);
       setDiff(diff);
       setScores(scores);
     });
 
     socket.on("roundOver", async ({ scores, socketToUserMap }) => {
-      console.log("Round over!");
-      console.log("Mapping:", socketToUserMap);
-      console.log("Round info from server:", { currentRound, totalRounds });
-
       const [showingAnswer, setShowingAnswer] = useState(false);
 
       setShowingAnswer(true);
@@ -349,10 +337,7 @@ export default function GameScreen() {
       // Fetch the host's socket ID from the server
       get("/api/hostSocketId", { roomCode })
         .then(({ hostSocketId }) => {
-          console.log("Current socket: ", socket.id);
-          console.log("Host socket: ", hostSocketId);
           const isHost = socket.id === hostSocketId;
-          console.log("After get request, Is host value:", isHost);
           navigate("/leaderboard", {
             state: {
               scores,
@@ -659,7 +644,6 @@ export default function GameScreen() {
 
   useEffect(() => {
     socket.on("roundOver", async ({ scores, socketToUserMap }) => {
-      console.log("Round over!");
       setShowingAnswer(true);
 
       // Show answer for 3 seconds before transitioning
@@ -669,10 +653,7 @@ export default function GameScreen() {
       // Fetch the host's socket ID from the server
       get("/api/hostSocketId", { roomCode })
         .then(({ hostSocketId }) => {
-          console.log("Current socket: ", socket.id);
-          console.log("Host socket: ", hostSocketId);
           const isHost = socket.id === hostSocketId;
-          console.log("After get request, Is host value:", isHost);
           navigate("/leaderboard", {
             state: {
               scores,

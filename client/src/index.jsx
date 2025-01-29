@@ -8,7 +8,6 @@ import Lobby from "./components/pages/Lobby";
 import NotFound from "./components/pages/NotFound";
 import GameSettings from "./components/pages/GameSettings";
 import Tutorial from "./components/pages/Tutorial";
-// import Game from "./components/pages/Game";
 import GameScreen from "./components/pages/GameScreen";
 import Leaderboard from "./components/pages/Leaderboard";
 import RandomReveal from "./components/pages/RandomReveal";
