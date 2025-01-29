@@ -25,9 +25,9 @@ const RandomReveal = () => {
   const [isShaking, setIsShaking] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [isRoundOver, setIsRoundOver] = useState(false);
-
   const [primaryAnswer, setPrimaryAnswer] = useState("");
   const [revealedHint, setRevealedHint] = useState("");
+  const [isMusicPlaying, setIsMusicPlaying] = useState(true);
 
   const hintsEnabled = state?.hintsEnabled || false;
   const playerName = state?.playerName;
@@ -258,6 +258,47 @@ const RandomReveal = () => {
       socket.off("scoreUpdate", handleScoreUpdate);
     };
   }, [roomCode, navigate, timePerRound]);
+
+  useEffect(() => {
+    // Try to play immediately (will likely fail due to browser restrictions)
+    document
+      .getElementById("randomRevealBackgroundMusic")
+      ?.play()
+      .catch(() => {
+        // On failure, set up a one-time click listener
+        document.addEventListener(
+          "click",
+          () => {
+            const audio = document.getElementById("randomRevealBackgroundMusic");
+            if (audio) {
+              audio.play().then(() => setIsMusicPlaying(true));
+            }
+          },
+          { once: true }
+        );
+      });
+
+    return () => {
+      const audio = document.getElementById("randomRevealBackgroundMusic");
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    };
+  }, []);
+
+  const toggleMusic = () => {
+    const audio = document.getElementById("randomRevealBackgroundMusic");
+    if (audio) {
+      if (isMusicPlaying) {
+        audio.pause();
+        audio.currentTime = 0;
+      } else {
+        audio.play();
+      }
+      setIsMusicPlaying(!isMusicPlaying);
+    }
+  };
 
   const renderGuessInput = () => {
     if (importedImages && isHost) {
@@ -869,6 +910,35 @@ const RandomReveal = () => {
           </div>
         </div>
       </div>
+
+      {/* Background Music */}
+      <audio id="randomRevealBackgroundMusic" loop>
+        <source src="/music/rounds.m4a" type="audio/mp4" />
+        Your browser does not support the audio element.
+      </audio>
+
+      {/* Music Control Button */}
+      <button
+        className="music-control"
+        onClick={toggleMusic}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          zIndex: 1000,
+          background: "rgba(255, 255, 255, 0.1)",
+          border: "none",
+          borderRadius: "50%",
+          width: "40px",
+          height: "40px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {isMusicPlaying ? "🔊" : "🔇"}
+      </button>
     </div>
   );
 };

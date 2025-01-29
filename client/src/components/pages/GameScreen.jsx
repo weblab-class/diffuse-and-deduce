@@ -20,6 +20,7 @@ export default function GameScreen() {
   const [guessedWrong, setGuessedWrong] = useState(false);
   const navigate = useNavigate();
   const [reward, setReward] = useState(0);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(true);
 
   const { state } = useLocation();
   const playerName = state?.playerName;
@@ -211,6 +212,47 @@ export default function GameScreen() {
       socket.off("sabotageApplied");
     };
   }, [revealMode]);
+
+  useEffect(() => {
+    // Try to play immediately (will likely fail due to browser restrictions)
+    document
+      .getElementById("gameBackgroundMusic")
+      ?.play()
+      .catch(() => {
+        // On failure, set up a one-time click listener
+        document.addEventListener(
+          "click",
+          () => {
+            const audio = document.getElementById("gameBackgroundMusic");
+            if (audio) {
+              audio.play().then(() => setIsMusicPlaying(true));
+            }
+          },
+          { once: true }
+        );
+      });
+
+    return () => {
+      const audio = document.getElementById("gameBackgroundMusic");
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    };
+  }, []);
+
+  const toggleMusic = () => {
+    const audio = document.getElementById("gameBackgroundMusic");
+    if (audio) {
+      if (isMusicPlaying) {
+        audio.pause();
+        audio.currentTime = 0;
+      } else {
+        audio.play();
+      }
+      setIsMusicPlaying(!isMusicPlaying);
+    }
+  };
 
   // Load the image whenever imagePath changes
   useEffect(() => {
@@ -640,7 +682,7 @@ export default function GameScreen() {
               currentRound,
               totalRounds,
               imagePath,
-              totalTime: timePerRound,
+              totalTime: timePerRound, // Pass the current round's time to use for next round
               gameMode,
               revealMode,
               hintsEnabled,
@@ -840,6 +882,33 @@ export default function GameScreen() {
           </div>
         </div>
       </div>
+
+      <audio id="gameBackgroundMusic" loop>
+        <source src="/music/rounds.m4a" type="audio/mp4" />
+        Your browser does not support the audio element.
+      </audio>
+
+      <button
+        className="music-control"
+        onClick={toggleMusic}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          zIndex: 1000,
+          background: "rgba(255, 255, 255, 0.1)",
+          border: "none",
+          borderRadius: "50%",
+          width: "40px",
+          height: "40px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {isMusicPlaying ? "🔊" : "🔇"}
+      </button>
 
       {showingAnswer && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-50">
