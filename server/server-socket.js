@@ -166,9 +166,7 @@ setInterval(cleanupRooms, 5 * 60 * 1000);
 
 function checkGuess(guessText, correctAnswers) {
   if (!guessText || !correctAnswers) return false;
-  if (correctAnswers.includes(guessText)) return true;
-  const normalizedGuess = guessText.trim().toLowerCase().replace(/\s+/g, "");
-  console.log(normalizedGuess);
+  const normalizedGuess = guessText.trim().toLowerCase();
   return correctAnswers.includes(normalizedGuess);
 }
 
@@ -512,7 +510,7 @@ module.exports = {
 
               console.log(`Selected image for room ${roomCode}: ${selectedImage}`);
 
-              round.correctAnswers = path.parse(selectedImage).name.split("-");
+              round.correctAnswers = path.parse(selectedImage).name.trim().toLowerCase().split("-");
               round.primaryAnswer = round.correctAnswers[0];
               imagePath = `/game-images/${topic}/${selectedImage}`;
             }

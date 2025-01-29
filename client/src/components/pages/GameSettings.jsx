@@ -504,9 +504,9 @@ const GameSettings = () => {
                   {gameMode === "multi" && (
                     <div className="flex items-center justify-between group">
                       <span className="w-32 text-white/90 font-medium text-lg group-hover:text-[#E94560] transition-colors whitespace-nowrap">
-                        Sabotage{" "}
+                        Sabotage
                         {!hasSufficientPlayers && (
-                          <span className="text-sm text-red-400 font-normal">(2+ players)</span>
+                          <span className="text-sm text-red-400 font-normal"> (2+ players)</span>
                         )}
                         :
                       </span>
