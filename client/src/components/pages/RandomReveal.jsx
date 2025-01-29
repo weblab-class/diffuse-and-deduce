@@ -25,8 +25,6 @@ const RandomReveal = () => {
   const [isShaking, setIsShaking] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [isRoundOver, setIsRoundOver] = useState(false);
-  const [finalScores, setFinalScores] = useState(null);
-  const [finalSocketMap, setFinalSocketMap] = useState(null);
 
   const [primaryAnswer, setPrimaryAnswer] = useState("");
   const [revealedHint, setRevealedHint] = useState("");
@@ -42,25 +40,20 @@ const RandomReveal = () => {
 
   const canvasRef = useRef(null);
   const [revealCircles, setRevealCircles] = useState([]);
-  const [lastRevealTime, setLastRevealTime] = useState(Date.now());
+  const [noiseCircles, setNoiseCircles] = useState([]);
 
-  // Constants for reveal configuration
-  const REVEAL_INTERVAL = 2000;
-  const MIN_CIRCLE_SIZE = 30;
-  const MAX_CIRCLE_SIZE = 80;
+  const [lastRevealTime, setLastRevealTime] = useState(Date.now());
 
   const { players, isHost, hostId, error } = useRoom(roomCode, playerName);
 
   const [selectedOpponent, setSelectedOpponent] = useState(null); // Currently selected opponent for sabotage
   const [guessDisabled, setGuessDisabled] = useState(false); // Disable guess input during stall sabotage
-  const [blackScreen, setBlackScreen] = useState(false); // Overlay for random reveal sabotage
   const [notifications, setNotifications] = useState([]);
   const [canSabotage, setCanSabotage] = useState(true);
   const price = { stall: 50, addNoise: 50, deduct: 30 };
 
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
   const [imagePath, setImagePath] = useState("");
-  const imageRef = useRef(null);
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
@@ -154,12 +147,7 @@ const RandomReveal = () => {
       let message = "";
       if (type === "addNoise") {
         message = "Another player has added noise to your image!";
-        if (revealMode === "diffusion") {
-          setNoiseLevel((prev) => prev + 10); // Adjust noise increment as needed
-        } else if (revealMode === "random") {
-          setBlackScreen(true);
-          setTimeout(() => setBlackScreen(false), 5000); // Black screen for 5 seconds
-        }
+        addNoiseCircles();
       }
 
       if (type === "stall" && !guessedCorrectly) {
@@ -373,7 +361,7 @@ const RandomReveal = () => {
   };
 
   // Modify drawImageWithReveals to use the new shapes
-  const drawImageWithReveals = (ctx, img, reveals) => {
+  const drawImageWithReveals = (ctx, img, reveals, noise) => {
     // First, draw the image
     ctx.drawImage(img, 0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -400,6 +388,16 @@ const RandomReveal = () => {
 
     // Draw the mask over the image
     ctx.drawImage(maskCanvas, 0, 0);
+
+    // Draw noise circles
+    if (noise && noise.length > 0) {
+      ctx.fillStyle = "black";
+      noise.forEach((circle) => {
+        ctx.beginPath();
+        ctx.arc(circle.x, circle.y, circle.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
   };
 
   // Calculate total number of reveals needed for full coverage
@@ -569,6 +567,25 @@ const RandomReveal = () => {
     return Math.min(timePerReveal * 1000, 500); // Cap at 500ms to maintain momentum
   };
 
+  const addNoiseCircles = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const numCircles = 15; // Number of noise circles to add
+    const newNoise = Array.from({ length: numCircles }).map(() => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: 15 + Math.random() * 30, // Size between 15 and 45
+    }));
+
+    setNoiseCircles((prev) => [...prev, ...newNoise]);
+
+    // Optionally, remove noise circles after a certain time (e.g., 5 seconds)
+    setTimeout(() => {
+      setNoiseCircles((prev) => prev.slice(numCircles));
+    }, 5000);
+  };
+
   // Effect to handle periodic reveals - stop when round is over
   useEffect(() => {
     if (!imgLoaded || isRoundOver) return;
@@ -603,9 +620,9 @@ const RandomReveal = () => {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         return;
       }
-      drawImageWithReveals(ctx, img, revealCircles);
+      drawImageWithReveals(ctx, img, revealCircles, noiseCircles);
     };
-  }, [revealCircles, imagePath, imgLoaded, timeElapsed, timePerRound]);
+  }, [revealCircles, noiseCircles, imagePath, imgLoaded, timeElapsed, timePerRound]);
 
   return (
     <div className="h-screen flex flex-col font-space-grotesk">
@@ -740,7 +757,7 @@ const RandomReveal = () => {
                     guessedWrong ? "animate-shake" : ""
                   }`}
                 >
-                  <div className="flex gap-2 items-center justify-center">
+                  <div className="flex gap-2 items-center justify-center pt-4">
                     <input
                       className="flex-1 bg-white/10 text-purple-100 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50"
                       placeholder="Enter guess..."
@@ -778,8 +795,6 @@ const RandomReveal = () => {
           </div>
         </div>
       </div>
-      {/* Black Screen Overlay for Random Reveal Sabotage */}
-      {blackScreen && <div className="fixed inset-0 bg-black opacity-50 z-50"></div>}
     </div>
   );
 };

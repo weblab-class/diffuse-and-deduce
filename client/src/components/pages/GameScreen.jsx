@@ -421,7 +421,7 @@ export default function GameScreen() {
     }
 
     return (
-      <div className="flex gap-4 items-center">
+      <div className="flex gap-4 items-center pt-4">
         <input
           type="text"
           value={guessText}
