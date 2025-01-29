@@ -205,10 +205,28 @@ const RandomReveal = () => {
       setGuessedWrong(false); // Also reset wrong guesses
     };
 
-    const handleRoundOver = ({ scores, socketToUserMap }) => {
+    const handleScoreUpdate = ({ scores: newScores, diff }) => {
+      console.log("Received score update:", newScores, diff);
+      setScores(newScores);
+      setDiff(diff);
+    };
+
+    socket.on("timeUpdate", handleTimeUpdate);
+    socket.on("roundStarted", handleRoundStarted);
+    socket.on("scoreUpdate", handleScoreUpdate);
+
+    socket.on("roundOver", async ({ scores, socketToUserMap }) => {
       console.log("Round over!");
       console.log("Mapping:", socketToUserMap);
       console.log("Round info from server:", { currentRound, totalRounds });
+
+      const [showingAnswer, setShowingAnswer] = useState(false);
+
+      setShowingAnswer(true);
+
+      // Show answer for 5 seconds before transitioning
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      setShowingAnswer(false);
 
       // Fetch the host's socket ID from the server
       get("/api/hostSocketId", { roomCode })
@@ -238,24 +256,13 @@ const RandomReveal = () => {
         .catch((error) => {
           console.error("GET request to /api/hostSocketId failed with error:", error);
         });
-    };
-
-    const handleScoreUpdate = ({ scores: newScores, diff }) => {
-      console.log("Received score update:", newScores, diff);
-      setScores(newScores);
-      setDiff(diff);
-    };
-
-    socket.on("timeUpdate", handleTimeUpdate);
-    socket.on("roundStarted", handleRoundStarted);
-    socket.on("roundOver", handleRoundOver);
-    socket.on("scoreUpdate", handleScoreUpdate);
+    });
 
     return () => {
       socket.off("timeUpdate", handleTimeUpdate);
       socket.off("roundStarted", handleRoundStarted);
-      socket.off("roundOver", handleRoundOver);
       socket.off("scoreUpdate", handleScoreUpdate);
+      socket.off("roundOver");
     };
   }, [roomCode, navigate, timePerRound]);
 
@@ -694,6 +701,52 @@ const RandomReveal = () => {
     };
   }, [revealCircles, noiseCircles, imagePath, imgLoaded, timeElapsed, timePerRound]);
 
+  const [showingAnswer, setShowingAnswer] = useState(false);
+
+  useEffect(() => {
+    socket.on("roundOver", async ({ scores, socketToUserMap }) => {
+      console.log("Round over!");
+      setShowingAnswer(true);
+
+      // Show answer for 3 seconds before transitioning
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      setShowingAnswer(false);
+
+      // Fetch the host's socket ID from the server
+      get("/api/hostSocketId", { roomCode })
+        .then(({ hostSocketId }) => {
+          console.log("Current socket: ", socket.id);
+          console.log("Host socket: ", hostSocketId);
+          const isHost = socket.id === hostSocketId;
+          console.log("After get request, Is host value:", isHost);
+          navigate("/leaderboard", {
+            state: {
+              scores,
+              socketToUserMap,
+              roomCode,
+              isHost,
+              currentRound,
+              totalRounds,
+              imagePath,
+              totalTime: timePerRound,
+              gameMode,
+              revealMode,
+              hintsEnabled,
+              sabotageEnabled,
+              importedImages,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error("GET request to /api/hostSocketId failed with error:", error);
+        });
+    });
+
+    return () => {
+      socket.off("roundOver");
+    };
+  }, [roomCode, navigate, timePerRound]);
+
   return (
     <div className="h-screen flex flex-row font-space-grotesk">
       <Header backNav="/room-actions" />
@@ -791,39 +844,43 @@ const RandomReveal = () => {
                           </div>
                         </div>
 
-                        {/* Sabotage Actions Section */}
-                        <div className="space-y-2">
-                          <div className="relative group">
-                            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
-                            <div className="relative">
-                              <h4 className="text-lg font-medium mb-3 pl-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center">
-                                <span className="mr-2">🎯</span> Actions
-                              </h4>
-                              <div className="space-y-2">
-                                <div className="text-white/80 text-sm pl-2">
-                                  Press key to sabotage:
+                        {/* Available Actions Section with enhanced cards */}
+                        <div className="relative group">
+                          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
+                          <div className="relative">
+                            <h4 className="text-lg font-medium mb-3 pl-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center">
+                              <span className="mr-2">🎯</span> Available Actions
+                            </h4>
+                            <div className="space-y-2.5">
+                              {[
+                                { key: "addNoise", label: "Add Noise", shortcut: "A", icon: "🌫" }, // Static/noise icon
+                                { key: "stall", label: "Stall", shortcut: "S", icon: "⏳" }, // Timer/hourglass for stalling
+                                {
+                                  key: "deduct",
+                                  label: "Deduct Points",
+                                  shortcut: "D",
+                                  icon: "�",
+                                }, // Downward trend for point deduction
+                              ].map((action) => (
+                                <div
+                                  key={action.key}
+                                  onClick={() => performSabotage(action.key)}
+                                  className="group/action cursor-pointer rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10 overflow-hidden hover-scale"
+                                >
+                                  <div className="p-2.5 relative">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 group-hover/action:translate-x-full transition-transform duration-1000"></div>
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-white/80 group-hover/action:text-purple-200 transition-colors duration-300 flex items-center">
+                                        <span className="mr-2 text-lg">{action.icon}</span>
+                                        {action.label}
+                                      </span>
+                                      <span className="px-2 py-1 rounded bg-white/10 text-purple-200 text-sm font-medium border border-white/5 group-hover/action:border-purple-500/30 transition-all duration-300">
+                                        {action.shortcut}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center text-white/70 hover:text-white/90 transition-colors">
-                                    <span className="w-6 h-6 flex items-center justify-center bg-white/10 rounded mr-2 text-sm">
-                                      A
-                                    </span>
-                                    Add Noise
-                                  </div>
-                                  <div className="flex items-center text-white/70 hover:text-white/90 transition-colors">
-                                    <span className="w-6 h-6 flex items-center justify-center bg-white/10 rounded mr-2 text-sm">
-                                      S
-                                    </span>
-                                    Stall
-                                  </div>
-                                  <div className="flex items-center text-white/70 hover:text-white/90 transition-colors">
-                                    <span className="w-6 h-6 flex items-center justify-center bg-white/10 rounded mr-2 text-sm">
-                                      D
-                                    </span>
-                                    Deduct
-                                  </div>
-                                </div>
-                              </div>
+                              ))}
                             </div>
                           </div>
                         </div>
@@ -868,6 +925,21 @@ const RandomReveal = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {showingAnswer && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-50">
+          <h2 className="text-3xl font-bold text-white mb-4">The answer was:</h2>
+          <p className="text-4xl font-bold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
+            {primaryAnswer}
+          </p>
+        </div>
+      )}
+
+      <div className="fixed top-20 right-4 z-50">
+        {notifications.map((notif, index) => (
+          <Notification key={index} message={notif.message} type={notif.type} />
+        ))}
       </div>
     </div>
   );
