@@ -183,7 +183,7 @@ export default function GameScreen() {
       if (type === "stall" && !guessedCorrectly) {
         message = "Another user has stalled your guessing!";
         setGuessDisabled(true);
-        setTimeout(() => setGuessDisabled(false), 10000); // Disable guessing for 5 seconds
+        setTimeout(() => setGuessDisabled(false), 5000); // Disable guessing for 5 seconds
       }
 
       if (type === "deduct") {
@@ -435,6 +435,7 @@ export default function GameScreen() {
               handleSubmitGuess();
             }
           }}
+          disabled={guessDisabled}
         />
         <button
           onClick={handleSubmitGuess}
