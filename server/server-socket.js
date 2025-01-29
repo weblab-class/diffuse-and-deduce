@@ -510,8 +510,11 @@ module.exports = {
 
               console.log(`Selected image for room ${roomCode}: ${selectedImage}`);
 
-              round.correctAnswers = path.parse(selectedImage).name.trim().toLowerCase().split("-");
+              round.correctAnswers = path.parse(selectedImage).name.trim().split("-");
               round.primaryAnswer = round.correctAnswers[0];
+              for (i = 0; i < round.correctAnswers.length; i += 1) {
+                round.correctAnswers[i] = round.correctAnswers[i].toLowerCase();
+              }
               imagePath = `/game-images/${topic}/${selectedImage}`;
             }
 
