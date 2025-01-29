@@ -14,7 +14,7 @@ const Leaderboard = () => {
   const scores = state?.scores || {};
   const socketToUserMap = state?.socketToUserMap || {};
   const roomCode = state?.roomCode;
-  const isHost = state?.isHost || false; 
+  const isHost = state?.isHost || false;
   const currentRound = state?.currentRound || 1;
   const totalRounds = state?.totalRounds || 1;
   const totalTime = state?.totalTime || 0;
@@ -47,9 +47,18 @@ const Leaderboard = () => {
   const handleNextRound = () => {
     console.log("Next Round button clicked");
     console.log("Leaderboard's Image Path: ", imagePath);
-    const topic = imagePath.split('/')[4];
+    const topic = imagePath.split("/")[4];
     console.log("New current round being sent to server from Leaderboard: ", currentRound + 1);
-    socket.emit("startRound", { roomCode, totalTime, topic, totalRounds, currentRound: currentRound + 1, revealMode, hintsEnabled, gameMode }); 
+    socket.emit("startRound", {
+      roomCode,
+      totalTime,
+      topic,
+      totalRounds,
+      currentRound: currentRound + 1,
+      revealMode,
+      hintsEnabled,
+      gameMode,
+    });
   };
 
   return (
@@ -90,64 +99,59 @@ const Leaderboard = () => {
                   :currentRound === totalRounds && gameMode === "multi" && index === 2
                   ? "bg-amber-700 hover:bg-amber-800 backdrop-blur-md border-amber-600/30" // Bronze with darker hover
                   : "bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md"; // Default
-                return (
-                  <div
-                    key={playerId}
-                    className={`group flex items-center justify-between p-4 rounded-xl ${bgColor} transition-all duration-300 hover:border-purple-500/30 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-purple-500/10`}
-                  >
-                    <div className="flex items-center space-x-4">
-                      {gameMode === "single" ? (
-                        <span className="text-lg text-white/90 font-medium">Your score:</span>
-                      ) : (
-                        <>
-                          <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/20 text-white/90 font-medium">
-                            {index + 1}
-                          </span>
-                          <span className="text-lg text-white/90 font-medium">{player.name}</span>
-                        </>
-                      )}
-                    </div>
-                    <div className="px-4 py-1 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
-                      <span className="text-white/90 font-semibold">{scores[playerId] || 0}</span>
-                      <span className="text-white/70 ml-1">pts</span>
-                    </div>
-                  </div>
-                );
-              })}
-              <div>
-                {currentRound === totalRounds ? (
-                  <div className="flex justify-center mt-4">  
-                    <div className="text-white px-4 py-2">
-                      Game Finished!
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {isHost ? (
-                      <div className="flex justify-center mt-4">
-                        {console.log("Next Round button rendered")}
-                        <button
-                          className="text-white px-4 py-2 rounded rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300"
-                          onClick={handleNextRound}
-                        >
-                          Next Round
-                        </button>
-                      </div>
+              return (
+                <div
+                  key={playerId}
+                  className={`group flex items-center justify-between p-4 rounded-xl ${bgColor} transition-all duration-300 hover:border-purple-500/30 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-purple-500/10`}
+                >
+                  <div className="flex items-center space-x-4">
+                    {gameMode === "single" ? (
+                      <span className="text-lg text-white/90 font-medium">Your score:</span>
                     ) : (
-                      <div className="flex justify-center mt-4">
-                        {console.log("Next Round button not rendered")}
-                        <div className="text-white px-4 py-2">
-                          Waiting for next round...
-                        </div>
-                      </div>
+                      <>
+                        <span className="h-8 w-8 flex items-center justify-center text-white/90 font-medium rounded-full bg-gradient-to-r from-purple-500/50 to-indigo-500/50 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
+                          {index + 1}
+                        </span>
+                        <span className="text-lg text-white/90 font-medium">{player.name}</span>
+                      </>
                     )}
-                  </>
-                )}
-              </div>
+                  </div>
+                  <div className="px-4 py-1 rounded-full bg-gradient-to-r from-purple-500/50 to-indigo-500/50 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
+                    <span className="text-white/90 font-semibold">{scores[playerId] || 0}</span>
+                    <span className="text-white/70 ml-1">pts</span>
+                  </div>
+                </div>
+              );
+            })}
+            <div>
+              {currentRound === totalRounds ? (
+                <div className="flex justify-center mt-4">
+                  <div className="text-white px-4 py-2">Game Finished!</div>
+                </div>
+              ) : (
+                <>
+                  {isHost ? (
+                    <div className="flex justify-center mt-4">
+                      {console.log("Next Round button rendered")}
+                      <button
+                        className="text-white px-4 py-2 rounded rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300"
+                        onClick={handleNextRound}
+                      >
+                        Next Round
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex justify-center mt-4">
+                      {console.log("Next Round button not rendered")}
+                      <div className="text-white px-4 py-2">Waiting for next round...</div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
-
     </div>
   );
 };

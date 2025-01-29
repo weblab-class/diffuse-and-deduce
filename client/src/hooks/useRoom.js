@@ -37,20 +37,42 @@ const useRoom = (roomCode, playerName) => {
       setHostId(data.hostId);
     });
 
-    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode, revealMode, hintsEnabled }) => {
+    socket.on("roundStarted", (data) => {
+      console.log("Round started with data:", data);
+      const {
+        startTime,
+        totalTime,
+        imagePath: serverImagePath,
+        totalRounds,
+        currentRound,
+        gameMode,
+        revealMode,
+        hintsEnabled,
+      } = data;
+
       const targetPath =
-          revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
-      
+        revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
+
       navigate(targetPath, {
-        state: { startTime, timePerRound: totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode, revealMode, hintsEnabled },
+        state: {
+          startTime,
+          timePerRound: totalTime,
+          imagePath: serverImagePath,
+          totalRounds,
+          currentRound,
+          gameMode,
+          revealMode,
+          hintsEnabled,
+        },
       });
     });
 
     return () => {
       console.log("Cleaning up room effect");
       socket.off("roomData");
+      socket.off("roundStarted");
     };
-  }, []);
+  }, [roomCode, navigate]);
 
   return {
     players,
