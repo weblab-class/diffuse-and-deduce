@@ -504,7 +504,7 @@ const Leaderboard = () => {
                   >
                     <div className="flex items-center space-x-4">
                       {gameMode === "single" ? (
-                        <span className="text-lg text-white/90 font-medium">Your final score:</span>
+                        <span className="text-lg text-white/90 font-medium">Your total score:</span>
                       ) : (
                         <>
                           <span className="h-8 w-8 flex items-center justify-center text-white/90 font-medium rounded-full bg-gradient-to-r from-purple-500/50 to-indigo-500/50 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">

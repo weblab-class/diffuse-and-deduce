@@ -520,8 +520,8 @@ export default function GameScreen() {
     };
   }, []);
 
-  // Add a timeout effect for the wrong guess message
   useEffect(() => {
+    // Add a timeout effect for the wrong guess message
     let timeoutId;
     if (guessedWrong) {
       timeoutId = setTimeout(() => {
@@ -911,12 +911,18 @@ export default function GameScreen() {
       </button>
 
       {showingAnswer && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-50">
-          <h2 className="text-3xl font-bold text-white mb-4">The answer was:</h2>
-          <p className="text-4xl font-bold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
-            {primaryAnswer}
-          </p>
-        </div>
+        <>
+          {/* Semi-transparent overlay that makes everything unclickable */}
+          <div className="fixed inset-0 bg-black/60 z-[9999] pointer-events-auto" />
+
+          {/* Keep the original answer display but make it above the overlay */}
+          <div className="fixed inset-0 flex flex-col items-center justify-center bg-black/80 z-[10000] pointer-events-none">
+            <h2 className="text-3xl font-bold text-white mb-4">The answer was:</h2>
+            <p className="text-4xl font-bold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
+              {primaryAnswer}
+            </p>
+          </div>
+        </>
       )}
 
       <div className="fixed top-20 right-4 z-50">
