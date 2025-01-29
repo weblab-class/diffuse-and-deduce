@@ -291,10 +291,18 @@ export default function GameScreen() {
       setScores(scores);
     });
 
-    socket.on("roundOver", ({ scores, socketToUserMap }) => {
+    socket.on("roundOver", async ({ scores, socketToUserMap }) => {
       console.log("Round over!");
       console.log("Mapping:", socketToUserMap);
       console.log("Round info from server:", { currentRound, totalRounds });
+
+      const [showingAnswer, setShowingAnswer] = useState(false);
+
+      setShowingAnswer(true);
+
+      // Show answer for 5 seconds before transitioning
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      setShowingAnswer(false);
 
       // Fetch the host's socket ID from the server
       get("/api/hostSocketId", { roomCode })
@@ -605,6 +613,52 @@ export default function GameScreen() {
     ctx.putImageData(imageData, 0, 0);
   };
 
+  const [showingAnswer, setShowingAnswer] = useState(false);
+
+  useEffect(() => {
+    socket.on("roundOver", async ({ scores, socketToUserMap }) => {
+      console.log("Round over!");
+      setShowingAnswer(true);
+
+      // Show answer for 3 seconds before transitioning
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      setShowingAnswer(false);
+
+      // Fetch the host's socket ID from the server
+      get("/api/hostSocketId", { roomCode })
+        .then(({ hostSocketId }) => {
+          console.log("Current socket: ", socket.id);
+          console.log("Host socket: ", hostSocketId);
+          const isHost = socket.id === hostSocketId;
+          console.log("After get request, Is host value:", isHost);
+          navigate("/leaderboard", {
+            state: {
+              scores,
+              socketToUserMap,
+              roomCode,
+              isHost,
+              currentRound,
+              totalRounds,
+              imagePath,
+              totalTime: timePerRound,
+              gameMode,
+              revealMode,
+              hintsEnabled,
+              sabotageEnabled,
+              importedImages,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error("GET request to /api/hostSocketId failed with error:", error);
+        });
+    });
+
+    return () => {
+      socket.off("roundOver");
+    };
+  }, [roomCode, navigate, timePerRound]);
+
   return (
     <div className="h-screen flex flex-col font-space-grotesk">
       <Header backNav="/room-actions" />
@@ -786,6 +840,15 @@ export default function GameScreen() {
           </div>
         </div>
       </div>
+
+      {showingAnswer && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-50">
+          <h2 className="text-3xl font-bold text-white mb-4">The answer was:</h2>
+          <p className="text-4xl font-bold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
+            {primaryAnswer}
+          </p>
+        </div>
+      )}
 
       <div className="fixed top-20 right-4 z-50">
         {notifications.map((notif, index) => (
