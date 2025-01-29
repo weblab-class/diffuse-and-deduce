@@ -291,10 +291,19 @@ module.exports = {
         }) => {
           try {
             // Store if the room is using imported images
-            roomGameModes[roomCode] = {
-              isImportedImages: topic === "Import_Images",
-              host: socket.id,
-            };
+            if (currentRound === 1) {
+              // Only set the host on the first round
+              roomGameModes[roomCode] = {
+                isImportedImages: topic === "Import_Images",
+                host: socket.id,
+              };
+            } else if (roomTopics[roomCode] === "Import_Images") {
+              // For subsequent rounds, maintain the existing host but update isImportedImages
+              roomGameModes[roomCode] = {
+                isImportedImages: true,
+                host: roomGameModes[roomCode].host, // Preserve the original host
+              };
+            }
 
             console.log("Received startRound event:", {
               roomCode,
