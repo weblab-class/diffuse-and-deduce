@@ -1,11 +1,14 @@
-// GameScreen.jsx
-
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+
 import socket from "../../client-socket";
 import Header from "../modules/Header";
+import Notification from "../modules/Notification";
+import useRoom from "../../hooks/useRoom";
+
 import "../../utilities.css";
 import "./GameScreen.css";
+
 import { get } from "../../utilities";
 
 export default function GameScreen() {
@@ -16,17 +19,18 @@ export default function GameScreen() {
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
   const [guessedWrong, setGuessedWrong] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
+  const [reward, setReward] = useState(0);
 
   const [primaryAnswer, setPrimaryAnswer] = useState("");
-  // const [hintsEnabled, setHintsEnabled] = useState(location.state?.hintsEnabled ?? false);
   const [revealedHint, setRevealedHint] = useState("");
 
   const { state } = useLocation();
+  const playerName = state?.playerName;
   const currentRound = state?.currentRound || 1;
   const totalRounds = state?.totalRounds || 1;
   const gameMode = state?.gameMode || "single";
   const hintsEnabled = state?.hintsEnabled || false;
+  const sabotageEnabled = state?.sabotageEnabled || false;
   const revealMode = state?.revealMode || "diffusion";
   const timePerRound = state?.timePerRound || 30;
 
@@ -36,10 +40,16 @@ export default function GameScreen() {
   const canvasRef = useRef(null);
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
   const [imgLoaded, setImgLoaded] = useState(false);
-  // const [timePerRound, setTimePerRound] = useState(30);
   const [timeElapsed, setTimeElapsed] = useState(0);
-  // const [recievedTime, setRecievedTime] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
+
+  const { players, isHost, hostId, error } = useRoom(roomCode, playerName);
+
+  const [selectedOpponent, setSelectedOpponent] = useState(null); // Currently selected opponent for sabotage
+  const [guessDisabled, setGuessDisabled] = useState(false); // Disable guess input during stall sabotage
+  const [notifications, setNotifications] = useState([]);
+  const [canSabotage, setCanSabotage] = useState(true);
+  const price = { stall: 50, addNoise: 50, deduct: 30 };
 
   // Retrieve server URL from Vite environment variables
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
@@ -61,10 +71,6 @@ export default function GameScreen() {
           setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
           setNoiseLevel(initialNoise); // Reset noise
           setImgLoaded(false); // Trigger image loading
-          // setTimePerRound(totalTime);
-          // setRecievedTime(true);
-          // setTotalRounds(totalRounds);
-          // setCurrentRound(currentRound);
           setTopic(serverImagePath.split("/")[2]);
           setPrimaryAnswer(serverPrimaryAnswer);
         }
@@ -73,6 +79,105 @@ export default function GameScreen() {
         console.error("GET request to /api/gameState failed with error:", error);
       });
   }, []);
+
+  const performSabotage = useCallback(
+    (type) => {
+      if (!canSabotage) {
+        alert("You can perform sabotage actions once every 30 seconds.");
+        return;
+      }
+
+      if (!selectedOpponent) {
+        alert("Please select an opponent to sabotage.");
+        return;
+      }
+
+      const actingScore = scores[socket.id] || 0;
+      if (actingScore < price[type]) {
+        alert("Not enough points to perform sabotage.");
+        return;
+      }
+
+      // Emit sabotage event to the server
+      socket.emit("sabotage", {
+        roomCode,
+        type,
+        targetId: selectedOpponent.id,
+      });
+
+      // Optimistically update the acting player's score
+      setScores((prevScores) => ({
+        ...prevScores,
+        [socket.id]: prevScores[socket.id] - price[type],
+      }));
+
+      setCanSabotage(false);
+      setTimeout(() => setCanSabotage(true), 30000);
+    },
+    [canSabotage, selectedOpponent, scores, roomCode]
+  );
+
+  // Handle keypress events for sabotage
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!selectedOpponent) return;
+
+      switch (e.key.toLowerCase()) {
+        case "a":
+          performSabotage("addNoise");
+          break;
+        case "s":
+          performSabotage("stall");
+          break;
+        case "d":
+          performSabotage("deduct");
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedOpponent, performSabotage]);
+
+  // Listen for sabotage effects directed at the current player
+  useEffect(() => {
+    socket.on("sabotageApplied", ({ type, from }) => {
+      let message = "";
+      if (type === "addNoise") {
+        message = "Another player has added noise to your image!";
+        setNoiseLevel((prev) => prev + 10); // Adjust noise increment as needed
+      }
+
+      if (type === "stall" && !guessedCorrectly) {
+        message = "Another user has stalled your guessing!";
+        setGuessDisabled(true);
+        setTimeout(() => setGuessDisabled(false), 10000); // Disable guessing for 5 seconds
+      }
+
+      if (type === "deduct") {
+        message = "Another user has deducted 60 points from your score!";
+        setScores((prevScores) => ({
+          ...prevScores,
+          [socket.id]: (prevScores[socket.id] || 0) - 60,
+        }));
+      }
+
+      setNotifications((prev) => [...prev, { message, type }]);
+
+      setTimeout(() => {
+        setNotifications((prev) => prev.slice(1));
+      }, 5000);
+    });
+
+    return () => {
+      socket.off("sabotageApplied");
+    };
+  }, [revealMode]);
 
   // Load the image whenever imagePath changes
   useEffect(() => {
@@ -129,9 +234,10 @@ export default function GameScreen() {
         setImagePath(`${SERVER_URL}${imagePath}`);
         setNoiseLevel(initialNoise);
         setImgLoaded(false);
-        // setTimePerRound(totalTime);
         setPrimaryAnswer(serverPrimaryAnswer);
         setRevealedHint("");
+        setGuessedCorrectly(false); // Reset here
+        setGuessedWrong(false); // Also reset wrong guesses
       }
     );
 
@@ -141,8 +247,6 @@ export default function GameScreen() {
       const fraction = timeElapsed / timePerRound;
 
       // Add shake effect when time is less than 5 seconds
-      // console.log("Time per round:", timePerRound);
-      // console.log("Time remaining:", timePerRound - timeElapsed);
       const timeRemaining = timePerRound - timeElapsed;
       if (timeRemaining < 5) {
         setIsShaking(true);
@@ -194,6 +298,7 @@ export default function GameScreen() {
               gameMode,
               revealMode,
               hintsEnabled,
+              sabotageEnabled,
             },
           });
         })
@@ -217,10 +322,11 @@ export default function GameScreen() {
 
   // Listen for correct guess event
   useEffect(() => {
-    socket.on("correctGuess", ({ playerId }) => {
+    socket.on("correctGuess", ({ playerId, score }) => {
       if (playerId === socket.id) {
         setGuessedCorrectly(true);
         setGuessedWrong(false);
+        setReward(score);
       }
     });
 
@@ -425,6 +531,60 @@ export default function GameScreen() {
               </div>
             </div>
 
+            {sabotageEnabled && (
+              <>
+                <div className="mt-4 p-4 bg-white/10 backdrop-blur-xl rounded-lg">
+                  <h3 className="text-xl font-semibold text-white mb-2">Sabotage Actions</h3>
+
+                  <div className="mb-4">
+                    <h4 className="text-lg text-white">Select Opponent:</h4>
+                    <ul className="list-disc list-inside">
+                      {players
+                        .filter((player) => player.id !== socket.id)
+                        .map((player) => (
+                          <li
+                            key={player.id}
+                            onClick={() => setSelectedOpponent(player)}
+                            className={`cursor-pointer ${
+                              selectedOpponent?.id === player.id
+                                ? "text-yellow-400"
+                                : "text-white/80 hover:text-yellow-300"
+                            }`}
+                          >
+                            {player.name}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+
+                  <div>
+                    <p className="text-white/90 mb-2">
+                      Press the corresponding key to perform sabotage:
+                    </p>
+                    <ul className="list-disc list-inside">
+                      <li className="text-white/80">A: Add Noise</li>
+                      <li className="text-white/80">S: Stall (Disable Guessing)</li>
+                      <li className="text-white/80">D: Deduct 60 Points</li>
+                    </ul>
+                  </div>
+
+                  {selectedOpponent && (
+                    <div className="mt-4 p-2 bg-white/20 rounded">
+                      <p className="text-white">
+                        Selected Opponent: <strong>{selectedOpponent.name}</strong>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="fixed top-20 right-4 z-50">
+                  {notifications.map((notif, index) => (
+                    <Notification key={index} message={notif.message} type={notif.type} />
+                  ))}
+                </div>
+              </>
+            )}
+
             {/* Input section */}
             <div className="mt-auto pb-8">
               {guessedCorrectly ? (
@@ -436,7 +596,7 @@ export default function GameScreen() {
                         guessedCorrectly ? "score-animate" : ""
                       }`}
                     >
-                      {diff[socket.id] || 0}
+                      {reward || 0}
                     </span>{" "}
                     points.
                   </p>
@@ -459,10 +619,12 @@ export default function GameScreen() {
                         }
                       }}
                       onChange={(e) => setGuessText(e.target.value)}
+                      disabled={guessDisabled}
                     />
                     <button
                       onClick={handleSubmitGuess}
                       className="glow bg-gradient-to-r from-purple-600/80 to-indigo-600/80 text-white px-6 py-2 rounded-lg hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10"
+                      disabled={guessDisabled}
                     >
                       Submit
                     </button>

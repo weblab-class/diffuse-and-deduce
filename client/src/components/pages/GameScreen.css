@@ -192,3 +192,16 @@
 .canvas-container:hover {
   transform: scale(1.01) rotate(0.5deg);
 }
+
+.player-item.selected {
+  color: #e94560; /* Highlight color */
+  font-weight: bold;
+}
+
+.sabotage-notification {
+  background-color: rgba(233, 69, 96, 0.2);
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 8px;
+  text-align: center;
+}
