@@ -155,14 +155,17 @@ router.get("/gameState", (req, res) => {
 // Endpoint to handle image uploads
 router.post("/upload-images", upload.array("images", 10), (req, res) => {
   try {
-    const labels = req.body.labels || [];
+    const primaryLabels = req.body.primaryLabels || [];
+    const secondaryLabels = req.body.secondaryLabels || [];
+
     const imageIds = req.files.map((file, index) => {
       const imageId = uuidv4();
       imageStorage.set(imageId, {
         buffer: file.buffer,
         mimetype: file.mimetype,
         originalName: file.originalname,
-        label: Array.isArray(labels) ? labels[index] : labels,
+        primaryLabel: Array.isArray(primaryLabels) ? primaryLabels[index] : primaryLabels,
+        secondaryLabel: Array.isArray(secondaryLabels) ? secondaryLabels[index] : secondaryLabels,
       });
       return imageId;
     });

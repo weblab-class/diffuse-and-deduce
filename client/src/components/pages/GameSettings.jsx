@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [previews, setPreviews] = React.useState([]);
-  const [labels, setLabels] = React.useState([]); // Store labels for each image
+  const [labels, setLabels] = React.useState([]); // Array of {primary: string, secondary: string}
   const [uploadStatus, setUploadStatus] = React.useState({ loading: false, error: null });
   const [uploadError, setUploadError] = React.useState("");
   const fileInputRef = React.useRef(null);
@@ -29,7 +29,7 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
     const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
 
     // Initialize empty labels for new files
-    const newLabels = newFiles.map(() => "");
+    const newLabels = newFiles.map(() => ({ primary: "", secondary: "" }));
 
     // Append new files and previews to existing ones
     setSelectedFiles((prev) => [...prev, ...newFiles]);
@@ -44,10 +44,10 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
     };
   }, [previews]);
 
-  const handleLabelChange = (index, value) => {
+  const handleLabelChange = (index, field, value) => {
     setLabels((prev) => {
       const newLabels = [...prev];
-      newLabels[index] = value;
+      newLabels[index] = { ...newLabels[index], [field]: value };
       return newLabels;
     });
   };
@@ -58,17 +58,18 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
       return;
     }
 
-    // Check if all images have labels
-    const emptyLabelIndex = labels.findIndex((label) => !label.trim());
+    // Check if all images have primary labels
+    const emptyLabelIndex = labels.findIndex((label) => !label.primary.trim());
     if (emptyLabelIndex !== -1) {
-      setUploadError(`Please add a label for image ${emptyLabelIndex + 1}`);
+      setUploadError(`Please add a primary label for image ${emptyLabelIndex + 1}`);
       return;
     }
 
     const formData = new FormData();
     selectedFiles.forEach((file, index) => {
       formData.append("images", file);
-      formData.append("labels", labels[index]); // Send labels with the images
+      formData.append("primaryLabels", labels[index].primary);
+      formData.append("secondaryLabels", labels[index].secondary || ""); // Send empty string if no secondary label
     });
 
     try {
@@ -92,107 +93,94 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
   };
 
   const removeImage = (index) => {
-    setSelectedFiles((prev) => {
-      const newFiles = [...prev];
-      newFiles.splice(index, 1);
-      return newFiles;
-    });
-    setPreviews((prev) => {
-      const newPreviews = [...prev];
-      URL.revokeObjectURL(newPreviews[index]);
-      newPreviews.splice(index, 1);
-      return newPreviews;
-    });
-    setLabels((prev) => {
-      const newLabels = [...prev];
-      newLabels.splice(index, 1);
-      return newLabels;
-    });
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+    setLabels((prev) => prev.filter((_, i) => i !== index));
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#1A1A2E] p-8 rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
-      >
-        <h2 className="text-2xl font-bold mb-6 text-white">Upload Images</h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-[#1A1A2E] text-white p-8 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[80vh] overflow-y-auto">
+        <h2 className="text-2xl font-bold mb-6 font-['Orbitron']">Upload Images</h2>
+
         <div className="space-y-6">
-          <div className="flex flex-col items-center justify-center border-2 border-dashed border-[#E94560] rounded-lg p-8 hover:border-white/50 transition-colors">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileSelection}
-              className="hidden"
-              ref={fileInputRef}
-            />
-            <button
-              onClick={() => fileInputRef.current.click()}
-              className="text-white hover:text-[#E94560] transition-colors"
-            >
-              Click to select images (max 10)
-            </button>
-            {selectedFiles.length > 0 && (
-              <p className="mt-2 text-white">
-                {selectedFiles.length} {selectedFiles.length === 1 ? "image" : "images"} selected
-              </p>
-            )}
+          <div className="flex items-center justify-center w-full">
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/20 border-dashed rounded-lg cursor-pointer bg-white/5 hover:bg-white/10">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <p className="mb-2 text-sm text-white/90">
+                  <span className="font-semibold">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-xs text-white/70">PNG, JPG or GIF (MAX. 5MB each)</p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept="image/*"
+                multiple
+                onChange={handleFileSelection}
+              />
+            </label>
           </div>
 
-          {/* Image Previews with Labels */}
-          {previews.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-4">
-              {previews.map((preview, index) => (
-                <div key={preview} className="relative group space-y-2">
-                  <div className="relative">
-                    <img
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg"
-                    />
-                    <button
-                      onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      ×
-                    </button>
-                  </div>
+          {uploadError && <div className="text-red-500 text-sm mt-2">{uploadError}</div>}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {selectedFiles.map((file, index) => (
+              <div
+                key={index}
+                className="relative p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all group"
+              >
+                <button
+                  onClick={() => removeImage(index)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  ×
+                </button>
+                <img
+                  src={previews[index]}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-40 object-contain mb-4 rounded"
+                />
+                <div className="space-y-2">
                   <input
                     type="text"
-                    value={labels[index]}
-                    onChange={(e) => handleLabelChange(index, e.target.value)}
-                    placeholder="Enter correct answer for this image"
-                    className="w-full px-3 py-2 bg-[#2A2A3E] text-white rounded-lg focus:ring-2 focus:ring-[#E94560] outline-none"
+                    value={labels[index].primary}
+                    onChange={(e) => handleLabelChange(index, "primary", e.target.value)}
+                    placeholder="Enter primary label (required)"
+                    className="w-full p-2 bg-white/10 rounded border border-white/20 focus:border-[#E94560] focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    value={labels[index].secondary}
+                    onChange={(e) => handleLabelChange(index, "secondary", e.target.value)}
+                    placeholder="Enter secondary label (optional)"
+                    className="w-full p-2 bg-white/10 rounded border border-white/20 focus:border-[#E94560] focus:outline-none"
                   />
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
 
-          <div className="flex gap-4">
+          <div className="flex justify-end space-x-4 mt-6">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-opacity-80 transition-all"
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all"
             >
               Cancel
             </button>
             <button
               onClick={handleUploadImages}
-              className="flex-1 px-4 py-2 bg-[#E94560] text-white rounded-lg hover:bg-opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!selectedFiles.length || uploadStatus.loading}
+              disabled={uploadStatus.loading}
+              className="px-4 py-2 bg-[#E94560] hover:bg-[#E94560]/80 rounded-lg transition-all disabled:opacity-50"
             >
               {uploadStatus.loading ? "Uploading..." : "Upload Images"}
             </button>
           </div>
-
-          {uploadError && <p className="text-red-500 text-center">{uploadError}</p>}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };
@@ -543,7 +531,7 @@ const GameSettings = () => {
                           className={`flex-1 flex items-center justify-center transition-all duration-300 cursor-pointer ${
                             settings.revealMode === "diffusion"
                               ? "bg-[#E94560] text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"
-                              : "bg-white/10 text-white/90 hover:bg-white/20"
+                              : "bg-white/10 text-white/90 hover:bg-gradient-to-r hover:from-white/10 hover:to-white/5"
                           }`}
                         >
                           <span className="text-sm font-medium">Diffusion</span>
@@ -554,7 +542,7 @@ const GameSettings = () => {
                           className={`flex-1 flex items-center justify-center transition-all duration-300 cursor-pointer ${
                             settings.revealMode === "random"
                               ? "bg-[#E94560] text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"
-                              : "bg-white/10 text-white/90 hover:bg-white/20"
+                              : "bg-white/10 text-white/90 hover:bg-gradient-to-r hover:from-white/10 hover:to-white/5"
                           }`}
                         >
                           <span className="text-sm font-medium">Random Reveal</span>

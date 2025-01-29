@@ -350,12 +350,19 @@ module.exports = {
                 throw new Error("Image storage not initialized");
               }
               const imageData = sharedImageStorage.get(selectedImageId);
-              if (imageData && imageData.label) {
-                // Process the label to create valid answers - only exact match
-                const label = imageData.label.toLowerCase().trim();
-                round.correctAnswers = [label];
-                round.primaryAnswer = label;
-                console.log(`Setting answer for image ${selectedImageId}:`, round.correctAnswers);
+              if (imageData && imageData.primaryLabel) {
+                // Process the labels to create valid answers
+                const primaryLabel = imageData.primaryLabel.toLowerCase().trim();
+                const secondaryLabel = imageData.secondaryLabel
+                  ? imageData.secondaryLabel.toLowerCase().trim()
+                  : "";
+
+                // Add both labels to correctAnswers if secondary label exists
+                round.correctAnswers = secondaryLabel
+                  ? [primaryLabel, secondaryLabel]
+                  : [primaryLabel];
+                round.primaryAnswer = primaryLabel;
+                console.log(`Setting answers for image ${selectedImageId}:`, round.correctAnswers);
               } else {
                 round.correctAnswers = ["uploaded-image"];
                 round.primaryAnswer = "uploaded-image";
