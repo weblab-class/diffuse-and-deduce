@@ -21,7 +21,6 @@ const RandomReveal = () => {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [isRoundOver, setIsRoundOver] = useState(false);
   const [finalScores, setFinalScores] = useState(null);
-  const [finalSocketMap, setFinalSocketMap] = useState(null);
 
   const [primaryAnswer, setPrimaryAnswer] = useState("");
   // const [hintsEnabled, setHintsEnabled] = useState(state?.hintsEnabled ?? false);
@@ -34,12 +33,15 @@ const RandomReveal = () => {
   const revealMode = state?.revealMode || "diffusion";
   const timePerRound = state?.timePerRound || 30;
 
+  const [isHost, setIsHost] = useState(false);
+  const [socketToUserMap, setSocketToUserMap] = useState({});
+
   const canvasRef = useRef(null);
   const [revealCircles, setRevealCircles] = useState([]);
   const [lastRevealTime, setLastRevealTime] = useState(Date.now());
 
   // Constants for reveal configuration
-  const REVEAL_INTERVAL = 2000;
+  const REVEAL_INTERVAL = 2000; 
   const MIN_CIRCLE_SIZE = 30;
   const MAX_CIRCLE_SIZE = 80;
 
@@ -94,7 +96,7 @@ const RandomReveal = () => {
       setRevealedHint("");
     };
 
-    const handleRoundOver = ({ scores, socketToUserMap }) => {
+    const handleRoundOver = ({ scores, socketToUserMap, correctAnswers}) => {
       // console.log("Round over with scores:", newScores);
       // setScores(newScores);
       // setIsRoundOver(true);
@@ -108,27 +110,16 @@ const RandomReveal = () => {
       console.log("Mapping:", socketToUserMap);
       console.log("Round info from server:", { currentRound, totalRounds });
 
+      setIsRoundOver(true);
+      setSocketToUserMap(socketToUserMap);
+
       // Fetch the host's socket ID from the server
       get("/api/hostSocketId", { roomCode }).then(({ hostSocketId }) => {
         console.log("Current socket: ", socket.id);
         console.log("Host socket: ", hostSocketId);
-        const isHost = socket.id === hostSocketId;
-        console.log("After get request, Is host value:", isHost);
-        navigate("/leaderboard", { 
-          state: { 
-            scores, 
-            socketToUserMap, 
-            roomCode, 
-            isHost, 
-            currentRound,
-            totalRounds,
-            imagePath,
-            totalTime: timePerRound,  // Pass the current round's time to use for next round
-            gameMode,
-            revealMode, 
-            hintsEnabled
-          } 
-        });
+        const isHostServer = socket.id === hostSocketId;
+        console.log("After get request, Is host value:", isHostServer);
+        setIsHost(isHostServer);
       }).catch((error) => {
         console.error("GET request to /api/hostSocketId failed with error:", error);
       }); 
@@ -152,6 +143,37 @@ const RandomReveal = () => {
       socket.off("scoreUpdate", handleScoreUpdate);
     };
   }, [roomCode, navigate, timePerRound]);
+
+  useEffect(() => {
+    // Listen for the 'navigateToLeaderboard' event
+    socket.on('navigateToLeaderboard', ({ roomCode, hostId, scores, socketToUserMap }) => {
+      navigate("/leaderboard", { 
+        state: { 
+          scores, 
+          socketToUserMap, 
+          roomCode, 
+          isHost: socket.id === hostId, 
+          currentRound,
+          totalRounds,
+          imagePath,
+          totalTime: timePerRound,  // Pass the current round's time to use for next round
+          gameMode,
+          revealMode, 
+          hintsEnabled
+        } 
+      });
+    });
+
+    // Clean up the listener on component unmount
+    return () => {
+      socket.off('navigateToLeaderboard');
+    };
+  }, []);
+
+  const handleContinueToLeaderboard = () => {
+    socket.emit('goToLeaderboard', { roomCode });
+  };
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -551,16 +573,39 @@ const RandomReveal = () => {
                   timePerRound - timeElapsed <= 5 ? "text-red-200" : "text-purple-200"
                 } bg-white/5 backdrop-blur-xl inline-block px-4 py-1 rounded-full border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50`}
               >
-                Time Remaining:{" "}
-                <span
-                  className={`font-semibold ${
-                    timePerRound - timeElapsed <= 5
-                      ? "text-red-300 animate-pulse"
-                      : "text-purple-300"
-                  } transition-colors duration-300`}
-                >
-                  {timePerRound - timeElapsed}
-                </span>
+                {isRoundOver ? (
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="text-lg text-purple-200">
+                        Correct Answer:{" "}
+                        <span className="font-semibold text-purple-300">
+                          {primaryAnswer}
+                        </span>
+                      </p>
+                    </div>
+                    {isHost && (
+                      <button
+                        onClick={handleContinueToLeaderboard}
+                        className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10"
+                      >
+                        Continue to Leaderboard
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    Time Remaining:{" "}
+                    <span
+                      className={`font-semibold ${
+                        timePerRound - timeElapsed <= 5
+                          ? "text-red-300 animate-pulse"
+                          : "text-purple-300"
+                      } transition-colors duration-300`}
+                    >
+                      {timePerRound - timeElapsed}
+                    </span>
+                  </>
+                )}
               </p>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div

@@ -62,10 +62,12 @@ export default function GameScreen() {
   const canvasRef = useRef(null);
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
   const [imgLoaded, setImgLoaded] = useState(false);
-  // const [timePerRound, setTimePerRound] = useState(30);
   const [timeElapsed, setTimeElapsed] = useState(0);
-  // const [recievedTime, setRecievedTime] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
+
+  const [isHost, setIsHost] = useState(false);
+  const [isRoundOver, setIsRoundOver] = useState(false);
+  const [socketToUserMap, setSocketToUserMap] = useState({});
 
   // Retrieve server URL from Vite environment variables
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
@@ -195,37 +197,42 @@ export default function GameScreen() {
       setScores(scores);
     });
 
-    socket.on("roundOver", ({ scores, socketToUserMap }) => {
+    socket.on("roundOver", ({ scores, socketToUserMap, correctAnswers }) => {
       console.log("Round over!");
       console.log("Mapping:", socketToUserMap);
       console.log("Round info from server:", { currentRound, totalRounds });
 
+      setIsRoundOver(true);
+      setSocketToUserMap(socketToUserMap);
+
+      // console.log("Correct answers:", correctAnswers);
+      // setCorrectAnswers(correctAnswers);
+
       // Fetch the host's socket ID from the server
-      get("/api/hostSocketId", { roomCode })
-        .then(({ hostSocketId }) => {
-          console.log("Current socket: ", socket.id);
-          console.log("Host socket: ", hostSocketId);
-          const isHost = socket.id === hostSocketId;
-          console.log("After get request, Is host value:", isHost);
-          navigate("/leaderboard", {
-            state: {
-              scores,
-              socketToUserMap,
-              roomCode,
-              isHost,
-              currentRound,
-              totalRounds,
-              imagePath,
-              totalTime: timePerRound, // Pass the current round's time to use for next round
-              gameMode,
-              revealMode,
-              hintsEnabled,
-            },
-          });
-        })
-        .catch((error) => {
-          console.error("GET request to /api/hostSocketId failed with error:", error);
-        });
+      get("/api/hostSocketId", { roomCode }).then(({ hostSocketId }) => {
+        console.log("Current socket: ", socket.id);
+        console.log("Host socket: ", hostSocketId);
+        const isHostServer = socket.id === hostSocketId;
+        console.log("After get request, Is host value:", isHostServer);
+        setIsHost(isHostServer);
+        // navigate("/leaderboard", { 
+        //   state: { 
+        //     scores, 
+        //     socketToUserMap, 
+        //     roomCode, 
+        //     isHost, 
+        //     currentRound,
+        //     totalRounds,
+        //     imagePath,
+        //     totalTime: timePerRound,  // Pass the current round's time to use for next round
+        //     gameMode,
+        //     revealMode, 
+        //     hintsEnabled
+        //   } 
+        // });
+      }).catch((error) => {
+        console.error("GET request to /api/hostSocketId failed with error:", error);
+      }); 
     });
 
     return () => {
@@ -303,6 +310,36 @@ export default function GameScreen() {
     setGuessText("");
   };
 
+  useEffect(() => {
+    // Listen for the 'navigateToLeaderboard' event
+    socket.on('navigateToLeaderboard', ({ roomCode, hostId, scores, socketToUserMap }) => {
+      navigate("/leaderboard", { 
+        state: { 
+          scores, 
+          socketToUserMap, 
+          roomCode, 
+          isHost: socket.id === hostId, 
+          currentRound,
+          totalRounds,
+          imagePath,
+          totalTime: timePerRound,  // Pass the current round's time to use for next round
+          gameMode,
+          revealMode, 
+          hintsEnabled
+        } 
+      });
+    });
+
+    // Clean up the listener on component unmount
+    return () => {
+      socket.off('navigateToLeaderboard');
+    };
+  }, []);
+
+  const handleContinueToLeaderboard = () => {
+    socket.emit('goToLeaderboard', { roomCode });
+  };
+
   const renderGuessInput = () => {
     if (isSpectator) {
       return (
@@ -314,31 +351,31 @@ export default function GameScreen() {
       );
     }
 
-    return (
-      <div className="flex gap-4 items-center">
-        <input
-          type="text"
-          value={guessText}
-          onChange={(e) => setGuessText(e.target.value)}
-          placeholder="Enter your guess..."
-          className={`flex-1 p-3 rounded-lg bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#E94560] ${
-            isShaking ? "animate-shake" : ""
-          }`}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !guessedCorrectly) {
-              handleSubmitGuess();
-            }
-          }}
-        />
-        <button
-          onClick={handleSubmitGuess}
-          disabled={guessedCorrectly}
-          className="px-6 py-3 bg-[#E94560] text-white rounded-lg hover:bg-[#E94560]/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Submit
-        </button>
-      </div>
-    );
+    // return (
+    //   <div className="flex gap-4 items-center">
+    //     <input
+    //       type="text"
+    //       value={guessText}
+    //       onChange={(e) => setGuessText(e.target.value)}
+    //       placeholder="Enter your guess..."
+    //       className={`flex-1 p-3 rounded-lg bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#E94560] ${
+    //         isShaking ? "animate-shake" : ""
+    //       }`}
+    //       onKeyDown={(e) => {
+    //         if (e.key === "Enter" && !guessedCorrectly) {
+    //           handleSubmitGuess();
+    //         }
+    //       }}
+    //     />
+    //     <button
+    //       onClick={handleSubmitGuess}
+    //       disabled={guessedCorrectly}
+    //       className="px-6 py-3 bg-[#E94560] text-white rounded-lg hover:bg-[#E94560]/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    //     >
+    //       Submit
+    //     </button>
+    //   </div>
+    // );
   };
 
   // Listen for correct guess event
@@ -509,16 +546,39 @@ export default function GameScreen() {
                   timePerRound - timeElapsed <= 5 ? "text-red-200" : "text-purple-200"
                 } bg-white/5 backdrop-blur-xl inline-block px-4 py-1 rounded-full border border-white/10 glow mb-1 transition-colors duration-300`}
               >
-                Time Remaining:{" "}
-                <span
-                  className={`font-semibold ${
-                    timePerRound - timeElapsed <= 5
-                      ? "text-red-300 animate-pulse"
-                      : "text-purple-300"
-                  } transition-colors duration-300`}
-                >
-                  {timePerRound - timeElapsed}
-                </span>
+                {isRoundOver ? (
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="text-lg text-purple-200">
+                        Correct Answer:{" "}
+                        <span className="font-semibold text-purple-300">
+                          {primaryAnswer}
+                        </span>
+                      </p>
+                    </div>
+                    {isHost && (
+                      <button
+                        onClick={handleContinueToLeaderboard}
+                        className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10"
+                      >
+                        Continue to Leaderboard
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    Time Remaining:{" "}
+                    <span
+                      className={`font-semibold ${
+                        timePerRound - timeElapsed <= 5
+                          ? "text-red-300 animate-pulse"
+                          : "text-purple-300"
+                      } transition-colors duration-300`}
+                    >
+                      {timePerRound - timeElapsed}
+                    </span>
+                  </>
+                )}
               </p>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div
