@@ -46,6 +46,11 @@ const Tutorial = () => {
                 Choose one topic. If importing images, choose at most 10 images and label each
                 image.
               </p>
+              <p className="text-gray-200 pt-2">
+                The player importing images will watch the game as a spectator, that is, they will
+                be able to see denoising images and manage rounds but won't be able to submit
+                guesses, sabotage others, or be sabotaged.
+              </p>
             </div>
 
             <div className="h-px bg-gradient-to-r from-transparent via-purple-400/30 to-transparent my-8" />
@@ -58,14 +63,23 @@ const Tutorial = () => {
               <div className="bg-white/8 backdrop-blur-2xl rounded-lg p-4 mb-4 border border-purple-500/10">
                 <h3 className="text-lg font-semibold text-indigo-400 mb-2">Sabotage</h3>
                 <p className="text-gray-200 mb-4">
-                  Pick any other player to stall, add noise, or deduct. (Requires at least 2
-                  players in the game).
+                  Pick an opponent to add noise, stall, or deduct. (Requires at least 2 players in
+                  the game).
                 </p>
 
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4 items-center">
-                    <div className="bg-gradient-to-r from-purple-600/80 to-indigo-600/80 backdrop-blur-xl text-white px-6 py-2 rounded-lg text-center w-full md:w-32 hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10">
-                      Stall
+                    <div className="bg-gradient-to-r from-purple-600/80 to-indigo-600/80 backdrop-blur-xl text-white px-6 py-2 rounded-lg text-center w-full md:w-40 hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10">
+                      Add Noise (A)
+                    </div>
+                    <p className="text-gray-200">
+                      Costs 50 points. Player's image becomes noisier.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4 items-center">
+                    <div className="bg-gradient-to-r from-purple-600/80 to-indigo-600/80 backdrop-blur-xl text-white px-6 py-2 rounded-lg text-center w-full md:w-40 hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10">
+                      Stall (S)
                     </div>
                     <p className="text-gray-200">
                       Costs 50 points. Player can't submit for 5 seconds.
@@ -73,19 +87,12 @@ const Tutorial = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4 items-center">
-                    <div className="bg-gradient-to-r from-purple-600/80 to-indigo-600/80 backdrop-blur-xl text-white px-6 py-2 rounded-lg text-center w-full md:w-32 hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10">
-                      Add Noise
+                    <div className="bg-gradient-to-r from-purple-600/80 to-indigo-600/80 backdrop-blur-xl text-white px-6 py-2 rounded-lg text-center w-full md:w-40 hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10">
+                      Deduct (D)
                     </div>
                     <p className="text-gray-200">
-                      Costs 50 points. Player can't submit for 5 seconds.
+                      Costs 30 points. Deducts 60 points from player's score.
                     </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4 items-center">
-                    <div className="bg-gradient-to-r from-purple-600/80 to-indigo-600/80 backdrop-blur-xl text-white px-6 py-2 rounded-lg text-center w-full md:w-32 hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10">
-                      Deduct
-                    </div>
-                    <p className="text-gray-200">Costs 30 points. Deducts 60 points from player.</p>
                   </div>
                 </div>
               </div>
