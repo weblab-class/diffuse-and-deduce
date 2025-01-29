@@ -219,7 +219,11 @@ const GameSettings = () => {
   const { state } = useLocation();
   const playerName = state?.playerName;
 
-  useRoom(roomCode, playerName);
+  const { players } = useRoom(roomCode, playerName);
+  const otherPlayers = Object.entries(players || {}).filter(
+    ([_, player]) => player.id !== socket.id
+  );
+  const hasSufficientPlayers = otherPlayers.length > 0;
 
   useEffect(() => {
     if (!state) {
@@ -247,6 +251,13 @@ const GameSettings = () => {
     hints: false,
     revealMode: "diffusion",
   });
+
+  // Disable sabotage if there aren't enough players
+  useEffect(() => {
+    if (!hasSufficientPlayers && settings.sabotage) {
+      setSettings((prev) => ({ ...prev, sabotage: false }));
+    }
+  }, [hasSufficientPlayers, settings.sabotage]);
 
   const [selectedTopic, setSelectedTopic] = React.useState(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = React.useState(false);
@@ -492,17 +503,21 @@ const GameSettings = () => {
                   {/* Sabotage Toggle */}
                   {gameMode === "multi" && (
                     <div className="flex items-center justify-between group">
-                      <span className="w-32 text-white/90 font-medium text-lg group-hover:text-[#E94560] transition-colors">
-                        Sabotage:
+                      <span className="w-32 text-white/90 font-medium text-lg group-hover:text-[#E94560] transition-colors whitespace-nowrap">
+                        Sabotage{" "}
+                        {!hasSufficientPlayers && (
+                          <span className="text-sm text-red-400 font-normal">(2+ players)</span>
+                        )}
+                        :
                       </span>
                       <div className="w-48 flex justify-end">
                         <div
-                          onClick={() => handleToggle("sabotage")}
+                          onClick={() => (!hasSufficientPlayers ? null : handleToggle("sabotage"))}
                           className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ease-in-out ${
                             settings.sabotage
                               ? "bg-[#E94560] shadow-inner"
                               : "bg-white/10 hover:bg-white/20"
-                          }`}
+                          } ${!hasSufficientPlayers ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           <div
                             className={`bg-white w-5 h-5 rounded-full shadow-md transform duration-300 ease-in-out ${

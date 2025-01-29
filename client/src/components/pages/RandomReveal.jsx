@@ -297,8 +297,8 @@ const RandomReveal = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    canvas.width = 600; // Set appropriate width
-    canvas.height = 400; // Set appropriate height
+    canvas.width = 600; // Match GameScreen image width
+    canvas.height = 400; // Match GameScreen image height
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
@@ -713,67 +713,122 @@ const RandomReveal = () => {
               </div>
             </div>
 
-            {/* Canvas container */}
-            <div className="relative flex-1 min-h-0 mb-2">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
-              <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
-                <canvas ref={canvasRef} className="w-full h-full object-contain rounded-xl" />
+            {/* Main game content container */}
+            <div className="flex-1 flex flex-row gap-4 min-h-0">
+              {/* Canvas container */}
+              <div className={`${sabotageEnabled ? "flex-[3]" : "flex-[2.5]"} relative`}>
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
+                <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
+                  <div className="w-[800px] h-[600px] overflow-auto">
+                    <canvas
+                      ref={canvasRef}
+                      className="min-w-[800px] min-h-[600px] w-full h-full object-contain"
+                      width="1600"
+                      height="1000"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {sabotageEnabled && (
-              <>
-                <div className="mt-4 p-4 bg-white/10 backdrop-blur-xl rounded-lg">
-                  <h3 className="text-xl font-semibold text-white mb-2">Sabotage Actions</h3>
-
-                  <div className="mb-4">
-                    <h4 className="text-lg text-white">Select Opponent:</h4>
-                    <ul className="list-disc list-inside">
-                      {players
-                        .filter((player) => player.id !== socket.id)
-                        .map((player) => (
-                          <li
-                            key={player.id}
-                            onClick={() => setSelectedOpponent(player)}
-                            className={`cursor-pointer ${
-                              selectedOpponent?.id === player.id
-                                ? "text-yellow-400"
-                                : "text-white/80 hover:text-yellow-300"
-                            }`}
-                          >
-                            {player.name}
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-
-                  <div>
-                    <p className="text-white/90 mb-2">
-                      Press the corresponding key to perform sabotage:
-                    </p>
-                    <ul className="list-disc list-inside">
-                      <li className="text-white/80">A: Add Noise</li>
-                      <li className="text-white/80">S: Stall (Disable Guessing)</li>
-                      <li className="text-white/80">D: Deduct 60 Points</li>
-                    </ul>
-                  </div>
-
-                  {selectedOpponent && (
-                    <div className="mt-4 p-2 bg-white/20 rounded">
-                      <p className="text-white">
-                        Selected Opponent: <strong>{selectedOpponent.name}</strong>
-                      </p>
+              {/* Sabotage Panel */}
+              {sabotageEnabled && (
+                <div className="w-56">
+                  <div className="relative h-full">
+                    {/* Background effects */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform rotate-1">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(147,51,234,0.15)_0%,transparent_60%)]"></div>
                     </div>
-                  )}
-                </div>
+                    <div className="relative h-full bg-white/5 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-xl glow flex flex-col">
+                      {/* Decorative corner elements */}
+                      <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-purple-500/30 rounded-tl-2xl"></div>
+                      <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-purple-500/30 rounded-br-2xl"></div>
 
-                <div className="fixed top-20 right-4 z-50">
-                  {notifications.map((notif, index) => (
-                    <Notification key={index} message={notif.message} type={notif.type} />
-                  ))}
+                      {/* Title with enhanced decoration */}
+                      <div className="relative mb-6 text-center">
+                        <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
+                        <h3 className="relative inline-block px-6 py-1 bg-[#1a1a2e] text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-300 tracking-wider transform hover:scale-105 transition-transform duration-300">
+                          Sabotage
+                          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"></div>
+                        </h3>
+                      </div>
+
+                      <div className="flex-1 flex flex-col justify-between space-y-6">
+                        {/* Select Opponent Section with enhanced styling */}
+                        <div className="relative group">
+                          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
+                          <div className="relative">
+                            <h4 className="text-lg font-medium mb-3 pl-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center">
+                              <span className="mr-2">⚡</span> Select Opponent
+                            </h4>
+                            <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar">
+                              {Object.entries(players || {}).map(([id, player]) => (
+                                <div
+                                  key={id}
+                                  onClick={() => setSelectedOpponent({ id, name: player.name })}
+                                  className={`group cursor-pointer p-2.5 rounded-lg border transition-all duration-300 hover-scale ${
+                                    selectedOpponent?.id === id
+                                      ? "border-purple-500/50 bg-purple-500/20 text-purple-200 shadow-lg shadow-purple-500/20"
+                                      : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10"
+                                  }`}
+                                >
+                                  <div className="flex items-center">
+                                    <div
+                                      className={`w-2 h-2 rounded-full mr-3 transition-all duration-300 ${
+                                        selectedOpponent?.id === id
+                                          ? "bg-purple-400"
+                                          : "bg-white/30 group-hover:bg-purple-400/50"
+                                      }`}
+                                    ></div>
+                                    <span className="font-medium">{player.name}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sabotage Actions Section */}
+                        <div className="space-y-2">
+                          <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
+                            <div className="relative">
+                              <h4 className="text-lg font-medium mb-3 pl-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center">
+                                <span className="mr-2">🎯</span> Actions
+                              </h4>
+                              <div className="space-y-2">
+                                <div className="text-white/80 text-sm pl-2">
+                                  Press key to sabotage:
+                                </div>
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center text-white/70 hover:text-white/90 transition-colors">
+                                    <span className="w-6 h-6 flex items-center justify-center bg-white/10 rounded mr-2 text-sm">
+                                      A
+                                    </span>
+                                    Add Noise
+                                  </div>
+                                  <div className="flex items-center text-white/70 hover:text-white/90 transition-colors">
+                                    <span className="w-6 h-6 flex items-center justify-center bg-white/10 rounded mr-2 text-sm">
+                                      S
+                                    </span>
+                                    Stall
+                                  </div>
+                                  <div className="flex items-center text-white/70 hover:text-white/90 transition-colors">
+                                    <span className="w-6 h-6 flex items-center justify-center bg-white/10 rounded mr-2 text-sm">
+                                      D
+                                    </span>
+                                    Deduct
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </>
-            )}
+              )}
+            </div>
 
             {/* Input section */}
             <div className="mt-auto pb-8">

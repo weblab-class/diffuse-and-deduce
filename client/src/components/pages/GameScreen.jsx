@@ -44,6 +44,23 @@ export default function GameScreen() {
 
   const { players, isHost, hostId, error } = useRoom(roomCode, playerName);
 
+  // Debug logs
+  console.log("Current socket ID:", socket.id);
+  console.log("All players:", players);
+
+  // Filter out current player by comparing with the id field in the player object
+  const otherPlayers = Object.entries(players || {}).reduce((acc, [key, player]) => {
+    console.log("Checking player:", key, player);
+    if (player.id !== socket.id) {
+      acc[key] = player;
+    } else {
+      console.log("Filtering out current player:", player.id);
+    }
+    return acc;
+  }, {});
+
+  console.log("Filtered players:", otherPlayers);
+
   const [selectedOpponent, setSelectedOpponent] = useState(null); // Currently selected opponent for sabotage
   const [guessDisabled, setGuessDisabled] = useState(false); // Disable guess input during stall sabotage
   const [notifications, setNotifications] = useState([]);
@@ -344,7 +361,7 @@ export default function GameScreen() {
 
   useEffect(() => {
     // Handle navigation and reload
-    const handleUnload = (e) => {
+    const handleUnload = () => {
       // Emit leave room event
       socket.emit("leaveRoom", { roomCode });
 
@@ -582,145 +599,205 @@ export default function GameScreen() {
       </div>
 
       <div className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
-        <div className="flex-1 flex flex-col px-4">
-          <div className="max-w-4xl mx-auto w-full flex flex-col h-full">
-            {/* Time remaining display */}
-            <div className={`text-center pt-24 mb-2 ${isShaking ? "animate-violent-shake" : ""}`}>
-              <p
-                className={`text-lg ${
-                  timePerRound - timeElapsed <= 5 ? "text-red-200" : "text-purple-200"
-                } bg-white/5 backdrop-blur-xl inline-block px-4 py-1 rounded-full border border-white/10 glow mb-1 transition-colors duration-300`}
-              >
-                Time Remaining:{" "}
-                <span
-                  className={`font-semibold ${
-                    timePerRound - timeElapsed <= 5
-                      ? "text-red-300 animate-pulse"
-                      : "text-purple-300"
-                  } transition-colors duration-300`}
+        <div className="flex-1 flex flex-row px-4 gap-4">
+          <div className="flex-1 flex flex-col h-full">
+            <div className="max-w-7xl mx-auto w-full flex flex-col h-full">
+              {/* Time remaining display */}
+              <div className={`text-center pt-24 mb-2 ${isShaking ? "animate-violent-shake" : ""}`}>
+                <p
+                  className={`text-lg ${
+                    timePerRound - timeElapsed <= 5 ? "text-red-200" : "text-purple-200"
+                  } bg-white/5 backdrop-blur-xl inline-block px-4 py-1 rounded-full border border-white/10 glow mb-1 transition-colors duration-300`}
                 >
-                  {timePerRound - timeElapsed}
-                </span>
-              </p>
-              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-300 rounded-full ${
-                    timePerRound - timeElapsed <= 5
-                      ? "bg-gradient-to-r from-red-500 to-red-600 animate-pulse"
-                      : "bg-gradient-to-r from-purple-500 to-indigo-500"
-                  }`}
-                  style={{
-                    width: `${((timePerRound - timeElapsed) / timePerRound) * 100}%`,
-                    boxShadow:
+                  Time Remaining:{" "}
+                  <span
+                    className={`font-semibold ${
                       timePerRound - timeElapsed <= 5
-                        ? "0 0 20px rgba(239, 68, 68, 0.5)"
-                        : "0 0 20px rgba(147, 51, 234, 0.5)",
-                  }}
-                />
+                        ? "text-red-300 animate-pulse"
+                        : "text-purple-300"
+                    } transition-colors duration-300`}
+                  >
+                    {timePerRound - timeElapsed}
+                  </span>
+                </p>
+                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 rounded-full ${
+                      timePerRound - timeElapsed <= 5
+                        ? "bg-gradient-to-r from-red-500 to-red-600 animate-pulse"
+                        : "bg-gradient-to-r from-purple-500 to-indigo-500"
+                    }`}
+                    style={{
+                      width: `${((timePerRound - timeElapsed) / timePerRound) * 100}%`,
+                      boxShadow:
+                        timePerRound - timeElapsed <= 5
+                          ? "0 0 20px rgba(239, 68, 68, 0.5)"
+                          : "0 0 20px rgba(147, 51, 234, 0.5)",
+                    }}
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Canvas container */}
-            <div className="relative flex-1 min-h-0 mb-2">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
-              <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
-                <canvas
-                  ref={canvasRef}
-                  className="w-full h-full object-contain rounded-xl"
-                  width="800"
-                  height="600"
-                />
-              </div>
-            </div>
-
-            {sabotageEnabled && (
-              <>
-                <div className="mt-4 p-4 bg-white/10 backdrop-blur-xl rounded-lg">
-                  <h3 className="text-xl font-semibold text-white mb-2">Sabotage Actions</h3>
-
-                  <div className="mb-4">
-                    <h4 className="text-lg text-white">Select Opponent:</h4>
-                    <ul className="list-disc list-inside">
-                      {players
-                        .filter((player) => player.id !== socket.id)
-                        .map((player) => (
-                          <li
-                            key={player.id}
-                            onClick={() => setSelectedOpponent(player)}
-                            className={`cursor-pointer ${
-                              selectedOpponent?.id === player.id
-                                ? "text-yellow-400"
-                                : "text-white/80 hover:text-yellow-300"
-                            }`}
-                          >
-                            {player.name}
-                          </li>
-                        ))}
-                    </ul>
+              {/* Main game content container */}
+              <div className="flex-1 flex flex-row gap-4 min-h-0">
+                {/* Canvas container */}
+                <div className={`${sabotageEnabled ? "flex-[3]" : "flex-[2.5]"} relative`}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
+                  <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
+                    <canvas
+                      ref={canvasRef}
+                      className="w-full h-full object-contain rounded-xl"
+                      width="1600"
+                      height="1000"
+                    />
                   </div>
+                </div>
 
-                  <div>
-                    <p className="text-white/90 mb-2">
-                      Press the corresponding key to perform sabotage:
+                {/* Sabotage Panel */}
+                {sabotageEnabled && (
+                  <div className="w-56">
+                    <div className="relative h-full">
+                      {/* Background effects */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform rotate-1">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(147,51,234,0.15)_0%,transparent_60%)]"></div>
+                      </div>
+                      <div className="relative h-full bg-white/5 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-xl glow flex flex-col">
+                        {/* Decorative corner elements */}
+                        <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-purple-500/30 rounded-tl-2xl"></div>
+                        <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-purple-500/30 rounded-br-2xl"></div>
+
+                        {/* Title with enhanced decoration */}
+                        <div className="relative mb-6 text-center">
+                          <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
+                          <h3 className="relative inline-block px-6 py-1 bg-[#1a1a2e] text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-300 tracking-wider transform hover:scale-105 transition-transform duration-300">
+                            Sabotage
+                            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"></div>
+                          </h3>
+                        </div>
+
+                        <div className="flex-1 flex flex-col justify-between space-y-6">
+                          {/* Select Opponent Section with enhanced styling */}
+                          <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
+                            <div className="relative">
+                              <h4 className="text-lg font-medium mb-3 pl-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center">
+                                <span className="mr-2">⚡</span> Select Opponent
+                              </h4>
+                              <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar">
+                                {Object.entries(otherPlayers || {}).map(([id, player]) => (
+                                  <div
+                                    key={id}
+                                    onClick={() => setSelectedOpponent({ id, name: player.name })}
+                                    className={`group cursor-pointer p-2.5 rounded-lg border transition-all duration-300 hover-scale ${
+                                      selectedOpponent?.id === id
+                                        ? "border-purple-500/50 bg-purple-500/20 text-purple-200 shadow-lg shadow-purple-500/20"
+                                        : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10"
+                                    }`}
+                                  >
+                                    <div className="flex items-center">
+                                      <div
+                                        className={`w-2 h-2 rounded-full mr-3 transition-all duration-300 ${
+                                          selectedOpponent?.id === id
+                                            ? "bg-purple-400"
+                                            : "bg-white/30 group-hover:bg-purple-400/50"
+                                        }`}
+                                      ></div>
+                                      <span className="font-medium">{player.name}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Available Actions Section with enhanced cards */}
+                          <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
+                            <div className="relative">
+                              <h4 className="text-lg font-medium mb-3 pl-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center">
+                                <span className="mr-2">🎯</span> Available Actions
+                              </h4>
+                              <div className="space-y-2.5">
+                                {[
+                                  { key: "addNoise", label: "Add Noise", shortcut: "A", icon: "🌫" }, // Static/noise icon
+                                  { key: "stall", label: "Stall", shortcut: "S", icon: "⏳" }, // Timer/hourglass for stalling
+                                  {
+                                    key: "deduct",
+                                    label: "Deduct Points",
+                                    shortcut: "D",
+                                    icon: "�",
+                                  }, // Downward trend for point deduction
+                                ].map((action) => (
+                                  <div
+                                    key={action.key}
+                                    onClick={() => performSabotage(action.key)}
+                                    className="group/action cursor-pointer rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10 overflow-hidden hover-scale"
+                                  >
+                                    <div className="p-2.5 relative">
+                                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 group-hover/action:translate-x-full transition-transform duration-1000"></div>
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-white/80 group-hover/action:text-purple-200 transition-colors duration-300 flex items-center">
+                                          <span className="mr-2 text-lg">{action.icon}</span>
+                                          {action.label}
+                                        </span>
+                                        <span className="px-2 py-1 rounded bg-white/10 text-purple-200 text-sm font-medium border border-white/5 group-hover/action:border-purple-500/30 transition-all duration-300">
+                                          {action.shortcut}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Input section */}
+              <div className="mt-auto pb-8">
+                {guessedCorrectly ? (
+                  <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-3 text-center border border-purple-500/20 shadow-lg">
+                    <p className="text-lg text-purple-200">
+                      Congratulations! You scored{" "}
+                      <span
+                        className={`font-semibold text-purple-300 ${
+                          guessedCorrectly ? "score-animate" : ""
+                        }`}
+                      >
+                        {reward || 0}
+                      </span>{" "}
+                      points.
                     </p>
-                    <ul className="list-disc list-inside">
-                      <li className="text-white/80">A: Add Noise</li>
-                      <li className="text-white/80">S: Stall (Disable Guessing)</li>
-                      <li className="text-white/80">D: Deduct 60 Points</li>
-                    </ul>
+                    <p className="text-sm text-gray-300">Waiting for the round to end... </p>
                   </div>
+                ) : (
+                  renderGuessInput()
+                )}
 
-                  {selectedOpponent && (
-                    <div className="mt-4 p-2 bg-white/20 rounded">
-                      <p className="text-white">
-                        Selected Opponent: <strong>{selectedOpponent.name}</strong>
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="fixed top-20 right-4 z-50">
-                  {notifications.map((notif, index) => (
-                    <Notification key={index} message={notif.message} type={notif.type} />
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Input section */}
-            <div className="mt-auto pb-8">
-              {guessedCorrectly ? (
-                <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-3 text-center border border-purple-500/20 shadow-lg">
-                  <p className="text-lg text-purple-200">
-                    Congratulations! You scored{" "}
-                    <span
-                      className={`font-semibold text-purple-300 ${
-                        guessedCorrectly ? "score-animate" : ""
-                      }`}
-                    >
-                      {reward || 0}
-                    </span>{" "}
-                    points.
-                  </p>
-                  <p className="text-sm text-gray-300">Waiting for the round to end... </p>
-                </div>
-              ) : (
-                renderGuessInput()
-              )}
-
-              {guessedWrong && (
-                <div className="mt-2 bg-red-500/10 backdrop-blur-xl text-red-200 py-2 px-4 rounded-lg border border-red-500/20 text-center animate-shake">
-                  Wrong guess! Try again.
-                  {hintsEnabled && revealedHint && (
-                    <div className="hint-message">
-                      Hint so far: <span style={{ fontWeight: "bold" }}>{revealedHint}</span>
-                    </div>
-                  )}
-                </div>
-              )}
+                {guessedWrong && (
+                  <div className="mt-2 bg-red-500/10 backdrop-blur-xl text-red-200 py-2 px-4 rounded-lg border border-red-500/20 text-center animate-shake">
+                    Wrong guess! Try again.
+                    {hintsEnabled && revealedHint && (
+                      <div className="hint-message">
+                        Hint so far: <span style={{ fontWeight: "bold" }}>{revealedHint}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="fixed top-20 right-4 z-50">
+        {notifications.map((notif, index) => (
+          <Notification key={index} message={notif.message} type={notif.type} />
+        ))}
       </div>
     </div>
   );
