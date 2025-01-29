@@ -519,7 +519,11 @@ const GameSettings = () => {
                           </span>
                         </div>
                         {topic === "Import_Images" && (
-                          <div className="text-sm mt-2 text-white/70">
+                          <div
+                            className={`text-sm mt-2 ${
+                              !hasSufficientPlayers ? "text-red-400" : "text-white/70"
+                            }`}
+                          >
                             {!hasSufficientPlayers
                               ? "2+ players required"
                               : uploadedImages.length === 0
