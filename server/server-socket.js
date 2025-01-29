@@ -92,7 +92,7 @@ function startRoundTimer(roomCode) {
 
         // Notify clients that round is over with round information
         io.to(roomCode).emit("roundOver", { 
-          scores: rooms[roomCode].scores, 
+          scores: rooms[roomCode].scores,  
           socketToUserMap,
           // currentRound: round.currentRound,
           // totalRounds: round.totalRounds
@@ -174,6 +174,12 @@ module.exports = {
       console.log(`socket has connected ${socket.id}`);
 
       const Round = require("./models/round");
+
+      socket.on('goToLeaderboard', async ({ roomCode }) => {
+        // Broadcast the event to all clients, including the sender
+        const room = await Room.findOne({ code: roomCode });
+        io.to(roomCode).emit('navigateToLeaderboard', { roomCode, hostId: room.hostId, scores: rooms[roomCode].scores, socketToUserMap });
+      });
 
       socket.on("submitGuess", async ({ roomCode, guessText }) => {
         try {
@@ -328,6 +334,10 @@ module.exports = {
 
           round.correctAnswers = path.parse(selectedImage).name.split("-");
           round.primaryAnswer = round.correctAnswers[0]; // use the first label for hints
+          round.correctAnswers[0] = round.correctAnswers[0].replace(/ /g, "");
+          round.correctAnswers[0] = round.correctAnswers[0].toLowerCase();
+          console.log("Correct answers:", round.correctAnswers);
+          console.log("Primary answer:", round.primaryAnswer);
 
           // Set the image path accessible by the frontend
           const imagePath = `/game-images/${topic}/${selectedImage}`;
