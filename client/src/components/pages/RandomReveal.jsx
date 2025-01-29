@@ -30,7 +30,6 @@ const RandomReveal = () => {
   const [revealedHint, setRevealedHint] = useState("");
 
   const hintsEnabled = state?.hintsEnabled || false;
-  const sabotageEnabled = state?.sabotageEnabled || false;
   const playerName = state?.playerName;
   const currentRound = state?.currentRound || 1;
   const totalRounds = state?.totalRounds || 1;
@@ -47,6 +46,8 @@ const RandomReveal = () => {
 
   const { players, isHost, hostId, error } = useRoom(roomCode, playerName);
 
+  const sabotageEnabled = (state?.sabotageEnabled && !(importedImages && isHost)) || false;
+
   const [selectedOpponent, setSelectedOpponent] = useState(null); // Currently selected opponent for sabotage
   const [guessDisabled, setGuessDisabled] = useState(false); // Disable guess input during stall sabotage
   const [notifications, setNotifications] = useState([]);
@@ -55,6 +56,10 @@ const RandomReveal = () => {
 
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
   const [imagePath, setImagePath] = useState("");
+
+  const sabotagePlayers = players.filter(
+    (player) => player.id !== socket.id && !(importedImages && player.id === hostId)
+  );
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
@@ -290,6 +295,30 @@ const RandomReveal = () => {
           Submit
         </button>
       </div>
+    );
+  };
+
+  const renderSabotageOpponents = () => {
+    if (!sabotagePlayers.length) {
+      return <p className="text-white/60">No opponents available for sabotage.</p>;
+    }
+
+    return (
+      <ul className="list-disc list-inside">
+        {sabotagePlayers.map((player) => (
+          <li
+            key={player.id}
+            onClick={() => setSelectedOpponent(player)}
+            className={`cursor-pointer ${
+              selectedOpponent?.id === player.id
+                ? "text-yellow-400"
+                : "text-white/80 hover:text-yellow-300"
+            }`}
+          >
+            {player.name}
+          </li>
+        ))}
+      </ul>
     );
   };
 
@@ -760,30 +789,7 @@ const RandomReveal = () => {
                             <h4 className="text-lg font-medium mb-3 pl-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center">
                               <span className="mr-2">⚡</span> Select Opponent
                             </h4>
-                            <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar">
-                              {Object.entries(players || {}).map(([id, player]) => (
-                                <div
-                                  key={id}
-                                  onClick={() => setSelectedOpponent({ id, name: player.name })}
-                                  className={`group cursor-pointer p-2.5 rounded-lg border transition-all duration-300 hover-scale ${
-                                    selectedOpponent?.id === id
-                                      ? "border-purple-500/50 bg-purple-500/20 text-purple-200 shadow-lg shadow-purple-500/20"
-                                      : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10"
-                                  }`}
-                                >
-                                  <div className="flex items-center">
-                                    <div
-                                      className={`w-2 h-2 rounded-full mr-3 transition-all duration-300 ${
-                                        selectedOpponent?.id === id
-                                          ? "bg-purple-400"
-                                          : "bg-white/30 group-hover:bg-purple-400/50"
-                                      }`}
-                                    ></div>
-                                    <span className="font-medium">{player.name}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                            {renderSabotageOpponents()}
                           </div>
                         </div>
 
