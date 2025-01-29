@@ -351,31 +351,31 @@ export default function GameScreen() {
       );
     }
 
-    // return (
-    //   <div className="flex gap-4 items-center">
-    //     <input
-    //       type="text"
-    //       value={guessText}
-    //       onChange={(e) => setGuessText(e.target.value)}
-    //       placeholder="Enter your guess..."
-    //       className={`flex-1 p-3 rounded-lg bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#E94560] ${
-    //         isShaking ? "animate-shake" : ""
-    //       }`}
-    //       onKeyDown={(e) => {
-    //         if (e.key === "Enter" && !guessedCorrectly) {
-    //           handleSubmitGuess();
-    //         }
-    //       }}
-    //     />
-    //     <button
-    //       onClick={handleSubmitGuess}
-    //       disabled={guessedCorrectly}
-    //       className="px-6 py-3 bg-[#E94560] text-white rounded-lg hover:bg-[#E94560]/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-    //     >
-    //       Submit
-    //     </button>
-    //   </div>
-    // );
+    return (
+      <div className="flex gap-4 items-center">
+        <input
+          type="text"
+          value={guessText}
+          onChange={(e) => setGuessText(e.target.value)}
+          placeholder="Enter your guess..."
+          className={`flex-1 p-3 rounded-lg bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#E94560] ${
+            isShaking ? "animate-shake" : ""
+          }`}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !guessedCorrectly) {
+              handleSubmitGuess();
+            }
+          }}
+        />
+        <button
+          onClick={handleSubmitGuess}
+          disabled={guessedCorrectly}
+          className="px-6 py-3 bg-[#E94560] text-white rounded-lg hover:bg-[#E94560]/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Submit
+        </button>
+      </div>
+    );
   };
 
   // Listen for correct guess event
