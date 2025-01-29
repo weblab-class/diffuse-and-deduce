@@ -722,6 +722,12 @@ module.exports = {
                 Round.deleteMany({ roomCode }), // Delete all rounds for this room
               ]);
               console.log(`Deleted room ${roomCode} and its rounds`);
+
+              // Clear any existing interval before deleting the room
+              if (rooms[roomCode] && rooms[roomCode].interval) {
+                clearInterval(rooms[roomCode].interval);
+              }
+              delete rooms[roomCode];
             }
           } else {
             // not host- just save player removal
@@ -746,6 +752,10 @@ module.exports = {
             });
 
             if (rooms[roomCode].players.length === 0) {
+              // Clear any existing interval before deleting the room
+              if (rooms[roomCode] && rooms[roomCode].interval) {
+                clearInterval(rooms[roomCode].interval);
+              }
               delete rooms[roomCode];
             }
           }
