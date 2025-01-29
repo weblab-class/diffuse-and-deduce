@@ -1,6 +1,3 @@
-// models/round.js
-
-const { CurrencyBtc } = require("@phosphor-icons/react");
 const mongoose = require("mongoose");
 
 const RoundSchema = new mongoose.Schema({
