@@ -49,6 +49,22 @@ const Leaderboard = () => {
   const [animationStage, setAnimationStage] = useState(0);
 
   useEffect(() => {
+    if (!state || Object.keys(scores).length === 0) {
+      navigate("/");
+    }
+  }, [state, scores, navigate]);
+
+  useEffect(() => {
+    if (currentRound === totalRounds) {
+      return () => {
+        if (roomCode) {
+          socket.emit("leaveRoom", { roomCode });
+        }
+      };
+    }
+  }, [currentRound, totalRounds, roomCode]);
+
+  useEffect(() => {
     if (currentRound === totalRounds) {
       setShowPodium(true);
 
@@ -227,8 +243,8 @@ const Leaderboard = () => {
                 animationStage >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               }`}
             >
-              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-40">
-                <div className="animate-bounce text-center">
+              <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-40">
+                <div className="animate-bounce text-center" style={{ animationDuration: "2s" }}>
                   <div className="flex justify-center mb-2">
                     <Trophy type="silver" />
                   </div>
@@ -255,8 +271,8 @@ const Leaderboard = () => {
                 animationStage >= 3 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               }`}
             >
-              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-40">
-                <div className="animate-bounce text-center">
+              <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-40">
+                <div className="animate-bounce text-center" style={{ animationDuration: "2s" }}>
                   <div className="flex justify-center mb-2">
                     <Trophy type="gold" />
                   </div>
@@ -285,8 +301,8 @@ const Leaderboard = () => {
                 animationStage >= 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               }`}
             >
-              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-40">
-                <div className="animate-bounce text-center">
+              <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-40">
+                <div className="animate-bounce text-center" style={{ animationDuration: "2s" }}>
                   <div className="flex justify-center mb-2">
                     <Trophy type="bronze" />
                   </div>
@@ -435,155 +451,174 @@ const Leaderboard = () => {
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col">
-      <Header backNav="/room-actions" />
-      {/* Background layers */}
-      <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#1a1a2e] to-[#0a0a1b]">
-        <div className="absolute inset-0 bg-[url('/background-images/background-leaderboard.png')] bg-cover bg-center bg-no-repeat opacity-60 mix-blend-overlay" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.15)_0%,transparent_70%)]" />
-      </div>
-
-      <div className="relative z-10 min-h-screen flex justify-center items-center">
-        {currentRound === totalRounds && showPodium ? (
-          <div className="w-full max-w-4xl backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-hidden p-8">
-            <h2 className="text-3xl font-bold text-center text-white mb-12">Final Results!</h2>
-            {gameMode === "multi" ? (
-              <>
-                {renderPodium()}
-                {renderPlayerList()}
-              </>
-            ) : (
-              renderSinglePlayerScore()
-            )}
-            <div className="mt-8 flex justify-center">
-              <button
-                onClick={handleReturnHome}
-                className="group relative px-8 py-3 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
-              >
-                <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/10 to-indigo-500/10 animate-pulse" />
-                <span className="relative text-white group-hover:text-white/90 transition-colors">
-                  Back to Home
-                </span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="w-[28rem] backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
-            {/* Header with glow effect */}
-            <div className="relative py-6 text-center">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20" />
-              <h1 className="relative text-3xl font-semibold text-white/90 tracking-wide">
-                Leaderboard
-              </h1>
-              <p className="relative text-lg text-white/60 mt-1">
-                On round: {currentRound}/{totalRounds}
-              </p>
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(147,51,234,0.2)_0%,transparent_60%)]" />
+    <>
+      {/* Transparent scrolling container */}
+      <div className="fixed inset-0 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#E94560]/50 hover:scrollbar-thumb-[#E94560]">
+        <div className="min-h-[101vh]">
+          <div className="min-h-screen relative flex flex-col">
+            <Header backNav="/room-actions" />
+            {/* Background layers */}
+            <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#1a1a2e] to-[#0a0a1b]">
+              <div className="absolute inset-0 bg-[url('/background-images/background-leaderboard.png')] bg-cover bg-center bg-no-repeat opacity-60 mix-blend-overlay" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.15)_0%,transparent_70%)]" />
             </div>
 
-            {/* Divider with glow */}
-            <div className="h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
+            <div className="relative z-10 min-h-screen flex justify-center items-center py-20">
+              {currentRound === totalRounds && showPodium ? (
+                <div className="w-full max-w-4xl backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-hidden p-8">
+                  <h2 className="text-3xl font-bold text-center text-white mb-12 sticky top-0 bg-[#1a1a2e]/80 backdrop-blur-md py-4 -mx-8 px-8">
+                    Final Results!
+                  </h2>
+                  {gameMode === "multi" ? (
+                    <>
+                      {renderPodium()}
+                      {renderPlayerList()}
+                    </>
+                  ) : (
+                    renderSinglePlayerScore()
+                  )}
+                  <div className="mt-8 flex justify-center">
+                    <button
+                      onClick={handleReturnHome}
+                      className="group relative px-8 py-3 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
+                    >
+                      <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/10 to-indigo-500/10 animate-pulse" />
+                      <span className="relative text-white group-hover:text-white/90 transition-colors">
+                        Back to Home
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-[28rem] backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                  {/* Header with glow effect */}
+                  <div className="relative py-6 text-center">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20" />
+                    <h1 className="relative text-3xl font-semibold text-white/90 tracking-wide">
+                      Leaderboard
+                    </h1>
+                    <p className="relative text-lg text-white/60 mt-1">
+                      On round: {currentRound}/{totalRounds}
+                    </p>
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(147,51,234,0.2)_0%,transparent_60%)]" />
+                  </div>
 
-            {/* Scores list with hover effects */}
-            <div className="p-6 space-y-3">
-              {Array.from(sortedSocketToUserMap.entries()).map(([playerId, player], index) => {
-                const bgColor =
-                  gameMode === "multi" && index === 0
-                    ? "bg-[#cdab31] hover:bg-[#B38600] backdrop-blur-md border-yellow-500/30" // Gold with darker hover
-                    : gameMode === "multi" && index === 1
-                    ? "bg-[#a29fa5] hover:bg-[#848484] backdrop-blur-md border-gray-400/30" // Silver with darker hover
-                    : gameMode === "multi" && index === 2
-                    ? "bg-[#764c00] hover:bg-[#5c3b00] backdrop-blur-md border-amber-600/30" // Bronze with darker hover
-                    : "bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md"; // Default
-                return (
-                  <div
-                    key={playerId}
-                    className={`group flex items-center justify-between p-4 rounded-xl ${bgColor} transition-all duration-300 hover:border-purple-500/30 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-purple-500/10`}
-                  >
-                    <div className="flex items-center space-x-4">
-                      {gameMode === "single" ? (
-                        <span className="text-lg text-white/90 font-medium">Your final score:</span>
+                  {/* Divider with glow */}
+                  <div className="h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
+
+                  {/* Scores list with hover effects */}
+                  <div className="p-6 space-y-3">
+                    {Array.from(sortedSocketToUserMap.entries()).map(
+                      ([playerId, player], index) => {
+                        const bgColor =
+                          gameMode === "multi" && index === 0
+                            ? "bg-[#cdab31] hover:bg-[#B38600] backdrop-blur-md border-yellow-500/30" // Gold with darker hover
+                            : gameMode === "multi" && index === 1
+                            ? "bg-[#a29fa5] hover:bg-[#848484] backdrop-blur-md border-gray-400/30" // Silver with darker hover
+                            : gameMode === "multi" && index === 2
+                            ? "bg-[#764c00] hover:bg-[#5c3b00] backdrop-blur-md border-amber-600/30" // Bronze with darker hover
+                            : "bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md"; // Default
+                        return (
+                          <div
+                            key={playerId}
+                            className={`group flex items-center justify-between p-4 rounded-xl ${bgColor} transition-all duration-300 hover:border-purple-500/30 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-purple-500/10`}
+                          >
+                            <div className="flex items-center space-x-4">
+                              {gameMode === "single" ? (
+                                <span className="text-lg text-white/90 font-medium">
+                                  Your total score:
+                                </span>
+                              ) : (
+                                <>
+                                  <span className="h-8 w-8 flex items-center justify-center text-white/90 font-medium rounded-full bg-gradient-to-r from-purple-500/50 to-indigo-500/50 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
+                                    {index + 1}
+                                  </span>
+                                  <span className="text-lg text-white/90 font-medium">
+                                    {player.name}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            <div className="px-4 py-1 rounded-full bg-gradient-to-r from-purple-500/50 to-indigo-500/50 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
+                              <span className="text-white/90 font-semibold">
+                                {scores[playerId] || 0}
+                              </span>
+                              <span className="text-white/70 ml-1">pts</span>
+                            </div>
+                          </div>
+                        );
+                      }
+                    )}
+                    <div>
+                      {currentRound === totalRounds ? (
+                        <div className="flex flex-col items-center mt-8 relative">
+                          {/* Decorative frame corners */}
+                          <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-purple-400/30 -translate-x-2 -translate-y-2" />
+                          <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-purple-400/30 translate-x-2 -translate-y-2" />
+                          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-purple-400/30 -translate-x-2 translate-y-2" />
+                          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-purple-400/30 translate-x-2 translate-y-2" />
+
+                          {/* Main content */}
+                          <div className="text-center px-8 py-6 backdrop-blur-lg bg-white/5 rounded-2xl border border-white/10">
+                            <h2 className="text-2xl font-semibold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent mb-3">
+                              Game Complete!
+                            </h2>
+
+                            {/* Winner announcement for multiplayer */}
+                            {gameMode === "multi" &&
+                              Array.from(sortedSocketToUserMap.entries())[0] && (
+                                <div className="mb-6">
+                                  <p className="text-white/80 mb-2">Champion</p>
+                                  <p className="text-xl font-bold text-yellow-300">
+                                    {Array.from(sortedSocketToUserMap.entries())[0][1].name}
+                                  </p>
+                                  <div className="text-white/60 mt-1">
+                                    with {scores[Array.from(sortedSocketToUserMap.entries())[0][0]]}{" "}
+                                    points
+                                  </div>
+                                </div>
+                              )}
+
+                            <button
+                              onClick={handleReturnHome}
+                              className="group relative px-8 py-3 mt-2 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
+                            >
+                              <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/10 to-indigo-500/10 animate-pulse" />
+                              <span className="relative text-white group-hover:text-white/90 transition-colors">
+                                Back to Home
+                              </span>
+                            </button>
+                          </div>
+                        </div>
                       ) : (
                         <>
-                          <span className="h-8 w-8 flex items-center justify-center text-white/90 font-medium rounded-full bg-gradient-to-r from-purple-500/50 to-indigo-500/50 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
-                            {index + 1}
-                          </span>
-                          <span className="text-lg text-white/90 font-medium">{player.name}</span>
+                          {isHost ? (
+                            <div className="flex justify-center mt-4">
+                              {console.log("Next Round button rendered")}
+                              <button
+                                className="text-white px-4 py-2 rounded rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
+                                onClick={handleNextRound}
+                              >
+                                Next Round
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-center mt-4">
+                              {console.log("Next Round button not rendered")}
+                              <div className="text-white px-4 py-2">Waiting for next round...</div>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
-                    <div className="px-4 py-1 rounded-full bg-gradient-to-r from-purple-500/50 to-indigo-500/50 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
-                      <span className="text-white/90 font-semibold">{scores[playerId] || 0}</span>
-                      <span className="text-white/70 ml-1">pts</span>
-                    </div>
                   </div>
-                );
-              })}
-              <div>
-                {currentRound === totalRounds ? (
-                  <div className="flex flex-col items-center mt-8 relative">
-                    {/* Decorative frame corners */}
-                    <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-purple-400/30 -translate-x-2 -translate-y-2" />
-                    <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-purple-400/30 translate-x-2 -translate-y-2" />
-                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-purple-400/30 -translate-x-2 translate-y-2" />
-                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-purple-400/30 translate-x-2 translate-y-2" />
-
-                    {/* Main content */}
-                    <div className="text-center px-8 py-6 backdrop-blur-lg bg-white/5 rounded-2xl border border-white/10">
-                      <h2 className="text-2xl font-semibold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent mb-3">
-                        Game Complete!
-                      </h2>
-
-                      {/* Winner announcement for multiplayer */}
-                      {gameMode === "multi" && Array.from(sortedSocketToUserMap.entries())[0] && (
-                        <div className="mb-6">
-                          <p className="text-white/80 mb-2">Champion</p>
-                          <p className="text-xl font-bold text-yellow-300">
-                            {Array.from(sortedSocketToUserMap.entries())[0][1].name}
-                          </p>
-                          <div className="text-white/60 mt-1">
-                            with {scores[Array.from(sortedSocketToUserMap.entries())[0][0]]} points
-                          </div>
-                        </div>
-                      )}
-
-                      <button
-                        onClick={handleReturnHome}
-                        className="group relative px-8 py-3 mt-2 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
-                      >
-                        <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/10 to-indigo-500/10 animate-pulse" />
-                        <span className="relative text-white group-hover:text-white/90 transition-colors">
-                          Back to Home
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {isHost ? (
-                      <div className="flex justify-center mt-4">
-                        {console.log("Next Round button rendered")}
-                        <button
-                          className="text-white px-4 py-2 rounded rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
-                          onClick={handleNextRound}
-                        >
-                          Next Round
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex justify-center mt-4">
-                        {console.log("Next Round button not rendered")}
-                        <div className="text-white px-4 py-2">Waiting for next round...</div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

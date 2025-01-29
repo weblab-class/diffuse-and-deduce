@@ -225,6 +225,22 @@
   letter-spacing: 0.5px;
 }
 
+.music-control {
+  transition: all 0.3s ease;
+  font-size: 1.2rem;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.music-control:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.music-control:active {
+  transform: scale(0.95);
+}
+
 @media (max-width: 768px) {
   .lobby-content {
     padding: 1rem;

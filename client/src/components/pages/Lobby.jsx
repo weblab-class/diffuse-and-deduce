@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { UserContext } from "../App";
 import Button from "../modules/Button";
@@ -14,6 +14,50 @@ const Lobby = () => {
   const navigate = useNavigate();
   const { players, isHost, hostId } = useRoom(roomCode, userName);
   const [copied, setCopied] = useState(false);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(true);
+
+  useEffect(() => {
+    // Try to play immediately (will likely fail due to browser restrictions)
+    // Solution found on this StackOverflow post:
+    // https://stackoverflow.com/questions/65066070/is-there-a-way-to-auto-play-audio-in-react-without-using-an-onclick-event
+    document
+      .getElementById("backgroundMusic")
+      ?.play()
+      .catch(() => {
+        // On failure, set up a one-time click listener
+        document.addEventListener(
+          "click",
+          () => {
+            const audio = document.getElementById("backgroundMusic");
+            if (audio) {
+              audio.play().then(() => setIsMusicPlaying(true));
+            }
+          },
+          { once: true }
+        );
+      });
+
+    return () => {
+      const audio = document.getElementById("backgroundMusic");
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    };
+  }, []);
+
+  const toggleMusic = () => {
+    const audio = document.getElementById("backgroundMusic");
+    if (audio) {
+      if (isMusicPlaying) {
+        audio.pause();
+        audio.currentTime = 0;
+      } else {
+        audio.play();
+      }
+      setIsMusicPlaying(!isMusicPlaying);
+    }
+  };
 
   const handleContinue = () => {
     navigate(`/game-settings/${roomCode}`, { state: { playerName: userName, gameMode: "multi" } });
@@ -33,7 +77,36 @@ const Lobby = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.15)_0%,transparent_70%)]" />
       </div>
 
+      {/* Background Music */}
+      <audio id="backgroundMusic" loop>
+        <source src="/music/lobby.m4a" type="audio/mp4" />
+        Your browser does not support the audio element.
+      </audio>
+
       <Header backNav="room-actions" />
+
+      {/* Music Control Button */}
+      <button
+        className="music-control"
+        onClick={toggleMusic}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          zIndex: 1000,
+          background: "rgba(255, 255, 255, 0.1)",
+          border: "none",
+          borderRadius: "50%",
+          width: "40px",
+          height: "40px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {isMusicPlaying ? "🔊" : "🔇"}
+      </button>
 
       {/* Main content area */}
       <motion.div
