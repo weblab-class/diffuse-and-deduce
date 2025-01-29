@@ -64,15 +64,12 @@ router.get("/whoami", (req, res) => {
   if (req.session.user) {
     res.send(req.session.user);
   } else {
-    // not logged in
     return res.send({});
   }
 });
 
 router.post("/initsocket", (req, res) => {
-  // do nothing if user not logged in
   if (req.user) {
-    console.log("User id", req.user._id, "Socket id", req.body.socketid);
     socketManager.addUser(req.user, socketManager.getSocketFromSocketID(req.body.socketid));
   }
   res.send({});
@@ -95,17 +92,13 @@ router.get("/hostSocketId", (req, res) => {
 });
 
 router.get("/gameState", (req, res) => {
-  // fix for single user case
   const { roomCode } = req.query;
-  console.log(`Received request for game state with roomCode: ${roomCode}`);
 
   Round.findOne({ roomCode, isActive: true })
     .then((round) => {
       if (!round) {
-        console.log(`No active round found for roomCode: ${roomCode}`);
         return res.status(404).json({ error: "No active round found" });
       }
-      console.log(`Found round for roomCode: ${roomCode}`);
       res.json({
         imagePath: round.imagePath,
         startTime: round.startTime,
@@ -192,7 +185,6 @@ router.post("/cleanup-images", (req, res) => {
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {
-  console.log(`API route not found: ${req.method} ${req.url}`);
   res.status(404).send({ msg: "API route not found" });
 });
 
