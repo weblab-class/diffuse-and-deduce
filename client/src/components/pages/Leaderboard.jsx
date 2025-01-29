@@ -25,6 +25,20 @@ const Leaderboard = () => {
   const importedImages = state?.importedImages || false;
   const navigate = useNavigate();
 
+  console.log("Recieved states:", {
+    scores,
+    socketToUserMap,
+    roomCode,
+    isHost,
+    currentRound,
+    totalRounds,
+    totalTime,
+    imagePath,
+    gameMode,
+    revealMode,
+    hintsEnabled
+  });
+
   useRoom(roomCode);
 
   console.log(socketToUserMap, scores);
@@ -104,14 +118,15 @@ const Leaderboard = () => {
 
           {/* Scores list with hover effects */}
           <div className="p-6 space-y-3">
-            {Array.from(sortedSocketToUserMap.entries()).map(([playerId, player], index) => {
-              const bgColor =
-                gameMode === "multi" && index === 0
-                  ? "bg-[#cdab31] hover:bg-[#B38600] backdrop-blur-md border-yellow-500/30" // Gold with darker hover
-                  : gameMode === "multi" && index === 1
-                  ? "bg-[#a29fa5] hover:bg-[#848484] backdrop-blur-md border-gray-400/30" // Silver with darker hover
-                  : gameMode === "multi" && index === 2
-                  ? "bg-[#764c00] hover:bg-[#5c3b00] backdrop-blur-md border-amber-600/30" // Bronze with darker hover
+            {Array.from(sortedSocketToUserMap.entries())
+              .map(([playerId, player], index) => {
+                const bgColor = 
+                  currentRound === totalRounds && gameMode === "multi" && index === 0
+                  ? "bg-[#CC9900] hover:bg-[#B38600] backdrop-blur-md border-yellow-500/30" // Gold with darker hover
+                  : currentRound === totalRounds && gameMode === "multi" && index === 1
+                  ? "bg-gray-500 hover:bg-gray-600 backdrop-blur-md border-gray-400/30" // Silver with darker hover
+                  :currentRound === totalRounds && gameMode === "multi" && index === 2
+                  ? "bg-amber-700 hover:bg-amber-800 backdrop-blur-md border-amber-600/30" // Bronze with darker hover
                   : "bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md"; // Default
               return (
                 <div
