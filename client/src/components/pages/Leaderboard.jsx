@@ -445,8 +445,10 @@ const Leaderboard = () => {
 
       <div className="relative z-10 min-h-screen flex justify-center items-center">
         {currentRound === totalRounds && showPodium ? (
-          <div className="w-full max-w-4xl backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-hidden p-8">
-            <h2 className="text-3xl font-bold text-center text-white mb-12">Final Results!</h2>
+          <div className="w-full max-w-4xl backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-hidden p-8 max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
+            <h2 className="text-3xl font-bold text-center text-white mb-12 sticky top-0 bg-[#1a1a2e]/80 backdrop-blur-md py-4 -mx-8 px-8">
+              Final Results!
+            </h2>
             {gameMode === "multi" ? (
               <>
                 {renderPodium()}
@@ -468,7 +470,7 @@ const Leaderboard = () => {
             </div>
           </div>
         ) : (
-          <div className="w-[28rem] backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+          <div className="w-[28rem] backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
             {/* Header with glow effect */}
             <div className="relative py-6 text-center">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20" />
