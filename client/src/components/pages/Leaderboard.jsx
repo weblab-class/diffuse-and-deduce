@@ -26,6 +26,8 @@ const Leaderboard = () => {
 
   useRoom(roomCode);
 
+  console.log(socketToUserMap, scores);
+
   const entries = Object.entries(socketToUserMap).filter(([socketId]) => socketId in scores);
   entries.sort((a, b) => scores[b[0]] - scores[a[0]]);
   const sortedSocketToUserMap = new Map(entries);

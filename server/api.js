@@ -32,8 +32,11 @@ const upload = multer({
   },
 });
 
-//initialize socket with imageStorage
-const socketManager = require("./server-socket").init(null, imageStorage);
+// Import the entire server-socket module
+const socketManager = require("./server-socket");
+
+// Initialize socket with imageStorage
+socketManager.init(null, imageStorage);
 
 // api endpoints: all these paths will be prefixed with "/api/"
 const router = express.Router();

@@ -2,7 +2,6 @@ import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
-import Button from "../modules/Button";
 import Header from "../modules/Header";
 import socket from "../../client-socket";
 import { UserContext } from "../App";

@@ -22,32 +22,6 @@ export default function GameScreen() {
   const navigate = useNavigate();
   const [reward, setReward] = useState(0);
 
-  // Validate game state on mount and after reloads
-  useEffect(() => {
-    // Check if we have valid state from navigation
-    if (!location.state) {
-      console.log("No valid game state found, redirecting to home");
-      socket.emit("leaveRoom", { roomCode });
-      navigate("/");
-      return;
-    }
-
-    // Handle page reloads and navigation
-    const handleBeforeUnload = () => {
-      // Clear session storage to prevent persisting game state
-      sessionStorage.removeItem("gameState");
-      socket.emit("leaveRoom", { roomCode });
-      return null;
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      socket.emit("leaveRoom", { roomCode });
-    };
-  }, [roomCode, navigate, location]);
-
   const { state } = useLocation();
   const playerName = state?.playerName;
   const currentRound = state?.currentRound || 1;
@@ -83,6 +57,32 @@ export default function GameScreen() {
 
   // Initialize imagePath state with the backend server URL
   const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`); // default image
+
+  // Validate game state on mount and after reloads
+  useEffect(() => {
+    // Check if we have valid state from navigation
+    if (!state) {
+      console.log("No valid game state found, redirecting to home");
+      socket.emit("leaveRoom", { roomCode });
+      navigate("/");
+      return;
+    }
+
+    // Handle page reloads and navigation
+    const handleBeforeUnload = () => {
+      // Clear session storage to prevent persisting game state
+      sessionStorage.removeItem("gameState");
+      socket.emit("leaveRoom", { roomCode });
+      return null;
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      socket.emit("leaveRoom", { roomCode });
+    };
+  }, [roomCode, navigate, state]);
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
@@ -730,33 +730,6 @@ export default function GameScreen() {
                   <p className="text-sm text-gray-300">Waiting for the round to end... </p>
                 </div>
               ) : (
-                <div
-                  className={`bg-white/5 backdrop-blur-2xl rounded-xl p-3 border border-purple-500/20 shadow-lg ${
-                    guessedWrong ? "animate-shake" : ""
-                  }`}
-                >
-                  <div className="flex gap-2 items-center justify-center">
-                    <input
-                      className="flex-1 bg-white/10 text-purple-100 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50"
-                      placeholder="Enter guess..."
-                      value={guessText}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleSubmitGuess();
-                        }
-                      }}
-                      onChange={(e) => setGuessText(e.target.value)}
-                      disabled={guessDisabled}
-                    />
-                    <button
-                      onClick={handleSubmitGuess}
-                      className="glow bg-gradient-to-r from-purple-600/80 to-indigo-600/80 text-white px-6 py-2 rounded-lg hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10"
-                      disabled={guessDisabled}
-                    >
-                      Submit
-                    </button>
-                  </div>
-                </div>
                 renderGuessInput()
               )}
 

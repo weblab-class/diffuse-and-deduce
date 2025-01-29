@@ -52,7 +52,6 @@ const useRoom = (roomCode, playerName) => {
       const targetPath =
         revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
 
-      revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
       navigate(targetPath, {
         state: {
           playerName,
