@@ -682,7 +682,7 @@ const RandomReveal = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const numCircles = 15; // Number of noise circles to add
+    const numCircles = 20; // Number of noise circles to add
     const newNoise = Array.from({ length: numCircles }).map(() => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
@@ -726,11 +726,6 @@ const RandomReveal = () => {
     img.onload = () => {
       // Reveal image in the last 5 seconds
       const timeRemaining = timePerRound - timeElapsed;
-      if (timeRemaining < 5) {
-        // Fully reveal the image in the last 5 seconds
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        return;
-      }
       drawImageWithReveals(ctx, img, revealCircles, noiseCircles);
     };
   }, [revealCircles, noiseCircles, imagePath, imgLoaded, timeElapsed, timePerRound]);
