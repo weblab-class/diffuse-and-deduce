@@ -16,8 +16,6 @@ const useRoom = (roomCode, playerName) => {
       if (response.error) {
         console.error("Join room error:", response.error);
         setError(response.error);
-      } else {
-        console.log("Successfully joined room:", roomCode);
       }
     });
   }, [roomCode, playerName]);
