@@ -11,6 +11,7 @@ import { get } from "../../utilities";
 export default function GameScreen() {
   const { roomCode } = useParams();
   const [scores, setScores] = useState({});
+  const [diff, setDiff] = useState({});
   const [guessText, setGuessText] = useState("");
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
   const [guessedWrong, setGuessedWrong] = useState(false);
@@ -18,46 +19,52 @@ export default function GameScreen() {
   const location = useLocation();
 
   const [primaryAnswer, setPrimaryAnswer] = useState("");
-  const [hintsEnabled, setHintsEnabled] = useState(location.state?.hintsEnabled ?? false);
+  // const [hintsEnabled, setHintsEnabled] = useState(location.state?.hintsEnabled ?? false);
   const [revealedHint, setRevealedHint] = useState("");
+
+  const { state } = useLocation();
+  const currentRound = state?.currentRound || 1;
+  const totalRounds = state?.totalRounds || 1;
+  const gameMode = state?.gameMode || "single";
+  const hintsEnabled = state?.hintsEnabled || false;
+  const revealMode = state?.revealMode || "diffusion";
+  const timePerRound = state?.timePerRound || 30;
+
+  const [topic, setTopic] = useState("Animals");
 
   const initialNoise = 8.0;
   const canvasRef = useRef(null);
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [timePerRound, setTimePerRound] = useState(30);
+  // const [timePerRound, setTimePerRound] = useState(30);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  // const [recievedTime, setRecievedTime] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
   // Retrieve server URL from Vite environment variables
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
 
-  // Initialize imagePath state with the default image (without server URL)
-  const [imagePath, setImagePath] = useState(`/game-images/Animals/lion.jpg`); // default image
+  // Initialize imagePath state with the backend server URL
+  const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`); // default image
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
-      .then(
-        ({
-          imagePath: serverImagePath,
-          startTime,
-          totalTime,
-          primaryAnswer: serverPrimaryAnswer,
-        }) => {
-          if (serverImagePath) {
-            console.log("Got game state with image:", serverImagePath);
-            setTimeElapsed(0);
-            setImagePath(`${SERVER_URL}${serverImagePath}`);
-            setNoiseLevel(initialNoise);
-            setImgLoaded(false);
-            setTimePerRound(totalTime);
-            setPrimaryAnswer(serverPrimaryAnswer);
-          }
-        }
-      )
+      .then(({ imagePath: serverImagePath, startTime, totalTime, primaryAnswer: serverPrimaryAnswer}) => {
+        console.log("Round started with image:", serverImagePath);
+        setTimeElapsed(0);
+        setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
+        setNoiseLevel(initialNoise); // Reset noise
+        setImgLoaded(false); // Trigger image loading
+        // setTimePerRound(totalTime);
+        // setRecievedTime(true);
+        // setTotalRounds(totalRounds);
+        // setCurrentRound(currentRound);
+        setTopic(serverImagePath.split("/")[2]);
+        setPrimaryAnswer(serverPrimaryAnswer);
+      })
       .catch((error) => {
         console.error("GET request to /api/gameState failed with error:", error);
-      });
+      }); 
   }, []);
 
   // Load the image whenever imagePath changes
@@ -115,7 +122,7 @@ export default function GameScreen() {
         setImagePath(`${SERVER_URL}${imagePath}`);
         setNoiseLevel(initialNoise);
         setImgLoaded(false);
-        setTimePerRound(totalTime);
+        // setTimePerRound(totalTime);
         setPrimaryAnswer(serverPrimaryAnswer);
         setRevealedHint("");
       }
@@ -127,6 +134,8 @@ export default function GameScreen() {
       const fraction = timeElapsed / timePerRound;
 
       // Add shake effect when time is less than 5 seconds
+      // console.log("Time per round:", timePerRound);
+      // console.log("Time remaining:", timePerRound - timeElapsed);
       const timeRemaining = timePerRound - timeElapsed;
       if (timeRemaining < 5) {
         setIsShaking(true);
@@ -147,15 +156,41 @@ export default function GameScreen() {
       setNoiseLevel(Math.max(initialNoise * (1 - easedFraction), 0));
     });
 
-    socket.on("scoreUpdate", ({ scores }) => {
-      console.log("Received score update:", scores);
+    socket.on("scoreUpdate", ({ scores, diff }) => {
+      console.log("Received score update:", scores, diff);
+      setDiff(diff);
       setScores(scores);
     });
 
-    socket.on("roundOver", ({ scores, socketToUserMap }) => {
+    socket.on("roundOver", ({ scores, socketToUserMap}) => {
       console.log("Round over!");
       console.log("Mapping:", socketToUserMap);
-      navigate("/leaderboard", { state: { scores, socketToUserMap, roomCode } });
+      console.log("Round info from server:", { currentRound, totalRounds });
+
+      // Fetch the host's socket ID from the server
+      get("/api/hostSocketId", { roomCode }).then(({ hostSocketId }) => {
+        console.log("Current socket: ", socket.id);
+        console.log("Host socket: ", hostSocketId);
+        const isHost = socket.id === hostSocketId;
+        console.log("After get request, Is host value:", isHost);
+        navigate("/leaderboard", { 
+          state: { 
+            scores, 
+            socketToUserMap, 
+            roomCode, 
+            isHost, 
+            currentRound,
+            totalRounds,
+            imagePath,
+            totalTime: timePerRound,  // Pass the current round's time to use for next round
+            gameMode,
+            revealMode, 
+            hintsEnabled
+          } 
+        });
+      }).catch((error) => {
+        console.error("GET request to /api/hostSocketId failed with error:", error);
+      }); 
     });
 
     return () => {
@@ -392,7 +427,7 @@ export default function GameScreen() {
                         guessedCorrectly ? "score-animate" : ""
                       }`}
                     >
-                      {scores[socket.id] || 0}
+                      {diff[socket.id] || 0}
                     </span>{" "}
                     points.
                   </p>
@@ -409,6 +444,11 @@ export default function GameScreen() {
                       className="flex-1 bg-white/10 text-purple-100 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50"
                       placeholder="Enter guess..."
                       value={guessText}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSubmitGuess();
+                        }
+                      }}
                       onChange={(e) => setGuessText(e.target.value)}
                     />
                     <button

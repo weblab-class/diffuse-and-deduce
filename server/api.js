@@ -22,6 +22,7 @@ const router = express.Router();
 const socketManager = require("./server-socket");
 
 const Round = require("./models/round");
+const Room = require("./models/room");
 
 // Generating temporary IDs for guests
 const { v4: uuidv4 } = require("uuid");
@@ -29,25 +30,18 @@ const { v4: uuidv4 } = require("uuid");
 router.post("/login", auth.login);
 
 function guestLogin(req, res) {
-  // Generate a unique temporary ID
   const guestId = uuidv4();
 
-  // Create a guest user object
   const guestUser = {
     _id: guestId,
-    name: `Guest-${guestId.substring(0, 5)}`, // Optional: create a display name
-    is_guest: true, // Flag to indicate this is a guest user
+    name: `Guest-${guestId.substring(0, 5)}`,
+    is_guest: true,
   };
 
-  // Store the guest user in the session
-  console.log("Guest login");
-  console.log(req.session.user);
-  console.log(guestUser);
   req.session.user = guestUser;
-
-  // Respond with the guest user data
   res.send(guestUser);
 }
+
 router.post("/guest-login", guestLogin);
 
 router.post("/logout", auth.logout);
@@ -70,28 +64,38 @@ router.post("/initsocket", (req, res) => {
   res.send({});
 });
 
-// router.get("/gameState", (req, res) => { // fix for single user case
-//   Round.findOne({ roomCode: req.query.roomCode }).then((round) => {
-//     res.send(round);
-//   });
-// });
+router.get("/hostSocketId", (req, res) => {
+  const { roomCode } = req.query;
+
+  Room.findOne({ code: roomCode }).then((room) => {
+    if (!room) {
+      return res.status(404).json({ error: "Room not found" });
+    }
+    res.json({ hostSocketId: room.hostId });
+  }).catch((error) => {
+    console.error("Error fetching room:", error);
+    res.status(500).json({ error: "Internal server error" });
+  });
+});
 
 router.get("/gameState", (req, res) => {
   // fix for single user case
   const { roomCode } = req.query;
   console.log(`Received request for game state with roomCode: ${roomCode}`);
 
-  Round.findOne({ roomCode })
+  Round.findOne({ roomCode, isActive: true })
     .then((round) => {
       if (!round) {
-        console.log(`No round found for roomCode: ${roomCode}`);
-        return res.status(404).json({ error: "Round not found" });
+        console.log(`No active round found for roomCode: ${roomCode}`);
+        return res.status(404).json({ error: "No active round found" });
       }
       console.log(`Found round for roomCode: ${roomCode}`);
       res.json({
         imagePath: round.imagePath,
         startTime: round.startTime,
         totalTime: round.totalTime,
+        // totalRounds: round.totalRounds,
+        // currentRound: round.currentRound,
         primaryAnswer: round.primaryAnswer,
         // Add any other properties that might be needed by the client
       });
@@ -101,6 +105,39 @@ router.get("/gameState", (req, res) => {
       res.status(500).json({ error: "Internal server error" });
     });
 });
+
+// router.get("/gameState", (req, res) => {
+//   const { roomCode } = req.query;
+//   console.log(`Received request for game state with roomCode: ${roomCode}`);
+
+//   Promise.all([
+//     Room.findOne({ code: roomCode }),
+//     Round.findOne({ roomCode })
+//   ])
+//     .then(([room, round]) => {
+//       if (!room) {
+//         console.log(`No room found for roomCode: ${roomCode}`);
+//         return res.status(404).json({ error: "Room not found" });
+//       }
+//       if (!round) {
+//         console.log(`No round found for roomCode: ${roomCode}`);
+//         return res.status(404).json({ error: "Round not found" });
+//       }
+//       console.log(`Found room and round for roomCode: ${roomCode}`);
+//       console.log(`Total rounds in room: ${room.settings?.rounds}`);
+//       res.json({
+//         imagePath: round.imagePath,
+//         startTime: round.startTime,
+//         totalTime: round.totalTime,
+//         totalRounds: room.settings?.rounds, 
+//         // Add any other properties that might be needed by the client
+//       });
+//     })
+//     .catch((error) => {
+//       console.error("Error fetching game state:", error);
+//       res.status(500).json({ error: "Internal server error" });
+//     });
+// });
 
 // |------------------------------|
 // | write your API methods below!|
