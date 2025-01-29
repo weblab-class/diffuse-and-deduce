@@ -1,53 +1,60 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+
 import socket from "../../client-socket";
 import Header from "../modules/Header";
+import Notification from "../modules/Notification";
+import useRoom from "../../hooks/useRoom";
+
 import "../../utilities.css";
+
 import { get } from "../../utilities";
 
 const RandomReveal = () => {
   const { roomCode } = useParams();
   const { state } = useLocation();
   const navigate = useNavigate();
+  const [reward, setReward] = useState(0);
 
   const [scores, setScores] = useState({});
   const [diff, setDiff] = useState({});
   const [guessText, setGuessText] = useState("");
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
   const [guessedWrong, setGuessedWrong] = useState(false);
-  // const [timePerRound, setTimePerRound] = useState(30);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isShaking, setIsShaking] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [isRoundOver, setIsRoundOver] = useState(false);
-  const [finalScores, setFinalScores] = useState(null);
 
   const [primaryAnswer, setPrimaryAnswer] = useState("");
-  // const [hintsEnabled, setHintsEnabled] = useState(state?.hintsEnabled ?? false);
   const [revealedHint, setRevealedHint] = useState("");
 
   const hintsEnabled = state?.hintsEnabled || false;
+  const sabotageEnabled = state?.sabotageEnabled || false;
+  const playerName = state?.playerName;
   const currentRound = state?.currentRound || 1;
   const totalRounds = state?.totalRounds || 1;
   const gameMode = state?.gameMode || "single";
   const revealMode = state?.revealMode || "diffusion";
   const timePerRound = state?.timePerRound || 30;
-
-  const [isHost, setIsHost] = useState(false);
-  const [socketToUserMap, setSocketToUserMap] = useState({});
+  const importedImages = state?.importedImages || false;
 
   const canvasRef = useRef(null);
   const [revealCircles, setRevealCircles] = useState([]);
+  const [noiseCircles, setNoiseCircles] = useState([]);
+
   const [lastRevealTime, setLastRevealTime] = useState(Date.now());
 
-  // Constants for reveal configuration
-  const REVEAL_INTERVAL = 2000; 
-  const MIN_CIRCLE_SIZE = 30;
-  const MAX_CIRCLE_SIZE = 80;
+  const { players, isHost, hostId, error } = useRoom(roomCode, playerName);
+
+  const [selectedOpponent, setSelectedOpponent] = useState(null); // Currently selected opponent for sabotage
+  const [guessDisabled, setGuessDisabled] = useState(false); // Disable guess input during stall sabotage
+  const [notifications, setNotifications] = useState([]);
+  const [canSabotage, setCanSabotage] = useState(true);
+  const price = { stall: 50, addNoise: 50, deduct: 30 };
 
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
   const [imagePath, setImagePath] = useState("");
-  const imageRef = useRef(null);
 
   useEffect(() => {
     get("/api/gameState", { roomCode })
@@ -62,7 +69,6 @@ const RandomReveal = () => {
             console.log("Got game state with image:", serverImagePath);
             setTimeElapsed(0); // Let server timeUpdate events handle the time
             setImagePath(`${SERVER_URL}${serverImagePath}`);
-            // setTimePerRound(totalTime);
             setPrimaryAnswer(serverPrimaryAnswer);
           }
         }
@@ -71,6 +77,105 @@ const RandomReveal = () => {
         console.error("GET request to /api/gameState failed with error:", error);
       });
   }, []);
+
+  const performSabotage = useCallback(
+    (type) => {
+      if (!canSabotage) {
+        alert("You can perform sabotage actions once every 30 seconds.");
+        return;
+      }
+
+      if (!selectedOpponent) {
+        alert("Please select an opponent to sabotage.");
+        return;
+      }
+
+      const actingScore = scores[socket.id] || 0;
+      if (actingScore < price[type]) {
+        alert("Not enough points to perform sabotage.");
+        return;
+      }
+
+      // Emit sabotage event to the server
+      socket.emit("sabotage", {
+        roomCode,
+        type,
+        targetId: selectedOpponent.id,
+      });
+
+      // Optimistically update the acting player's score
+      setScores((prevScores) => ({
+        ...prevScores,
+        [socket.id]: prevScores[socket.id] - price[type],
+      }));
+
+      setCanSabotage(false);
+      setTimeout(() => setCanSabotage(true), 30000);
+    },
+    [canSabotage, selectedOpponent, scores, roomCode]
+  );
+
+  // Handle keypress events for sabotage
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!selectedOpponent) return;
+
+      switch (e.key.toLowerCase()) {
+        case "a":
+          performSabotage("addNoise");
+          break;
+        case "s":
+          performSabotage("stall");
+          break;
+        case "d":
+          performSabotage("deduct");
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedOpponent, performSabotage]);
+
+  // Listen for sabotage effects directed at the current player
+  useEffect(() => {
+    socket.on("sabotageApplied", ({ type, from }) => {
+      let message = "";
+      if (type === "addNoise") {
+        message = "Another player has added noise to your image!";
+        addNoiseCircles();
+      }
+
+      if (type === "stall" && !guessedCorrectly) {
+        message = "Another user has stalled your guessing!";
+        setGuessDisabled(true);
+        setTimeout(() => setGuessDisabled(false), 10000); // Disable guessing for 5 seconds
+      }
+
+      if (type === "deduct") {
+        message = "Another user has deducted 60 points from your score!";
+        setScores((prevScores) => ({
+          ...prevScores,
+          [socket.id]: (prevScores[socket.id] || 0) - 60,
+        }));
+      }
+
+      setNotifications((prev) => [...prev, { message, type }]);
+
+      setTimeout(() => {
+        setNotifications((prev) => prev.slice(1));
+      }, 5000);
+    });
+
+    return () => {
+      socket.off("sabotageApplied");
+    };
+  }, [revealMode]);
 
   useEffect(() => {
     const handleTimeUpdate = ({ timeElapsed }) => {
@@ -89,40 +194,45 @@ const RandomReveal = () => {
       console.log("Random Reveal: Round started with image:", imagePath);
       setTimeElapsed(0);
       setImagePath(`${SERVER_URL}${imagePath}`);
-      // setTimePerRound(totalTime);
       setRevealCircles([]); // Reset reveal circles for new round
       setLastRevealTime(Date.now());
-      setPrimaryAnswer(serverPrimaryAnswer);
-      setRevealedHint("");
+      setGuessedCorrectly(false); // Reset here
+      setGuessedWrong(false); // Also reset wrong guesses
     };
 
-    const handleRoundOver = ({ scores, socketToUserMap, correctAnswers}) => {
-      // console.log("Round over with scores:", newScores);
-      // setScores(newScores);
-      // setIsRoundOver(true);
-      // setFinalScores(newScores);
-      // setFinalSocketMap(socketToUserMap);
-
-      // Clear all reveals to show full image
-      // setRevealCircles([]);
-
+    const handleRoundOver = ({ scores, socketToUserMap }) => {
       console.log("Round over!");
       console.log("Mapping:", socketToUserMap);
       console.log("Round info from server:", { currentRound, totalRounds });
 
-      setIsRoundOver(true);
-      setSocketToUserMap(socketToUserMap);
-
       // Fetch the host's socket ID from the server
-      get("/api/hostSocketId", { roomCode }).then(({ hostSocketId }) => {
-        console.log("Current socket: ", socket.id);
-        console.log("Host socket: ", hostSocketId);
-        const isHostServer = socket.id === hostSocketId;
-        console.log("After get request, Is host value:", isHostServer);
-        setIsHost(isHostServer);
-      }).catch((error) => {
-        console.error("GET request to /api/hostSocketId failed with error:", error);
-      }); 
+      get("/api/hostSocketId", { roomCode })
+        .then(({ hostSocketId }) => {
+          console.log("Current socket: ", socket.id);
+          console.log("Host socket: ", hostSocketId);
+          const isHost = socket.id === hostSocketId;
+          console.log("After get request, Is host value:", isHost);
+          navigate("/leaderboard", {
+            state: {
+              scores,
+              socketToUserMap,
+              roomCode,
+              isHost,
+              currentRound,
+              totalRounds,
+              imagePath,
+              totalTime: timePerRound, // Pass the current round's time to use for next round
+              gameMode,
+              revealMode,
+              hintsEnabled,
+              sabotageEnabled,
+              importedImages,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error("GET request to /api/hostSocketId failed with error:", error);
+        });
     };
 
     const handleScoreUpdate = ({ scores: newScores, diff }) => {
@@ -144,43 +254,51 @@ const RandomReveal = () => {
     };
   }, [roomCode, navigate, timePerRound]);
 
-  useEffect(() => {
-    // Listen for the 'navigateToLeaderboard' event
-    socket.on('navigateToLeaderboard', ({ roomCode, hostId, scores, socketToUserMap }) => {
-      navigate("/leaderboard", { 
-        state: { 
-          scores, 
-          socketToUserMap, 
-          roomCode, 
-          isHost: socket.id === hostId, 
-          currentRound,
-          totalRounds,
-          imagePath,
-          totalTime: timePerRound,  // Pass the current round's time to use for next round
-          gameMode,
-          revealMode, 
-          hintsEnabled
-        } 
-      });
-    });
+  const renderGuessInput = () => {
+    if (importedImages && isHost) {
+      return (
+        <div className="text-center p-4 bg-white/5 rounded-lg">
+          <p className="text-[#E94560] font-semibold">
+            You imported these images - watching in spectator mode
+          </p>
+        </div>
+      );
+    }
 
-    // Clean up the listener on component unmount
-    return () => {
-      socket.off('navigateToLeaderboard');
-    };
-  }, []);
-
-  const handleContinueToLeaderboard = () => {
-    socket.emit('goToLeaderboard', { roomCode });
+    return (
+      <div className="flex gap-4 items-center pt-4">
+        <input
+          type="text"
+          value={guessText}
+          onChange={(e) => setGuessText(e.target.value)}
+          placeholder="Enter your guess..."
+          className={`flex-1 p-3 rounded-lg bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#E94560] ${
+            isShaking ? "animate-shake" : ""
+          }`}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !guessedCorrectly) {
+              handleSubmitGuess();
+            }
+          }}
+          disabled={guessDisabled}
+        />
+        <button
+          onClick={handleSubmitGuess}
+          disabled={guessedCorrectly || guessDisabled}
+          className="px-6 py-3 bg-[#E94560] text-white rounded-lg hover:bg-[#E94560]/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Submit
+        </button>
+      </div>
+    );
   };
-
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    canvas.width = 600; // Set appropriate width
-    canvas.height = 400; // Set appropriate height
+    canvas.width = 600; // Match GameScreen image width
+    canvas.height = 400; // Match GameScreen image height
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
@@ -201,7 +319,7 @@ const RandomReveal = () => {
       setImgLoaded(false);
       // Display a placeholder or error message
       // ctx.fillStyle = "#CCCCCC";
-      ctx.fillStyle = "black"; 
+      ctx.fillStyle = "black";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "#000000";
       ctx.font = "20px Arial";
@@ -210,10 +328,11 @@ const RandomReveal = () => {
   }, [imagePath]);
 
   useEffect(() => {
-    socket.on("correctGuess", ({ playerId }) => {
+    socket.on("correctGuess", ({ playerId, score }) => {
       if (playerId === socket.id) {
         setGuessedCorrectly(true);
         setGuessedWrong(false);
+        setReward(score);
       }
     });
 
@@ -283,7 +402,7 @@ const RandomReveal = () => {
   };
 
   // Modify drawImageWithReveals to use the new shapes
-  const drawImageWithReveals = (ctx, img, reveals) => {
+  const drawImageWithReveals = (ctx, img, reveals, noise) => {
     // First, draw the image
     ctx.drawImage(img, 0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -310,6 +429,16 @@ const RandomReveal = () => {
 
     // Draw the mask over the image
     ctx.drawImage(maskCanvas, 0, 0);
+
+    // Draw noise circles
+    if (noise && noise.length > 0) {
+      ctx.fillStyle = "black";
+      noise.forEach((circle) => {
+        ctx.beginPath();
+        ctx.arc(circle.x, circle.y, circle.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
   };
 
   // Calculate total number of reveals needed for full coverage
@@ -479,6 +608,25 @@ const RandomReveal = () => {
     return Math.min(timePerReveal * 1000, 500); // Cap at 500ms to maintain momentum
   };
 
+  const addNoiseCircles = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const numCircles = 15; // Number of noise circles to add
+    const newNoise = Array.from({ length: numCircles }).map(() => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: 15 + Math.random() * 30, // Size between 15 and 45
+    }));
+
+    setNoiseCircles((prev) => [...prev, ...newNoise]);
+
+    // Optionally, remove noise circles after a certain time (e.g., 5 seconds)
+    setTimeout(() => {
+      setNoiseCircles((prev) => prev.slice(numCircles));
+    }, 5000);
+  };
+
   // Effect to handle periodic reveals - stop when round is over
   useEffect(() => {
     if (!imgLoaded || isRoundOver) return;
@@ -513,46 +661,9 @@ const RandomReveal = () => {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         return;
       }
-      drawImageWithReveals(ctx, img, revealCircles);
+      drawImageWithReveals(ctx, img, revealCircles, noiseCircles);
     };
-  }, [revealCircles, imagePath, imgLoaded, timeElapsed, timePerRound]);
-
-  // Effect to handle round over navigation
-  // useEffect(() => {
-  //   if (isRoundOver && finalScores && finalSocketMap) {
-  //     // Fetch the host's socket ID from the server
-  //       get("/api/hostSocketId", { roomCode }).then(({ hostSocketId }) => {
-  //         console.log("Current socket: ", socket.id);
-  //         console.log("Host socket: ", hostSocketId);
-  //         const isHost = socket.id === hostSocketId;
-  //         console.log("After get request, Is host value:", isHost);
-  //         navigate("/leaderboard", { 
-  //           state: { 
-  //             scores, 
-  //             socketToUserMap: finalSocketMap, 
-  //             roomCode, 
-  //             isHost, 
-  //             currentRound,
-  //             totalRounds,
-  //             imagePath,
-  //             totalTime: timePerRound,  // Pass the current round's time to use for next round
-  //             gameMode,
-  //           } 
-  //         });
-  //       }).catch((error) => {
-  //         console.error("GET request to /api/hostSocketId failed with error:", error);
-  //       }); 
-      
-  //     // const timer = setTimeout(() => {
-  //     //   navigate(`/leaderboard`, {
-  //     //     state: { scores: finalScores, socketToUserMap: finalSocketMap, currentRound, totalRounds },
-  //     //   });
-  //     // }, 2000);
-
-  //     // return () => clearTimeout(timer);
-  //   }
-  // }, [isRoundOver, finalScores, finalSocketMap]);
-  // }, [isRoundOver, finalScores, finalSocketMap, navigate]);
+  }, [revealCircles, noiseCircles, imagePath, imgLoaded, timeElapsed, timePerRound]);
 
   return (
     <div className="h-screen flex flex-col font-space-grotesk">
@@ -573,39 +684,16 @@ const RandomReveal = () => {
                   timePerRound - timeElapsed <= 5 ? "text-red-200" : "text-purple-200"
                 } bg-white/5 backdrop-blur-xl inline-block px-4 py-1 rounded-full border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50`}
               >
-                {isRoundOver ? (
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <p className="text-lg text-purple-200">
-                        Correct Answer:{" "}
-                        <span className="font-semibold text-purple-300">
-                          {primaryAnswer}
-                        </span>
-                      </p>
-                    </div>
-                    {isHost && (
-                      <button
-                        onClick={handleContinueToLeaderboard}
-                        className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10"
-                      >
-                        Continue to Leaderboard
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    Time Remaining:{" "}
-                    <span
-                      className={`font-semibold ${
-                        timePerRound - timeElapsed <= 5
-                          ? "text-red-300 animate-pulse"
-                          : "text-purple-300"
-                      } transition-colors duration-300`}
-                    >
-                      {timePerRound - timeElapsed}
-                    </span>
-                  </>
-                )}
+                Time Remaining:{" "}
+                <span
+                  className={`font-semibold ${
+                    timePerRound - timeElapsed <= 5
+                      ? "text-red-300 animate-pulse"
+                      : "text-purple-300"
+                  } transition-colors duration-300`}
+                >
+                  {timePerRound - timeElapsed}
+                </span>
               </p>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div
@@ -625,12 +713,121 @@ const RandomReveal = () => {
               </div>
             </div>
 
-            {/* Canvas container */}
-            <div className="relative flex-1 min-h-0 mb-2">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
-              <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
-                <canvas ref={canvasRef} className="w-full h-full object-contain rounded-xl" />
+            {/* Main game content container */}
+            <div className="flex-1 flex flex-row gap-4 min-h-0">
+              {/* Canvas container */}
+              <div className={`${sabotageEnabled ? "flex-[3]" : "flex-[2.5]"} relative`}>
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
+                <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
+                  <div className="w-[800px] h-[600px] overflow-auto">
+                    <canvas
+                      ref={canvasRef}
+                      className="min-w-[800px] min-h-[600px] w-full h-full object-contain"
+                      width="1600"
+                      height="1000"
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Sabotage Panel */}
+              {sabotageEnabled && (
+                <div className="w-56">
+                  <div className="relative h-full">
+                    {/* Background effects */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform rotate-1">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(147,51,234,0.15)_0%,transparent_60%)]"></div>
+                    </div>
+                    <div className="relative h-full bg-white/5 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-xl glow flex flex-col">
+                      {/* Decorative corner elements */}
+                      <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-purple-500/30 rounded-tl-2xl"></div>
+                      <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-purple-500/30 rounded-br-2xl"></div>
+
+                      {/* Title with enhanced decoration */}
+                      <div className="relative mb-6 text-center">
+                        <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
+                        <h3 className="relative inline-block px-6 py-1 bg-[#1a1a2e] text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-300 tracking-wider transform hover:scale-105 transition-transform duration-300">
+                          Sabotage
+                          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"></div>
+                        </h3>
+                      </div>
+
+                      <div className="flex-1 flex flex-col justify-between space-y-6">
+                        {/* Select Opponent Section with enhanced styling */}
+                        <div className="relative group">
+                          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
+                          <div className="relative">
+                            <h4 className="text-lg font-medium mb-3 pl-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center">
+                              <span className="mr-2">⚡</span> Select Opponent
+                            </h4>
+                            <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar">
+                              {Object.entries(players || {}).map(([id, player]) => (
+                                <div
+                                  key={id}
+                                  onClick={() => setSelectedOpponent({ id, name: player.name })}
+                                  className={`group cursor-pointer p-2.5 rounded-lg border transition-all duration-300 hover-scale ${
+                                    selectedOpponent?.id === id
+                                      ? "border-purple-500/50 bg-purple-500/20 text-purple-200 shadow-lg shadow-purple-500/20"
+                                      : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10"
+                                  }`}
+                                >
+                                  <div className="flex items-center">
+                                    <div
+                                      className={`w-2 h-2 rounded-full mr-3 transition-all duration-300 ${
+                                        selectedOpponent?.id === id
+                                          ? "bg-purple-400"
+                                          : "bg-white/30 group-hover:bg-purple-400/50"
+                                      }`}
+                                    ></div>
+                                    <span className="font-medium">{player.name}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sabotage Actions Section */}
+                        <div className="space-y-2">
+                          <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
+                            <div className="relative">
+                              <h4 className="text-lg font-medium mb-3 pl-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center">
+                                <span className="mr-2">🎯</span> Actions
+                              </h4>
+                              <div className="space-y-2">
+                                <div className="text-white/80 text-sm pl-2">
+                                  Press key to sabotage:
+                                </div>
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center text-white/70 hover:text-white/90 transition-colors">
+                                    <span className="w-6 h-6 flex items-center justify-center bg-white/10 rounded mr-2 text-sm">
+                                      A
+                                    </span>
+                                    Add Noise
+                                  </div>
+                                  <div className="flex items-center text-white/70 hover:text-white/90 transition-colors">
+                                    <span className="w-6 h-6 flex items-center justify-center bg-white/10 rounded mr-2 text-sm">
+                                      S
+                                    </span>
+                                    Stall
+                                  </div>
+                                  <div className="flex items-center text-white/70 hover:text-white/90 transition-colors">
+                                    <span className="w-6 h-6 flex items-center justify-center bg-white/10 rounded mr-2 text-sm">
+                                      D
+                                    </span>
+                                    Deduct
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Input section */}
@@ -644,38 +841,14 @@ const RandomReveal = () => {
                         guessedCorrectly ? "score-animate" : ""
                       }`}
                     >
-                      {diff[socket.id] || 0}
+                      {reward || 0}
                     </span>{" "}
                     points.
                   </p>
                   <p className="text-sm text-gray-300">Waiting for the round to end... </p>
                 </div>
               ) : (
-                <div
-                  className={`bg-white/5 backdrop-blur-2xl rounded-xl p-3 border border-purple-500/20 shadow-lg ${
-                    guessedWrong ? "animate-shake" : ""
-                  }`}
-                >
-                  <div className="flex gap-2 items-center justify-center">
-                    <input
-                      className="flex-1 bg-white/10 text-purple-100 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50"
-                      placeholder="Enter guess..."
-                      value={guessText}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleSubmitGuess();
-                        }
-                      }}
-                      onChange={(e) => setGuessText(e.target.value)}
-                    />
-                    <button
-                      onClick={handleSubmitGuess}
-                      className="glow bg-gradient-to-r from-purple-600/80 to-indigo-600/80 text-white px-6 py-2 rounded-lg hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10"
-                    >
-                      Submit
-                    </button>
-                  </div>
-                </div>
+                renderGuessInput()
               )}
 
               {guessedWrong && (

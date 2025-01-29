@@ -320,12 +320,6 @@ const GameSettings = () => {
   };
 
   const handleStartGame = () => {
-    console.log("Start Game clicked with state:", {
-      selectedTopic,
-      uploadedImages,
-      settings,
-    });
-
     if (!selectedTopic) {
       console.log("No topic selected, returning");
       return;
@@ -345,6 +339,7 @@ const GameSettings = () => {
       currentRound: settings.currentRound,
       revealMode: settings.revealMode,
       hintsEnabled: settings.hints,
+      sabotageEnabled: settings.sabotage,
       gameMode,
       uploadedImages: selectedTopic === "Import_Images" ? uploadedImages : null,
     };
