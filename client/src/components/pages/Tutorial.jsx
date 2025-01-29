@@ -43,7 +43,7 @@ const Tutorial = () => {
             <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-6 mb-6 hover:-translate-y-1 hover:bg-white/10 transition-all duration-300 border border-purple-500/20 shadow-lg">
               <h2 className="text-xl font-semibold text-purple-400 mb-2">Topics</h2>
               <p className="text-gray-200">
-                Choose one topic. If importing images, choose at least 10 images and label each
+                Choose one topic. If importing images, choose at most 10 images and label each
                 image.
               </p>
             </div>
