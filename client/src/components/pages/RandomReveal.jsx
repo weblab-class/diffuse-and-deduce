@@ -695,7 +695,7 @@ const RandomReveal = () => {
   }, [revealCircles, noiseCircles, imagePath, imgLoaded, timeElapsed, timePerRound]);
 
   return (
-    <div className="h-screen flex flex-col font-space-grotesk">
+    <div className="h-screen flex flex-row font-space-grotesk">
       <Header backNav="/room-actions" />
       {/* Background layers */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#2a1a3a] to-[#0a0a1b] overflow-hidden">
@@ -748,14 +748,12 @@ const RandomReveal = () => {
               <div className={`${sabotageEnabled ? "flex-[3]" : "flex-[2.5]"} relative`}>
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
                 <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
-                  <div className="w-[800px] h-[600px] overflow-auto">
-                    <canvas
-                      ref={canvasRef}
-                      className="min-w-[800px] min-h-[600px] w-full h-full object-contain"
-                      width="1600"
-                      height="1000"
-                    />
-                  </div>
+                  <canvas
+                    ref={canvasRef}
+                    className="w-full h-full object-contain rounded-xl"
+                    width="1600"
+                    height="1000"
+                  />
                 </div>
               </div>
 

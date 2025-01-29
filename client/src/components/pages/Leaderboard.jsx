@@ -79,13 +79,14 @@ const Leaderboard = () => {
     <div className="min-h-screen relative flex flex-col">
       <Header backNav="/room-actions" />
       {/* Background layers */}
-      <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#1a1a2e] to-[#0a0a1b] overflow-hidden">
+      <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#1a1a2e] to-[#0a0a1b]">
         <div className="absolute inset-0 bg-[url('/background-images/background-leaderboard.png')] bg-cover bg-center bg-no-repeat opacity-60 mix-blend-overlay" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.15)_0%,transparent_70%)]" />
       </div>
 
-      <div className="relative z-10 min-h-screen flex justify-center items-center">
-        <div className="w-[28rem] backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+      {/* Main Content Container */}
+      <div className="relative z-10 flex flex-col items-center py-24">
+        <div className="w-full max-w-md px-4 py-6 backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-2xl">
           {/* Header with glow effect */}
           <div className="relative py-6 text-center">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20" />
@@ -181,7 +182,7 @@ const Leaderboard = () => {
                     <div className="flex justify-center mt-4">
                       {console.log("Next Round button rendered")}
                       <button
-                        className="text-white px-4 py-2 rounded rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
+                        className="text-white px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
                         onClick={handleNextRound}
                       >
                         Next Round
