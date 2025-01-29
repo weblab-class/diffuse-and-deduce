@@ -340,6 +340,9 @@ const GameSettings = () => {
 
   const handleTopicClick = (topic) => {
     if (topic === "Import_Images") {
+      if (!hasSufficientPlayers) {
+        return; // Do nothing if not enough players
+      }
       if (uploadedImages.length >= 10) {
         // Show error message that max images reached
         const errorMessage = document.createElement("div");
@@ -441,7 +444,11 @@ const GameSettings = () => {
                         stiffness: 100,
                       }}
                       whileHover={{
-                        scale: topic === "Import_Images" && uploadedImages.length >= 10 ? 1 : 1.03,
+                        scale:
+                          topic === "Import_Images" &&
+                          (uploadedImages.length >= 10 || !hasSufficientPlayers)
+                            ? 1
+                            : 1.03,
                         transition: {
                           type: "spring",
                           stiffness: 400,
@@ -449,7 +456,11 @@ const GameSettings = () => {
                         },
                       }}
                       whileTap={{
-                        scale: topic === "Import_Images" && uploadedImages.length >= 10 ? 1 : 0.97,
+                        scale:
+                          topic === "Import_Images" &&
+                          (uploadedImages.length >= 10 || !hasSufficientPlayers)
+                            ? 1
+                            : 0.97,
                         transition: {
                           type: "spring",
                           stiffness: 400,
@@ -458,7 +469,8 @@ const GameSettings = () => {
                       }}
                       onClick={() => handleTopicClick(topic)}
                       className={`relative p-4 rounded-xl font-medium ${
-                        topic === "Import_Images" && uploadedImages.length >= 10
+                        topic === "Import_Images" &&
+                        (uploadedImages.length >= 10 || !hasSufficientPlayers)
                           ? "cursor-not-allowed opacity-50"
                           : "cursor-pointer"
                       } w-full
@@ -466,7 +478,8 @@ const GameSettings = () => {
                         before:absolute before:inset-0 before:rounded-xl before:transition-all before:duration-500
                         before:opacity-0 before:bg-gradient-to-r before:from-[#E94560]/20 before:to-[#0F3460]/20
                         ${
-                          topic === "Import_Images" && uploadedImages.length >= 10
+                          topic === "Import_Images" &&
+                          (uploadedImages.length >= 10 || !hasSufficientPlayers)
                             ? ""
                             : "hover:before:opacity-100 hover:shadow-[0_0_30px_rgba(233,69,96,0.3)]"
                         }
@@ -507,7 +520,9 @@ const GameSettings = () => {
                         </div>
                         {topic === "Import_Images" && (
                           <div className="text-sm mt-2 text-white/70">
-                            {uploadedImages.length === 0
+                            {!hasSufficientPlayers
+                              ? "2+ players required"
+                              : uploadedImages.length === 0
                               ? "No images uploaded yet"
                               : uploadedImages.length >= 10
                               ? "Maximum 10 images uploaded"
