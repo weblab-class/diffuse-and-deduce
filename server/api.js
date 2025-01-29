@@ -67,15 +67,17 @@ router.post("/initsocket", (req, res) => {
 router.get("/hostSocketId", (req, res) => {
   const { roomCode } = req.query;
 
-  Room.findOne({ code: roomCode }).then((room) => {
-    if (!room) {
-      return res.status(404).json({ error: "Room not found" });
-    }
-    res.json({ hostSocketId: room.hostId });
-  }).catch((error) => {
-    console.error("Error fetching room:", error);
-    res.status(500).json({ error: "Internal server error" });
-  });
+  Room.findOne({ code: roomCode })
+    .then((room) => {
+      if (!room) {
+        return res.status(404).json({ error: "Room not found" });
+      }
+      res.json({ hostSocketId: room.hostId });
+    })
+    .catch((error) => {
+      console.error("Error fetching room:", error);
+      res.status(500).json({ error: "Internal server error" });
+    });
 });
 
 router.get("/gameState", (req, res) => {
@@ -129,7 +131,7 @@ router.get("/gameState", (req, res) => {
 //         imagePath: round.imagePath,
 //         startTime: round.startTime,
 //         totalTime: round.totalTime,
-//         totalRounds: room.settings?.rounds, 
+//         totalRounds: room.settings?.rounds,
 //         // Add any other properties that might be needed by the client
 //       });
 //     })
@@ -138,6 +140,78 @@ router.get("/gameState", (req, res) => {
 //       res.status(500).json({ error: "Internal server error" });
 //     });
 // });
+
+const multer = require("multer");
+
+// In-memory storage for uploaded images
+const imageStorage = new Map();
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    files: 10, // Maximum 10 files
+    fileSize: 5 * 1024 * 1024, // 5MB limit per file
+  },
+});
+
+// Endpoint to handle image uploads
+router.post("/upload-images", upload.array("images", 10), (req, res) => {
+  try {
+    const imageIds = req.files.map((file) => {
+      const imageId = uuidv4();
+      imageStorage.set(imageId, {
+        buffer: file.buffer,
+        mimetype: file.mimetype,
+        originalName: file.originalname,
+      });
+      return imageId;
+    });
+
+    res.json({ imageIds });
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ error: "Failed to upload images" });
+  }
+});
+
+// Endpoint to get a random image
+router.get("/get-game-image", (req, res) => {
+  const { roomCode, imageIds } = req.query;
+
+  if (!imageIds) {
+    return res.status(400).json({ error: "No image IDs provided" });
+  }
+
+  const imageIdArray = JSON.parse(imageIds);
+  if (!imageIdArray.length) {
+    return res.status(400).json({ error: "Empty image ID array" });
+  }
+
+  const randomIndex = Math.floor(Math.random() * imageIdArray.length);
+  const randomImageId = imageIdArray[randomIndex];
+  const image = imageStorage.get(randomImageId);
+
+  if (!image) {
+    return res.status(404).json({ error: "Image not found" });
+  }
+
+  res.set("Content-Type", image.mimetype);
+  res.send(image.buffer);
+});
+
+// Cleanup function to remove images when game ends
+router.post("/cleanup-images", (req, res) => {
+  const { imageIds } = req.body;
+
+  if (imageIds && Array.isArray(imageIds)) {
+    imageIds.forEach((id) => {
+      imageStorage.delete(id);
+    });
+  }
+
+  res.json({ success: true });
+});
 
 // |------------------------------|
 // | write your API methods below!|

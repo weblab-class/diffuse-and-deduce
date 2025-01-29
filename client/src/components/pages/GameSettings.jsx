@@ -1,10 +1,201 @@
 import React, { useEffect } from "react";
 import socket from "../../client-socket";
 import useRoom from "../../hooks/useRoom";
-
 import Header from "../modules/Header";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+
+const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
+  const [selectedFiles, setSelectedFiles] = React.useState([]);
+  const [previews, setPreviews] = React.useState([]);
+  const [labels, setLabels] = React.useState([]); // Store labels for each image
+  const [uploadStatus, setUploadStatus] = React.useState({ loading: false, error: null });
+  const [uploadError, setUploadError] = React.useState("");
+  const fileInputRef = React.useRef(null);
+
+  const handleFileSelection = (event) => {
+    const newFiles = Array.from(event.target.files);
+    setUploadError("");
+
+    // Check if adding these new files would exceed the 10 image limit
+    if (selectedFiles.length + newFiles.length > 10) {
+      setUploadError(
+        `Cannot add ${newFiles.length} more images. Maximum 10 images allowed (${selectedFiles.length} already selected)`
+      );
+      return;
+    }
+
+    // Create preview URLs for new files
+    const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+
+    // Initialize empty labels for new files
+    const newLabels = newFiles.map(() => "");
+
+    // Append new files and previews to existing ones
+    setSelectedFiles((prev) => [...prev, ...newFiles]);
+    setPreviews((prev) => [...prev, ...newPreviews]);
+    setLabels((prev) => [...prev, ...newLabels]);
+  };
+
+  // Clean up preview URLs when component unmounts
+  React.useEffect(() => {
+    return () => {
+      previews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previews]);
+
+  const handleLabelChange = (index, value) => {
+    setLabels((prev) => {
+      const newLabels = [...prev];
+      newLabels[index] = value;
+      return newLabels;
+    });
+  };
+
+  const handleUploadImages = async () => {
+    if (!selectedFiles.length) {
+      setUploadError("Please select images first");
+      return;
+    }
+
+    // Check if all images have labels
+    const emptyLabelIndex = labels.findIndex((label) => !label.trim());
+    if (emptyLabelIndex !== -1) {
+      setUploadError(`Please add a label for image ${emptyLabelIndex + 1}`);
+      return;
+    }
+
+    const formData = new FormData();
+    selectedFiles.forEach((file, index) => {
+      formData.append("images", file);
+      formData.append("labels", labels[index]); // Send labels with the images
+    });
+
+    try {
+      setUploadStatus({ loading: true, error: null });
+      const response = await fetch("/api/upload-images", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const result = await response.json();
+      onUploadComplete(result.imageIds);
+      onClose();
+    } catch (error) {
+      setUploadStatus({ loading: false, error: error.message });
+      setUploadError("Failed to upload images. Please try again.");
+    }
+  };
+
+  const removeImage = (index) => {
+    setSelectedFiles((prev) => {
+      const newFiles = [...prev];
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
+    setPreviews((prev) => {
+      const newPreviews = [...prev];
+      URL.revokeObjectURL(newPreviews[index]);
+      newPreviews.splice(index, 1);
+      return newPreviews;
+    });
+    setLabels((prev) => {
+      const newLabels = [...prev];
+      newLabels.splice(index, 1);
+      return newLabels;
+    });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-[#1A1A2E] p-8 rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
+        <h2 className="text-2xl font-bold mb-6 text-white">Upload Images</h2>
+        <div className="space-y-6">
+          <div className="flex flex-col items-center justify-center border-2 border-dashed border-[#E94560] rounded-lg p-8 hover:border-white/50 transition-colors">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileSelection}
+              className="hidden"
+              ref={fileInputRef}
+            />
+            <button
+              onClick={() => fileInputRef.current.click()}
+              className="text-white hover:text-[#E94560] transition-colors"
+            >
+              Click to select images (max 10)
+            </button>
+            {selectedFiles.length > 0 && (
+              <p className="mt-2 text-white">
+                {selectedFiles.length} {selectedFiles.length === 1 ? "image" : "images"} selected
+              </p>
+            )}
+          </div>
+
+          {/* Image Previews with Labels */}
+          {previews.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-4">
+              {previews.map((preview, index) => (
+                <div key={preview} className="relative group space-y-2">
+                  <div className="relative">
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={labels[index]}
+                    onChange={(e) => handleLabelChange(index, e.target.value)}
+                    placeholder="Enter correct answer for this image"
+                    className="w-full px-3 py-2 bg-[#2A2A3E] text-white rounded-lg focus:ring-2 focus:ring-[#E94560] outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-4">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-opacity-80 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleUploadImages}
+              className="flex-1 px-4 py-2 bg-[#E94560] text-white rounded-lg hover:bg-opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!selectedFiles.length || uploadStatus.loading}
+            >
+              {uploadStatus.loading ? "Uploading..." : "Upload Images"}
+            </button>
+          </div>
+
+          {uploadError && <p className="text-red-500 text-center">{uploadError}</p>}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const GameSettings = () => {
   const navigate = useNavigate();
@@ -42,8 +233,8 @@ const GameSettings = () => {
   });
 
   const [selectedTopic, setSelectedTopic] = React.useState(null);
-  const [uploadStatus, setUploadStatus] = React.useState({ loading: false, error: null });
-  const fileInputRef = React.useRef(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = React.useState(false);
+  const [uploadedImages, setUploadedImages] = React.useState([]);
 
   const topics = [
     "Animals",
@@ -85,25 +276,65 @@ const GameSettings = () => {
     }));
   };
 
+  const handleTopicClick = (topic) => {
+    if (topic === "Import_Images") {
+      setIsUploadModalOpen(true);
+      // Don't set the topic yet, wait for successful upload
+    } else {
+      setSelectedTopic(topic);
+    }
+  };
+
+  const handleModalClose = () => {
+    console.log("Modal closing with state:", {
+      selectedTopic,
+      uploadedImages,
+    });
+    setIsUploadModalOpen(false);
+    // If Import_Images was selected but no images were uploaded, deselect it
+    if (selectedTopic === "Import_Images" && uploadedImages.length === 0) {
+      setSelectedTopic(null);
+    }
+  };
+
+  const handleUploadComplete = (imageIds) => {
+    console.log("Upload complete with imageIds:", imageIds);
+    setUploadedImages(imageIds);
+    setSelectedTopic("Import_Images"); // Only set the topic after successful upload
+  };
+
   const handleStartGame = () => {
-    if (!selectedTopic) return; // Early return if no topic selected
+    console.log("Start Game clicked with state:", {
+      selectedTopic,
+      uploadedImages,
+      settings,
+    });
 
-    // // Only pass the essential data
-    // socket.emit("startRound", {
-    //   roomCode,
-    //   totalTime: settings.timePerRound,
-    //   topic: selectedTopic,
-    //   revealMode: settings.revealMode, // Only pass the reveal mode, not all settings
-    // });
+    if (!selectedTopic) {
+      console.log("No topic selected, returning");
+      return;
+    }
 
-    const totalRounds = settings.totalRounds;
-    const currentRound = settings.currentRound;
-    const revealMode = settings.revealMode;
-    const hintsEnabled = settings.hints;
-    const totalTime = settings.timePerRound;
+    // Additional validation for Import_Images
+    if (selectedTopic === "Import_Images" && uploadedImages.length === 0) {
+      console.log("Import Images selected but no images uploaded, returning");
+      return;
+    }
 
-    // useRoom handles the navigation
-    socket.emit("startRound", { roomCode, totalTime, topic: selectedTopic, totalRounds, currentRound, revealMode, hintsEnabled, gameMode }); 
+    const gameData = {
+      roomCode,
+      totalTime: settings.timePerRound,
+      topic: selectedTopic,
+      totalRounds: settings.totalRounds,
+      currentRound: settings.currentRound,
+      revealMode: settings.revealMode,
+      hintsEnabled: settings.hints,
+      gameMode,
+      uploadedImages: selectedTopic === "Import_Images" ? uploadedImages : null,
+    };
+
+    console.log("Emitting startRound with data:", gameData);
+    socket.emit("startRound", gameData);
   };
 
   return (
@@ -159,7 +390,7 @@ const GameSettings = () => {
                           damping: 10,
                         },
                       }}
-                      onClick={() => setSelectedTopic(topic)}
+                      onClick={() => handleTopicClick(topic)}
                       className={`relative p-4 rounded-xl font-medium cursor-pointer text-center
                         transform transition-all duration-500 ease-out
                         before:absolute before:inset-0 before:rounded-xl before:transition-all before:duration-500
@@ -218,7 +449,9 @@ const GameSettings = () => {
                         min="1"
                         max="10"
                         value={settings.totalRounds}
-                        onChange={(e) => handleSliderChange("totalRounds", parseInt(e.target.value))}
+                        onChange={(e) =>
+                          handleSliderChange("totalRounds", parseInt(e.target.value))
+                        }
                         className="w-32 cursor-pointer accent-[#E94560] hover:accent-[#0F3460]"
                       />
                       <span className="w-8 text-right text-white/90">{settings.totalRounds}</span>
@@ -362,21 +595,33 @@ const GameSettings = () => {
             {/* Start Game Button */}
             <button
               onClick={handleStartGame}
-              disabled={!selectedTopic}
+              disabled={
+                !selectedTopic || (selectedTopic === "Import_Images" && uploadedImages.length === 0)
+              }
               className={`px-8 py-3 text-lg font-semibold rounded-xl shadow-lg 
                      font-['Orbitron'] tracking-wider
                      transition-all duration-300 transform
                      ${
-                       selectedTopic
-                         ? "bg-gradient-to-r from-[#E94560] to-[#0F3460] text-white hover:shadow-[0_0_30px_rgba(233,69,96,0.3)] hover:scale-105"
-                         : "bg-white/10 backdrop-blur-md text-white/50 cursor-not-allowed ring-1 ring-white/20"
+                       !selectedTopic ||
+                       (selectedTopic === "Import_Images" && uploadedImages.length === 0)
+                         ? "bg-white/10 backdrop-blur-md text-white/50 cursor-not-allowed ring-1 ring-white/20"
+                         : "bg-gradient-to-r from-[#E94560] to-[#0F3460] text-white hover:shadow-[0_0_30px_rgba(233,69,96,0.3)] hover:scale-105"
                      }`}
             >
-              {selectedTopic ? "START GAME" : "SELECT A TOPIC TO START"}
+              {!selectedTopic || (selectedTopic === "Import_Images" && uploadedImages.length === 0)
+                ? "SELECT A TOPIC TO START"
+                : "START GAME"}
             </button>
           </div>
         </div>
       </div>
+      <AnimatePresence>
+        <FileUploadModal
+          isOpen={isUploadModalOpen}
+          onClose={handleModalClose}
+          onUploadComplete={handleUploadComplete}
+        />
+      </AnimatePresence>
     </>
   );
 };

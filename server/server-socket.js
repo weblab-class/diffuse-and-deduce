@@ -6,8 +6,8 @@ let io;
 const userToSocketMap = {}; // maps user ID to socket object
 const socketToUserMap = {}; // maps socket ID to user object
 
-const roomUsedImages = {};  // Track used images per room
-const roomTopics = {};  // Track the topic for each room
+const roomUsedImages = {}; // Track used images per room
+const roomTopics = {}; // Track the topic for each room
 
 const rooms = {}; // to store interval references for each room
 
@@ -55,15 +55,15 @@ function startRoundTimer(roomCode) {
   }
 
   console.log(`Starting round timer for room ${roomCode}`);
-  
+
   // Store the start time when we begin the timer
   const timerStartTime = Date.now();
-  
+
   // create an interval that checks the DB each second
   const interval = setInterval(async () => {
     try {
       const round = await Round.findOne({ roomCode });
-      
+
       // Check if round exists and is active
       if (!round) {
         console.log(`No round found for room ${roomCode}, clearing timer`);
@@ -78,11 +78,11 @@ function startRoundTimer(roomCode) {
 
       if (elapsed >= round.totalTime) {
         console.log(`Round ${roomCode} time is up, ending round`);
-        
+
         // Mark round as inactive and save
         round.isActive = false;
         await round.save();
-        
+
         // Clean up timer
         clearInterval(interval);
         delete rooms[roomCode].interval;
@@ -91,8 +91,8 @@ function startRoundTimer(roomCode) {
         rooms[roomCode].previousScores = { ...rooms[roomCode].scores };
 
         // Notify clients that round is over with round information
-        io.to(roomCode).emit("roundOver", { 
-          scores: rooms[roomCode].scores, 
+        io.to(roomCode).emit("roundOver", {
+          scores: rooms[roomCode].scores,
           socketToUserMap,
           // currentRound: round.currentRound,
           // totalRounds: round.totalRounds
@@ -180,7 +180,7 @@ module.exports = {
           console.log("Received guess:", { roomCode, guessText });
           // Find the active round for this room
           const round = await Round.findOne({ roomCode, isActive: true });
-          
+
           if (!round) {
             console.log("No active round found for guess");
             return socket.emit("errorMessage", "No active round in this room");
@@ -195,7 +195,7 @@ module.exports = {
             correctAnswer: round.correctAnswers,
             isCorrect,
             timeElapsed,
-            totalTime: round.totalTime
+            totalTime: round.totalTime,
           });
 
           const playerId = socket.id;
@@ -222,16 +222,22 @@ module.exports = {
           if (isCorrect) {
             const totalTime = round.totalTime;
             const score = Math.round(((totalTime - timeElapsed) / totalTime) * 1000);
-            console.log(`Score calculation: (${totalTime} - ${timeElapsed}) / ${totalTime} * 1000 = ${score}`);
-            
+            console.log(
+              `Score calculation: (${totalTime} - ${timeElapsed}) / ${totalTime} * 1000 = ${score}`
+            );
+
             rooms[roomCode].scores[playerId] += score;
-            console.log(`Player ${playerId} scored ${score} points. Total: ${rooms[roomCode].scores[playerId]}`);
+            console.log(
+              `Player ${playerId} scored ${score} points. Total: ${rooms[roomCode].scores[playerId]}`
+            );
 
             io.to(roomCode).emit("correctGuess", { playerId });
           } else {
             const score = -100;
             rooms[roomCode].scores[playerId] += score;
-            console.log(`Player ${playerId} lost 100 points. Total: ${rooms[roomCode].scores[playerId]}`);
+            console.log(
+              `Player ${playerId} lost 100 points. Total: ${rooms[roomCode].scores[playerId]}`
+            );
             io.to(roomCode).emit("wrongGuess", { playerId });
           }
 
@@ -241,7 +247,7 @@ module.exports = {
             const currentScore = rooms[roomCode].scores[playerId] || 0;
             const previousScore = rooms[roomCode].previousScores[playerId] || 0;
             diff[playerId] = currentScore - previousScore; // Net change since the last round
-          }); 
+          });
 
           console.log("Diff:", diff);
 
@@ -253,118 +259,159 @@ module.exports = {
         }
       });
 
-      socket.on("startRound", async ({ roomCode, totalTime, topic, totalRounds, currentRound, revealMode, hintsEnabled, gameMode }) => {
-        try {
-          // If this is a new round (not round 1), use the room's existing topic
-          if (currentRound > 1 && roomTopics[roomCode]) {
-            topic = roomTopics[roomCode];
-          } else {
-            // If this is round 1, store the topic for future rounds
-            roomTopics[roomCode] = topic;
+      socket.on(
+        "startRound",
+        async ({
+          roomCode,
+          totalTime,
+          topic,
+          totalRounds,
+          currentRound,
+          revealMode,
+          hintsEnabled,
+          gameMode,
+          uploadedImages,
+        }) => {
+          try {
+            // If this is a new round (not round 1), use the room's existing topic
+            if (currentRound > 1 && roomTopics[roomCode]) {
+              topic = roomTopics[roomCode];
+            } else {
+              // If this is round 1, store the topic for future rounds
+              roomTopics[roomCode] = topic;
+            }
+
+            console.log("Starting new round with params:", {
+              roomCode,
+              totalTime,
+              topic,
+              totalRounds,
+              currentRound,
+              revealMode,
+              hintsEnabled,
+              gameMode,
+              hasUploadedImages: !!uploadedImages,
+            });
+
+            // First mark any existing rounds as inactive
+            await Round.updateMany({ roomCode }, { isActive: false });
+
+            // Create a new round with all required fields
+            const round = new Round({
+              roomCode,
+              totalTime,
+              isActive: true,
+              totalRounds,
+              currentRound,
+              startTime: Date.now(),
+              revealMode,
+              hintsEnabled,
+            });
+
+            let imagePath;
+
+            if (topic === "Import_Images" && uploadedImages && uploadedImages.length > 0) {
+              console.log("Using uploaded images:", uploadedImages);
+              // Initialize used images tracking for this room if needed
+              if (!roomUsedImages[roomCode]) {
+                roomUsedImages[roomCode] = new Set();
+              }
+
+              // If we've used all images, reset the tracking
+              if (roomUsedImages[roomCode].size === uploadedImages.length) {
+                roomUsedImages[roomCode].clear();
+              }
+
+              // Get available images (ones we haven't used yet)
+              const availableImages = uploadedImages.filter(
+                (id) => !roomUsedImages[roomCode].has(id)
+              );
+
+              // Select random image from available ones
+              const randomIndex = Math.floor(Math.random() * availableImages.length);
+              const selectedImageId = availableImages[randomIndex];
+
+              // Mark as used
+              roomUsedImages[roomCode].add(selectedImageId);
+
+              console.log(`Selected uploaded image for room ${roomCode}: ${selectedImageId}`);
+
+              // For uploaded images, we'll use a special URL format
+              imagePath = `/api/get-game-image?roomCode=${roomCode}&imageIds=${JSON.stringify([
+                selectedImageId,
+              ])}`;
+              round.correctAnswers = ["uploaded-image"]; // You might want to handle this differently
+              round.primaryAnswer = "uploaded-image";
+            } else {
+              // Original code for predefined topics
+              const imagesDir = path.join(__dirname, "public", "game-images", topic);
+              const files = fs
+                .readdirSync(imagesDir)
+                .filter((file) => /\.(jpg|jpeg|png|gif)$/.test(file));
+
+              if (files.length === 0) {
+                throw new Error(`No images found for topic: ${topic}`);
+              }
+
+              // Initialize used images tracking for this room if needed
+              if (!roomUsedImages[roomCode]) {
+                roomUsedImages[roomCode] = new Set();
+              }
+
+              // If we've used all images, reset the tracking
+              if (roomUsedImages[roomCode].size === files.length) {
+                roomUsedImages[roomCode].clear();
+              }
+
+              // Get available images (ones we haven't used yet)
+              const availableImages = files.filter((file) => !roomUsedImages[roomCode].has(file));
+
+              // Select random image from available ones
+              const randomIndex = Math.floor(Math.random() * availableImages.length);
+              const selectedImage = availableImages[randomIndex];
+
+              // Mark as used
+              roomUsedImages[roomCode].add(selectedImage);
+
+              console.log(`Selected image for room ${roomCode}: ${selectedImage}`);
+
+              round.correctAnswers = path.parse(selectedImage).name.split("-");
+              round.primaryAnswer = round.correctAnswers[0];
+              imagePath = `/game-images/${topic}/${selectedImage}`;
+            }
+
+            console.log(`Selected image path: ${imagePath}`);
+            round.imagePath = imagePath;
+
+            await round.save();
+
+            // Clear any existing timer and start a new one
+            if (rooms[roomCode] && rooms[roomCode].interval) {
+              clearInterval(rooms[roomCode].interval);
+            }
+
+            // Emit 'roundStarted' to all clients in the room with image information
+            io.to(roomCode).emit("roundStarted", {
+              roomCode,
+              startTime: round.startTime,
+              totalTime: round.totalTime,
+              imagePath,
+              totalRounds: round.totalRounds,
+              currentRound: round.currentRound,
+              gameMode,
+              revealMode: round.revealMode,
+              primaryAnswer: round.primaryAnswer,
+              hintsEnabled: round.hintsEnabled,
+            });
+
+            // Start the timer after everything is set up
+            startRoundTimer(roomCode);
+          } catch (err) {
+            console.error("Error starting round:", err);
+            socket.emit("errorMessage", "Could not start round");
           }
-
-          console.log("Starting new round with params:", { roomCode, totalTime, topic, totalRounds, currentRound, revealMode, hintsEnabled, gameMode });
-          
-          // First mark any existing rounds as inactive
-          await Round.updateMany({ roomCode }, { isActive: false });
-
-          // Create a new round with all required fields
-          const round = new Round({ 
-            roomCode,
-            totalTime,  // Set totalTime when creating round
-            isActive: true,
-            totalRounds,
-            currentRound,
-            startTime: Date.now(), 
-            revealMode,
-            hintsEnabled
-          });
-          
-          console.log("Created round in server with roomcode:", roomCode);
-          console.log("Round details:", { 
-            totalTime: round.totalTime, 
-            totalRounds: round.totalRounds, 
-            currentRound: round.currentRound,
-            topic: topic  // Log the topic being used
-          });
-
-          // Initialize room if it doesn't exist
-          if (!rooms[roomCode]) {
-            rooms[roomCode] = { scores: {} };
-          }
-
-          // Define the directory containing images for the selected topic
-          const imagesDir = path.join(__dirname, "public", "game-images", topic);
-
-          // Read all image files from the topic directory
-          const files = fs
-            .readdirSync(imagesDir)
-            .filter((file) => /\.(jpg|jpeg|png|gif)$/.test(file));
-          if (files.length === 0) {
-            throw new Error(`No images found for topic: ${topic}`);
-          }
-
-          // Initialize used images tracking for this room if needed
-          if (!roomUsedImages[roomCode]) {
-            roomUsedImages[roomCode] = new Set();
-          }
-
-          // If we've used all images, reset the tracking
-          if (roomUsedImages[roomCode].size === files.length) {
-            roomUsedImages[roomCode].clear();
-          }
-
-          // Get available images (ones we haven't used yet)
-          const availableImages = files.filter(file => !roomUsedImages[roomCode].has(file));
-          
-          // Select random image from available ones
-          const randomIndex = Math.floor(Math.random() * availableImages.length);
-          const selectedImage = availableImages[randomIndex];
-          
-          // Mark as used
-          roomUsedImages[roomCode].add(selectedImage);
-          
-          console.log(`Selected image for room ${roomCode}: ${selectedImage} (${roomUsedImages[roomCode].size}/${files.length} used)`);
-
-          round.correctAnswers = path.parse(selectedImage).name.split("-");
-          round.primaryAnswer = round.correctAnswers[0]; // use the first label for hints
-
-          // Set the image path accessible by the frontend
-          const imagePath = `/game-images/${topic}/${selectedImage}`;
-          console.log(`Selected image path: ${imagePath}`);
-
-          round.imagePath = imagePath;
-
-          await round.save();
-          console.log("Round saved successfully with totalTime:", round.totalTime);
-          console.log("Round saved with totalRounds:", round.totalRounds);
-
-          // Clear any existing timer and start a new one
-          if (rooms[roomCode] && rooms[roomCode].interval) {
-            clearInterval(rooms[roomCode].interval);
-          }
-
-          // Emit 'roundStarted' to all clients in the room with image information
-          io.to(roomCode).emit("roundStarted", {
-            roomCode,
-            startTime: round.startTime,
-            totalTime: round.totalTime,
-            imagePath,
-            totalRounds: round.totalRounds,  // Use the saved totalRounds
-            currentRound: round.currentRound,
-            gameMode,
-            revealMode: round.revealMode,
-            primaryAnswer: round.primaryAnswer,
-            hintsEnabled: round.hintsEnabled
-          });
-
-          // Start the timer after everything is set up
-          startRoundTimer(roomCode);
-        } catch (err) {
-          console.error("Error starting round:", err);
-          socket.emit("errorMessage", "Could not start round");
         }
-      });
+      );
 
       socket.on("checkRoomExists", async ({ roomCode }, callback) => {
         if (!callback || typeof callback !== "function") {
@@ -665,7 +712,6 @@ module.exports = {
       //     }
       //   });
     });
-
   },
 
   addUser: addUser,
