@@ -10,6 +10,7 @@ const roomUsedImages = {}; // Track used images per room
 const roomTopics = {}; // Track the topic for each room
 const roomHosts = {}; // Track the host for each room
 const roomGameModes = {}; // Track if room is using imported images
+const roomUploadedImages = {}; // Store uploaded images per room
 
 const rooms = {}; // to store interval references for each room
 
@@ -302,6 +303,11 @@ module.exports = {
               uploadedImages: uploadedImages ? uploadedImages.length : 0,
             });
 
+            // If this is round 1 and we have uploaded images, store them
+            if (currentRound === 1 && uploadedImages && uploadedImages.length > 0) {
+              roomUploadedImages[roomCode] = uploadedImages;
+            }
+
             // If this is a new round (not round 1), use the room's existing topic
             if (currentRound > 1 && roomTopics[roomCode]) {
               topic = roomTopics[roomCode];
@@ -339,55 +345,55 @@ module.exports = {
 
             let imagePath;
 
-            if (topic === "Import_Images" && uploadedImages && uploadedImages.length > 0) {
-              console.log("Using uploaded images:", uploadedImages);
+            if (topic === "Import_Images") {
+              // Use the stored uploaded images
+              const currentUploadedImages = roomUploadedImages[roomCode];
+              if (!currentUploadedImages || currentUploadedImages.length === 0) {
+                throw new Error("No uploaded images available for this room");
+              }
+
               // Initialize used images tracking for this room if needed
               if (!roomUsedImages[roomCode]) {
                 roomUsedImages[roomCode] = new Set();
               }
 
               // If we've used all images, reset the tracking
-              if (roomUsedImages[roomCode].size === uploadedImages.length) {
+              if (roomUsedImages[roomCode].size === currentUploadedImages.length) {
                 roomUsedImages[roomCode].clear();
               }
 
               // Get available images (ones we haven't used yet)
-              const availableImages = uploadedImages.filter(
+              const availableImages = currentUploadedImages.filter(
                 (id) => !roomUsedImages[roomCode].has(id)
               );
 
-              // Select random image from available ones
+              // Select random image
               const randomIndex = Math.floor(Math.random() * availableImages.length);
               const selectedImageId = availableImages[randomIndex];
 
               // Mark as used
               roomUsedImages[roomCode].add(selectedImageId);
 
-              console.log(`Selected uploaded image for room ${roomCode}: ${selectedImageId}`);
-
-              // For uploaded images, we'll use a special URL format
+              // For uploaded images, use special URL format
               imagePath = `/api/get-game-image?roomCode=${roomCode}&imageIds=${JSON.stringify([
                 selectedImageId,
               ])}`;
 
-              // Get the image data from storage to access its label
+              // Get image data for answer
               if (!sharedImageStorage) {
                 throw new Error("Image storage not initialized");
               }
               const imageData = sharedImageStorage.get(selectedImageId);
               if (imageData && imageData.primaryLabel) {
-                // Process the labels to create valid answers
                 const primaryLabel = imageData.primaryLabel.toLowerCase().trim();
                 const secondaryLabel = imageData.secondaryLabel
                   ? imageData.secondaryLabel.toLowerCase().trim()
                   : "";
 
-                // Add both labels to correctAnswers if secondary label exists
                 round.correctAnswers = secondaryLabel
                   ? [primaryLabel, secondaryLabel]
                   : [primaryLabel];
                 round.primaryAnswer = primaryLabel;
-                console.log(`Setting answers for image ${selectedImageId}:`, round.correctAnswers);
               } else {
                 round.correctAnswers = ["uploaded-image"];
                 round.primaryAnswer = "uploaded-image";
@@ -434,11 +440,6 @@ module.exports = {
             round.imagePath = imagePath;
 
             await round.save();
-
-            // Clear any existing timer and start a new one
-            if (rooms[roomCode] && rooms[roomCode].interval) {
-              clearInterval(rooms[roomCode].interval);
-            }
 
             // Emit 'roundStarted' to all clients in the room with image information
             io.to(roomCode).emit("roundStarted", {

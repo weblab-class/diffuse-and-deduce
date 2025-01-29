@@ -33,18 +33,36 @@ const Leaderboard = () => {
   const handleNextRound = () => {
     console.log("Next Round button clicked");
     console.log("Leaderboard's Image Path: ", imagePath);
-    const topic = imagePath.split("/")[4];
-    console.log("New current round being sent to server from Leaderboard: ", currentRound + 1);
-    socket.emit("startRound", {
-      roomCode,
-      totalTime,
-      topic,
-      totalRounds,
-      currentRound: currentRound + 1,
-      revealMode,
-      hintsEnabled,
-      gameMode,
-    });
+
+    // Check if we're using imported images by checking the image path
+    const isImportedImages = imagePath.includes("/api/get-game-image");
+
+    if (isImportedImages) {
+      // For imported images, we need to use the room's topic and uploaded images
+      socket.emit("startRound", {
+        roomCode,
+        totalTime,
+        topic: "Import_Images", // This tells the server we're using imported images
+        totalRounds,
+        currentRound: currentRound + 1,
+        revealMode,
+        hintsEnabled,
+        gameMode,
+      });
+    } else {
+      // For regular images, extract topic from path
+      const topic = imagePath.split("/")[4];
+      socket.emit("startRound", {
+        roomCode,
+        totalTime,
+        topic,
+        totalRounds,
+        currentRound: currentRound + 1,
+        revealMode,
+        hintsEnabled,
+        gameMode,
+      });
+    }
   };
 
   return (
