@@ -49,6 +49,22 @@ const Leaderboard = () => {
   const [animationStage, setAnimationStage] = useState(0);
 
   useEffect(() => {
+    if (!state || Object.keys(scores).length === 0) {
+      navigate("/");
+    }
+  }, [state, scores, navigate]);
+
+  useEffect(() => {
+    if (currentRound === totalRounds) {
+      return () => {
+        if (roomCode) {
+          socket.emit("leaveRoom", { roomCode });
+        }
+      };
+    }
+  }, [currentRound, totalRounds, roomCode]);
+
+  useEffect(() => {
     if (currentRound === totalRounds) {
       setShowPodium(true);
 
