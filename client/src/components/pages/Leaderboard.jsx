@@ -70,6 +70,11 @@ const Leaderboard = () => {
     }
   };
 
+  const handleReturnHome = () => {
+    socket.emit("leaveRoom", { roomCode });
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen relative flex flex-col">
       <Header backNav="/room-actions" />
@@ -114,7 +119,7 @@ const Leaderboard = () => {
                 >
                   <div className="flex items-center space-x-4">
                     {gameMode === "single" ? (
-                      <span className="text-lg text-white/90 font-medium">Your score:</span>
+                      <span className="text-lg text-white/90 font-medium">Your final score:</span>
                     ) : (
                       <>
                         <span className="h-8 w-8 flex items-center justify-center text-white/90 font-medium rounded-full bg-gradient-to-r from-purple-500/50 to-indigo-500/50 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300">
@@ -133,8 +138,42 @@ const Leaderboard = () => {
             })}
             <div>
               {currentRound === totalRounds ? (
-                <div className="flex justify-center mt-4">
-                  <div className="text-white px-4 py-2">Game Finished!</div>
+                <div className="flex flex-col items-center mt-8 relative">
+                  {/* Decorative frame corners */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-purple-400/30 -translate-x-2 -translate-y-2" />
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-purple-400/30 translate-x-2 -translate-y-2" />
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-purple-400/30 -translate-x-2 translate-y-2" />
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-purple-400/30 translate-x-2 translate-y-2" />
+
+                  {/* Main content */}
+                  <div className="text-center px-8 py-6 backdrop-blur-lg bg-white/5 rounded-2xl border border-white/10">
+                    <h2 className="text-2xl font-semibold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent mb-3">
+                      Game Complete!
+                    </h2>
+
+                    {/* Winner announcement for multiplayer */}
+                    {gameMode === "multi" && Array.from(sortedSocketToUserMap.entries())[0] && (
+                      <div className="mb-6">
+                        <p className="text-white/80 mb-2">Champion</p>
+                        <p className="text-xl font-bold text-yellow-300">
+                          {Array.from(sortedSocketToUserMap.entries())[0][1].name}
+                        </p>
+                        <div className="text-white/60 mt-1">
+                          with {scores[Array.from(sortedSocketToUserMap.entries())[0][0]]} points
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleReturnHome}
+                      className="group relative px-8 py-3 mt-2 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
+                    >
+                      <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/10 to-indigo-500/10 animate-pulse" />
+                      <span className="relative text-white group-hover:text-white/90 transition-colors">
+                        Back to Home
+                      </span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
