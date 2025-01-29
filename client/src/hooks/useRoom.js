@@ -7,7 +7,7 @@ const useRoom = (roomCode, playerName) => {
   const [isHost, setIsHost] = useState(null);
   const [hostId, setHostId] = useState(null);
   const [error, setError] = useState(null);
-  const [hasJoined, setHasJoined] = useState(false); // Track if we've already joined
+  const [hasJoined, setHasJoined] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,22 +37,14 @@ const useRoom = (roomCode, playerName) => {
       setHostId(data.hostId);
     });
 
-    socket.on(
-      "roundStarted",
-      ({ startTime, totalTime, imagePath: serverImagePath, revealMode }) => {
-        // Use revealMode directly to determine the target path
-        const targetPath =
+    socket.on("roundStarted", ({ startTime, totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode, revealMode, hintsEnabled }) => {
+      const targetPath =
           revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
-
-        navigate(targetPath, {
-          state: {
-            startTime,
-            totalTime,
-            imagePath: serverImagePath,
-          },
-        });
-      }
-    );
+      
+      navigate(targetPath, {
+        state: { startTime, timePerRound: totalTime, imagePath: serverImagePath, totalRounds, currentRound, gameMode, revealMode, hintsEnabled },
+      });
+    });
 
     return () => {
       console.log("Cleaning up room effect");

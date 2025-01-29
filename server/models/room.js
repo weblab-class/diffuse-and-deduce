@@ -18,6 +18,7 @@ const RoomSchema = new mongoose.Schema({
   },
   isGameStarted: { type: Boolean, default: false },
   scores: { type: Map, of: Number, default: {} },
+  previousScores: { type: Map, of: Number, default: {} },
 });
 
 module.exports = mongoose.model("Room", RoomSchema);

@@ -1,5 +1,6 @@
 // models/round.js
 
+const { CurrencyBtc } = require("@phosphor-icons/react");
 const mongoose = require("mongoose");
 
 const RoundSchema = new mongoose.Schema({
@@ -10,7 +11,10 @@ const RoundSchema = new mongoose.Schema({
   correctAnswers: { type: [String], required: true },
   primaryAnswer: { type: String, default: "" },
   imagePath: { type: String, required: true }, // New field
+  totalRounds: { type: Number, default: 1 },  
+  currentRound: { type: Number, default: 1 },
   revealMode: { type: String, enum: ["diffusion", "random"], default: "diffusion" }, // Add reveal mode
+  hintsEnabled: { type: Boolean, default: false },
   players: [
     {
       socketId: String,
