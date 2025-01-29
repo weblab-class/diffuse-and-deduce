@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const FileUploadModal = ({ isOpen, onClose, onUploadComplete, totalUploadedImages = 0 }) => {
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [previews, setPreviews] = React.useState([]);
-  const [labels, setLabels] = React.useState([]); // Array of {primary: string, secondary: string}
+  const [labels, setLabels] = React.useState([]);
   const [uploadStatus, setUploadStatus] = React.useState({
     loading: false,
     error: null,
@@ -18,7 +18,6 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, totalUploadedImage
   const fileInputRef = React.useRef(null);
   const errorTimeoutRef = React.useRef(null);
 
-  // Clear timeout on unmount
   React.useEffect(() => {
     return () => {
       if (errorTimeoutRef.current) {
@@ -28,14 +27,12 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, totalUploadedImage
   }, []);
 
   const showError = (message) => {
-    // Clear any existing timeout
     if (errorTimeoutRef.current) {
       clearTimeout(errorTimeoutRef.current);
     }
 
     setUploadError(message);
 
-    // Set new timeout to clear error after 3 seconds
     errorTimeoutRef.current = setTimeout(() => {
       setUploadError("");
     }, 3000);
@@ -45,7 +42,6 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, totalUploadedImage
     const newFiles = Array.from(event.target.files);
     setUploadError("");
 
-    // Check if adding these new files would exceed the 10 image limit
     if (totalUploadedImages + selectedFiles.length + newFiles.length > 10) {
       showError(
         `Cannot add ${newFiles.length} more images. Maximum 10 images allowed (${
@@ -55,19 +51,15 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, totalUploadedImage
       return;
     }
 
-    // Create preview URLs for new files
     const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
 
-    // Initialize empty labels for new files
     const newLabels = newFiles.map(() => ({ primary: "", secondary: "" }));
 
-    // Append new files and previews to existing ones
     setSelectedFiles((prev) => [...prev, ...newFiles]);
     setPreviews((prev) => [...prev, ...newPreviews]);
     setLabels((prev) => [...prev, ...newLabels]);
   };
 
-  // Clean up preview URLs when component unmounts
   React.useEffect(() => {
     return () => {
       previews.forEach((url) => URL.revokeObjectURL(url));
@@ -88,7 +80,6 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, totalUploadedImage
       return;
     }
 
-    // Check if all images have primary labels
     const emptyLabelIndex = labels.findIndex((label) => !label.primary.trim());
     if (emptyLabelIndex !== -1) {
       showError(`Please add a primary label for image ${emptyLabelIndex + 1}`);
@@ -115,27 +106,21 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, totalUploadedImage
 
       const result = await response.json();
 
-      // Show success message
-      setUploadError(""); // Clear any existing errors
-      showError("Images uploaded successfully!"); // Reusing error display for success
+      setUploadError("");
+      showError("Images uploaded successfully!");
 
-      // Call onUploadComplete with the new image IDs
       onUploadComplete(result.imageIds);
 
-      // Set upload status to uploaded
       setUploadStatus({ loading: false, error: null, uploaded: true });
 
-      // Reset the form state for the next upload
       setSelectedFiles([]);
       setPreviews([]);
       setLabels([]);
 
-      // Reset the upload button state after 2 seconds
       setTimeout(() => {
         setUploadStatus({ loading: false, error: null, uploaded: false });
       }, 2000);
 
-      // Close after showing success
       setTimeout(() => {
         onClose();
       }, 1500);
@@ -277,7 +262,6 @@ const GameSettings = () => {
     revealMode: "diffusion",
   });
 
-  // Disable sabotage if there aren't enough players
   useEffect(() => {
     if (!hasSufficientPlayers && settings.sabotage) {
       setSettings((prev) => ({ ...prev, sabotage: false }));
@@ -298,7 +282,6 @@ const GameSettings = () => {
     "Sports",
   ];
 
-  // Add Import Images only for multiplayer
   if (gameMode === "multi") {
     topics.push("Import_Images");
   }
@@ -331,14 +314,12 @@ const GameSettings = () => {
   const handleTopicClick = (topic) => {
     if (topic === "Import_Images") {
       if (!hasSufficientPlayers) {
-        return; // Do nothing if not enough players
+        return;
       }
       if (uploadedImages.length >= 10) {
-        // Show error message that max images reached
         const errorMessage = document.createElement("div");
         errorMessage.textContent = "Maximum of 10 images already uploaded";
         errorMessage.className = "text-red-500 text-sm mt-2";
-        // Remove after 3 seconds
         setTimeout(() => errorMessage.remove(), 3000);
         return;
       }
@@ -350,16 +331,14 @@ const GameSettings = () => {
 
   const handleModalClose = () => {
     setIsUploadModalOpen(false);
-    // If Import_Images was selected but no images were uploaded, deselect it
     if (selectedTopic === "Import_Images" && uploadedImages.length === 0) {
       setSelectedTopic(null);
     }
   };
 
   const handleUploadComplete = (imageIds) => {
-    // Append new images to existing ones instead of replacing
     setUploadedImages((prevImages) => [...prevImages, ...imageIds]);
-    setSelectedTopic("Import_Images"); // Only set the topic after successful upload
+    setSelectedTopic("Import_Images");
   };
 
   const handleStartGame = () => {
@@ -367,7 +346,6 @@ const GameSettings = () => {
       return;
     }
 
-    // Additional validation for Import_Images
     if (selectedTopic === "Import_Images" && uploadedImages.length === 0) {
       return;
     }
@@ -389,20 +367,15 @@ const GameSettings = () => {
 
   return (
     <>
-      {/* Fixed header - highest layer */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-transparent">
         <Header backNav={gameMode === "single" ? "choose-num-players" : `lobby/${roomCode}`} />
       </div>
-      {/* Background container - lowest layer */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#0A0A1B] to-[#1A1A2E] overflow-hidden">
         <div className="absolute inset-0 bg-[url('/background-images/background-game_settings.png')] bg-cover bg-center bg-no-repeat opacity-40 mix-blend-overlay" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(233,69,96,0.1)_0%,transparent_70%)]" />
       </div>
-      {/* Content container - middle layer with scrolling */}
       <div className="relative z-0 min-h-screen font-['Space_Grotesk'] antialiased overflow-auto">
-        {/* Flex container to push button to bottom */}
         <div className="min-h-screen flex flex-col">
-          {/* Main content - centered vertically and horizontally */}
           <div className="flex-grow pt-20 p-10 flex items-center">
             <div className="w-full flex flex-col lg:flex-row gap-10 justify-center items-stretch">
               {/* Topics Container */}

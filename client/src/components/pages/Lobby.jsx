@@ -17,14 +17,10 @@ const Lobby = () => {
   const [isMusicPlaying, setIsMusicPlaying] = useState(true);
 
   useEffect(() => {
-    // Try to play immediately (will likely fail due to browser restrictions)
-    // Solution found on this StackOverflow post:
-    // https://stackoverflow.com/questions/65066070/is-there-a-way-to-auto-play-audio-in-react-without-using-an-onclick-event
     document
       .getElementById("backgroundMusic")
       ?.play()
       .catch(() => {
-        // On failure, set up a one-time click listener
         document.addEventListener(
           "click",
           () => {
@@ -66,18 +62,16 @@ const Lobby = () => {
   const copyRoomCode = () => {
     navigator.clipboard.writeText(roomCode);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="lobby-page-container">
-      {/* Background layers */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#1a1a2e] to-[#0a0a1b] overflow-hidden">
         <div className="absolute inset-0 bg-[url('/background-images/background-lobby.png')] bg-cover bg-center bg-no-repeat opacity-60 mix-blend-overlay" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.15)_0%,transparent_70%)]" />
       </div>
 
-      {/* Background Music */}
       <audio id="backgroundMusic" loop>
         <source src="/music/lobby.m4a" type="audio/mp4" />
         Your browser does not support the audio element.
@@ -85,7 +79,6 @@ const Lobby = () => {
 
       <Header backNav="room-actions" />
 
-      {/* Music Control Button */}
       <button
         className="music-control"
         onClick={toggleMusic}
@@ -108,7 +101,6 @@ const Lobby = () => {
         {isMusicPlaying ? "🔊" : "🔇"}
       </button>
 
-      {/* Main content area */}
       <motion.div
         className="lobby-content"
         initial={{ opacity: 0, y: 20 }}
@@ -163,7 +155,6 @@ const Lobby = () => {
         </div>
       </motion.div>
 
-      {/* Bottom controls - outside of main content */}
       <div className="lobby-controls">
         <div className="button-container">
           {isHost ? (

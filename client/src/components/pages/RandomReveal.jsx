@@ -48,8 +48,8 @@ const RandomReveal = () => {
 
   const sabotageEnabled = (state?.sabotageEnabled && !(importedImages && isHost)) || false;
 
-  const [selectedOpponent, setSelectedOpponent] = useState(null); // Currently selected opponent for sabotage
-  const [guessDisabled, setGuessDisabled] = useState(false); // Disable guess input during stall sabotage
+  const [selectedOpponent, setSelectedOpponent] = useState(null);
+  const [guessDisabled, setGuessDisabled] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [canSabotage, setCanSabotage] = useState(true);
   const price = { stall: 50, addNoise: 50, deduct: 30 };
@@ -71,7 +71,7 @@ const RandomReveal = () => {
           primaryAnswer: serverPrimaryAnswer,
         }) => {
           if (serverImagePath) {
-            setTimeElapsed(0); // Let server timeUpdate events handle the time
+            setTimeElapsed(0);
             setImagePath(`${SERVER_URL}${serverImagePath}`);
             setPrimaryAnswer(serverPrimaryAnswer);
           }
@@ -100,14 +100,12 @@ const RandomReveal = () => {
         return;
       }
 
-      // Emit sabotage event to the server
       socket.emit("sabotage", {
         roomCode,
         type,
         targetId: selectedOpponent.id,
       });
 
-      // Optimistically update the acting player's score
       setScores((prevScores) => ({
         ...prevScores,
         [socket.id]: prevScores[socket.id] - price[type],
@@ -119,7 +117,6 @@ const RandomReveal = () => {
     [canSabotage, selectedOpponent, scores, roomCode]
   );
 
-  // Handle keypress events for sabotage
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!selectedOpponent) return;
@@ -146,7 +143,6 @@ const RandomReveal = () => {
     };
   }, [selectedOpponent, performSabotage]);
 
-  // Listen for sabotage effects directed at the current player
   useEffect(() => {
     socket.on("sabotageApplied", ({ type, from }) => {
       let message = "";
@@ -158,7 +154,7 @@ const RandomReveal = () => {
       if (type === "stall" && !guessedCorrectly) {
         message = "Another user has stalled your guessing!";
         setGuessDisabled(true);
-        setTimeout(() => setGuessDisabled(false), 10000); // Disable guessing for 5 seconds
+        setTimeout(() => setGuessDisabled(false), 10000);
       }
 
       if (type === "deduct") {
@@ -185,7 +181,6 @@ const RandomReveal = () => {
     const handleTimeUpdate = ({ timeElapsed }) => {
       setTimeElapsed(timeElapsed);
 
-      // Add shake effect when time is less than 5 seconds
       const timeRemaining = timePerRound - timeElapsed;
       if (timeRemaining < 5) {
         setIsShaking(true);
@@ -196,10 +191,10 @@ const RandomReveal = () => {
     const handleRoundStarted = ({ startTime, totalTime, imagePath }) => {
       setTimeElapsed(0);
       setImagePath(`${SERVER_URL}${imagePath}`);
-      setRevealCircles([]); // Reset reveal circles for new round
+      setRevealCircles([]);
       setLastRevealTime(Date.now());
-      setGuessedCorrectly(false); // Reset here
-      setGuessedWrong(false); // Also reset wrong guesses
+      setGuessedCorrectly(false);
+      setGuessedWrong(false);
     };
 
     const handleScoreUpdate = ({ scores: newScores, diff }) => {
@@ -216,11 +211,9 @@ const RandomReveal = () => {
 
       setShowingAnswer(true);
 
-      // Show answer for 5 seconds before transitioning
       await new Promise((resolve) => setTimeout(resolve, 5000));
       setShowingAnswer(false);
 
-      // Fetch the host's socket ID from the server
       get("/api/hostSocketId", { roomCode })
         .then(({ hostSocketId }) => {
           const isHost = socket.id === hostSocketId;
@@ -233,7 +226,7 @@ const RandomReveal = () => {
               currentRound,
               totalRounds,
               imagePath,
-              totalTime: timePerRound, // Pass the current round's time to use for next round
+              totalTime: timePerRound,
               gameMode,
               revealMode,
               hintsEnabled,
@@ -256,12 +249,10 @@ const RandomReveal = () => {
   }, [roomCode, navigate, timePerRound]);
 
   useEffect(() => {
-    // Try to play immediately (will likely fail due to browser restrictions)
     document
       .getElementById("randomRevealBackgroundMusic")
       ?.play()
       .catch(() => {
-        // On failure, set up a one-time click listener
         document.addEventListener(
           "click",
           () => {
@@ -363,18 +354,16 @@ const RandomReveal = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    canvas.width = 600; // Match GameScreen image width
-    canvas.height = 400; // Match GameScreen image height
+    canvas.width = 600;
+    canvas.height = 400;
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
-    // Enable CORS for the image
     img.crossOrigin = "Anonymous";
     img.src = imagePath;
 
     img.onload = () => {
       setImgLoaded(true);
-      // Initially draw the image completely covered in black
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -383,8 +372,6 @@ const RandomReveal = () => {
     img.onerror = (err) => {
       console.error(`Failed to load image at path: ${imagePath}`, err);
       setImgLoaded(false);
-      // Display a placeholder or error message
-      // ctx.fillStyle = "#CCCCCC";
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "#000000";
@@ -424,20 +411,17 @@ const RandomReveal = () => {
   useEffect(() => {
     socket.on("wrongGuess", ({ playerId }) => {
       if (playerId === socket.id) {
-        // Reset guessedWrong first to ensure the animation triggers again
         setGuessedWrong(false);
-        // Use setTimeout to ensure the state actually changes before setting to true
         setTimeout(() => {
           setGuessedWrong(true);
         }, 10);
         if (hintsEnabled && primaryAnswer) {
           setRevealedHint((prev) => {
-            // Reveal one more letter
             const nextIndex = prev.length;
             if (nextIndex < primaryAnswer.length) {
               return primaryAnswer.substring(0, nextIndex + 1);
             }
-            return prev; // No change if we already revealed everything
+            return prev;
           });
         }
       }
@@ -453,11 +437,9 @@ const RandomReveal = () => {
     setGuessText("");
   };
 
-  // Simplified reveal shape function with just spotlight
   const drawRevealShape = (ctx, shape, x, y, size) => {
     ctx.beginPath();
 
-    // Create gradient for spotlight effect
     const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
     gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
     gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
@@ -466,37 +448,27 @@ const RandomReveal = () => {
 
     ctx.fill();
   };
-
-  // Modify drawImageWithReveals to use the new shapes
   const drawImageWithReveals = (ctx, img, reveals, noise) => {
-    // First, draw the image
     ctx.drawImage(img, 0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    // If round is over, don't draw the mask
     if (isRoundOver) return;
 
-    // Create a temporary canvas for the mask
     const maskCanvas = document.createElement("canvas");
     maskCanvas.width = ctx.canvas.width;
     maskCanvas.height = ctx.canvas.height;
     const maskCtx = maskCanvas.getContext("2d");
 
-    // Fill the mask with black
     maskCtx.fillStyle = "black";
     maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
 
-    // Set composite operation to "destination-out" to create holes in the black overlay
     maskCtx.globalCompositeOperation = "destination-out";
 
-    // Draw all reveal shapes
     reveals.forEach((reveal) => {
       drawRevealShape(maskCtx, reveal.shape, reveal.x, reveal.y, reveal.size);
     });
 
-    // Draw the mask over the image
     ctx.drawImage(maskCanvas, 0, 0);
 
-    // Draw noise circles
     if (noise && noise.length > 0) {
       ctx.fillStyle = "black";
       noise.forEach((circle) => {
@@ -507,50 +479,39 @@ const RandomReveal = () => {
     }
   };
 
-  // Calculate total number of reveals needed for full coverage
   const calculateTotalReveals = (roundTime) => {
     const canvas = canvasRef.current;
-    if (!canvas) return 80; // fallback to default
+    if (!canvas) return 80;
 
-    // Use normalized time for initial calculation
     const normalizedTime = Math.min(roundTime, 30);
     const avgBaseSize =
       Math.min(canvas.width, canvas.height) / (Math.sqrt(normalizedTime / 0.2) * 1.75);
 
-    // Apply the same size adjustments as in addRevealCircle
     let adjustedBaseSize = avgBaseSize;
     if (roundTime > 30) {
       adjustedBaseSize = adjustedBaseSize * (1 + Math.log10(roundTime / 30) * 0.2);
     }
     const avgSize = adjustedBaseSize * 0.8;
 
-    // Calculate area of canvas and area of each reveal
     const canvasArea = canvas.width * canvas.height;
     const revealArea = Math.PI * avgSize * avgSize;
 
-    // Calculate base number of reveals needed
-    const effectiveRevealArea = revealArea * 0.7; // Assume 70% effectiveness due to overlap
+    const effectiveRevealArea = revealArea * 0.7;
     const neededReveals = Math.ceil(canvasArea / effectiveRevealArea);
 
-    // For longer rounds, scale up the number of reveals with time
-    const baseReveals = Math.floor(roundTime / 0.25); // One reveal every 250ms
+    const baseReveals = Math.floor(roundTime / 0.25);
     const scaledReveals =
-      roundTime > 30
-        ? baseReveals * (1 + Math.log10(roundTime / 30) * 0.3) // More reveals for longer rounds
-        : baseReveals;
+      roundTime > 30 ? baseReveals * (1 + Math.log10(roundTime / 30) * 0.3) : baseReveals;
 
     return Math.max(10, Math.min(neededReveals, scaledReveals));
   };
 
-  // Helper function to check if image is mostly revealed
   const isImageMostlyRevealed = () => {
     const canvas = canvasRef.current;
     if (!canvas) return false;
 
-    // For longer rounds, don't stop reveals - let them continue throughout the round
     if (timePerRound > 30) return false;
 
-    // Only check coverage for shorter rounds
     const totalArea = canvas.width * canvas.height;
     let coveredArea = 0;
 
@@ -559,18 +520,15 @@ const RandomReveal = () => {
       coveredArea += revealArea;
     });
 
-    return coveredArea >= totalArea * 0.95; // 95% coverage for short rounds
+    return coveredArea >= totalArea * 0.95;
   };
 
-  // Get a random point with bias towards center in final phase
   const getRevealPoint = (canvas, progress) => {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
-    // In final 30% of round, focus more on center
     if (progress > 0.7) {
       const angle = Math.random() * 2 * Math.PI;
-      // Square root of random gives more concentration towards center
       const radius = Math.sqrt(Math.random()) * Math.min(canvas.width, canvas.height) * 0.3;
 
       return {
@@ -579,19 +537,16 @@ const RandomReveal = () => {
       };
     }
 
-    // Regular random distribution for earlier phases
     return {
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
     };
   };
 
-  // Simplified addRevealCircle to use random positions
   const addRevealCircle = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Stop adding reveals if image is mostly revealed
     if (isImageMostlyRevealed()) return;
 
     const now = Date.now();
@@ -601,27 +556,21 @@ const RandomReveal = () => {
     const progress = timeElapsed / timePerRound;
     const point = getRevealPoint(canvas, progress);
 
-    // Cap the time factor to prevent circles from getting too small in longer rounds
-    const normalizedTime = Math.min(timePerRound, 30); // Cap at 30 seconds for size calculation
+    const normalizedTime = Math.min(timePerRound, 30);
     let baseSize = Math.min(canvas.width, canvas.height) / (Math.sqrt(normalizedTime / 0.2) * 1.75);
 
-    // For longer rounds, adjust reveal frequency instead of size
     if (timePerRound > 30) {
-      baseSize = baseSize * (1 + Math.log10(timePerRound / 30) * 0.2); // Gradual size increase for longer rounds
+      baseSize = baseSize * (1 + Math.log10(timePerRound / 30) * 0.2);
     }
 
-    // Make reveals significantly larger in final phase
     if (progress > 0.7) {
-      // Increase base size by 20% in final phase
       baseSize = baseSize * 1.2;
-      // Use larger multiplier range (80-150% of base size)
       const sizeMultiplier = 0.8 + Math.random() * 0.5;
-      // Additional size boost for very central reveals
       const distanceFromCenter = Math.sqrt(
         Math.pow(point.x - canvas.width / 2, 2) + Math.pow(point.y - canvas.height / 2, 2)
       );
-      const maxDistance = Math.min(canvas.width, canvas.height) * 0.3; // Same as in getRevealPoint
-      const centerBoost = 1 + 0.3 * (1 - distanceFromCenter / maxDistance); // Up to 30% larger for central points
+      const maxDistance = Math.min(canvas.width, canvas.height) * 0.3;
+      const centerBoost = 1 + 0.3 * (1 - distanceFromCenter / maxDistance);
       const size = baseSize * sizeMultiplier * centerBoost;
       setRevealCircles((prev) => [
         ...prev,

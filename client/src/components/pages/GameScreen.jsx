@@ -56,24 +56,18 @@ export default function GameScreen() {
   const [canSabotage, setCanSabotage] = useState(true);
   const price = { stall: 50, addNoise: 50, deduct: 30 };
 
-  // Retrieve server URL from Vite environment variables
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
 
-  // Initialize imagePath state with the backend server URL
   const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`); // default image
 
-  // Validate game state on mount and after reloads
   useEffect(() => {
-    // Check if we have valid state from navigation
     if (!state) {
       socket.emit("leaveRoom", { roomCode });
       navigate("/");
       return;
     }
 
-    // Handle page reloads and navigation
     const handleBeforeUnload = () => {
-      // Clear session storage to prevent persisting game state
       sessionStorage.removeItem("gameState");
       socket.emit("leaveRoom", { roomCode });
       return null;
@@ -97,9 +91,9 @@ export default function GameScreen() {
           primaryAnswer: serverPrimaryAnswer,
         }) => {
           setTimeElapsed(0);
-          setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
-          setNoiseLevel(initialNoise); // Reset noise
-          setImgLoaded(false); // Trigger image loading
+          setImagePath(`${SERVER_URL}${serverImagePath}`);
+          setNoiseLevel(initialNoise);
+          setImgLoaded(false);
           setPrimaryAnswer(serverPrimaryAnswer);
         }
       )
@@ -126,14 +120,12 @@ export default function GameScreen() {
         return;
       }
 
-      // Emit sabotage event to the server
       socket.emit("sabotage", {
         roomCode,
         type,
         targetId: selectedOpponent.id,
       });
 
-      // Optimistically update the acting player's score
       setScores((prevScores) => ({
         ...prevScores,
         [socket.id]: prevScores[socket.id] - price[type],
@@ -145,7 +137,6 @@ export default function GameScreen() {
     [canSabotage, selectedOpponent, scores, roomCode]
   );
 
-  // Handle keypress events for sabotage
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!selectedOpponent) return;
@@ -172,19 +163,18 @@ export default function GameScreen() {
     };
   }, [selectedOpponent, performSabotage]);
 
-  // Listen for sabotage effects directed at the current player
   useEffect(() => {
     socket.on("sabotageApplied", ({ type, from }) => {
       let message = "";
       if (type === "addNoise") {
         message = "Another player has added noise to your image!";
-        setNoiseLevel((prev) => prev + 10); // Adjust noise increment as needed
+        setNoiseLevel((prev) => prev + 10);
       }
 
       if (type === "stall" && !guessedCorrectly) {
         message = "Another user has stalled your guessing!";
         setGuessDisabled(true);
-        setTimeout(() => setGuessDisabled(false), 5000); // Disable guessing for 5 seconds
+        setTimeout(() => setGuessDisabled(false), 5000);
       }
 
       if (type === "deduct") {
@@ -208,12 +198,10 @@ export default function GameScreen() {
   }, [revealMode]);
 
   useEffect(() => {
-    // Try to play immediately (will likely fail due to browser restrictions)
     document
       .getElementById("gameBackgroundMusic")
       ?.play()
       .catch(() => {
-        // On failure, set up a one-time click listener
         document.addEventListener(
           "click",
           () => {
@@ -248,24 +236,21 @@ export default function GameScreen() {
     }
   };
 
-  // Load the image whenever imagePath changes
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
-    // Enable CORS for the image
     img.crossOrigin = "Anonymous";
     img.src = imagePath;
     img.onload = () => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       setImgLoaded(true);
-      applyNoise(ctx, canvas, initialNoise); // Apply full noise immediately after drawing the image
+      applyNoise(ctx, canvas, initialNoise);
     };
     img.onerror = (err) => {
       console.error(`Failed to load image at path: ${imagePath}`, err);
       setImgLoaded(false);
-      // Optionally, display a placeholder or error message
       ctx.fillStyle = "#CCCCCC";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "#000000";
@@ -274,7 +259,6 @@ export default function GameScreen() {
     };
   }, [imagePath, SERVER_URL]);
 
-  // Re-apply noise whenever noiseLevel changes
   useEffect(() => {
     if (!imgLoaded) return;
 
@@ -286,7 +270,7 @@ export default function GameScreen() {
     baseImage.src = imagePath;
     baseImage.onload = () => {
       ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
-      applyNoise(ctx, canvas, noiseLevel); // Apply noise based on current noise level
+      applyNoise(ctx, canvas, noiseLevel);
     };
     baseImage.onerror = (err) => {
       console.error(`Failed to load base image at path: ${imagePath}`, err);
@@ -294,16 +278,13 @@ export default function GameScreen() {
   }, [noiseLevel, imgLoaded, imagePath]);
 
   useEffect(() => {
-    // Handle various socket events
     socket.on("timeUpdate", ({ timeElapsed }) => {
       setTimeElapsed(timeElapsed);
       const fraction = timeElapsed / timePerRound;
 
-      // Add shake effect when time is less than 5 seconds
       const timeRemaining = timePerRound - timeElapsed;
       if (timeRemaining < 5) {
         setIsShaking(true);
-        // Remove shake class after animation completes
         setTimeout(() => setIsShaking(false), 2000);
       }
 
@@ -330,11 +311,9 @@ export default function GameScreen() {
 
       setShowingAnswer(true);
 
-      // Show answer for 5 seconds before transitioning
       await new Promise((resolve) => setTimeout(resolve, 5000));
       setShowingAnswer(false);
 
-      // Fetch the host's socket ID from the server
       get("/api/hostSocketId", { roomCode })
         .then(({ hostSocketId }) => {
           const isHost = socket.id === hostSocketId;
@@ -347,7 +326,7 @@ export default function GameScreen() {
               currentRound,
               totalRounds,
               imagePath,
-              totalTime: timePerRound, // Pass the current round's time to use for next round
+              totalTime: timePerRound,
               gameMode,
               revealMode,
               hintsEnabled,
@@ -387,23 +366,17 @@ export default function GameScreen() {
   }, []);
 
   useEffect(() => {
-    // Handle navigation and reload
     const handleUnload = () => {
-      // Emit leave room event
       socket.emit("leaveRoom", { roomCode });
 
-      // Force redirect
       window.location.href = "/";
 
-      // Prevent the default reload behavior
       e.preventDefault();
       e.returnValue = "";
 
-      // Return a string to show the confirmation dialog in some browsers
       return "Are you sure you want to leave?";
     };
 
-    // Block navigation using the History API
     window.history.pushState(null, null, window.location.pathname);
 
     const blockNavigation = () => {
@@ -414,7 +387,6 @@ export default function GameScreen() {
     window.addEventListener("beforeunload", handleUnload);
     window.addEventListener("popstate", blockNavigation);
 
-    // Cleanup
     return () => {
       window.removeEventListener("beforeunload", handleUnload);
       window.removeEventListener("popstate", blockNavigation);
@@ -490,7 +462,6 @@ export default function GameScreen() {
     );
   };
 
-  // Listen for correct guess event
   useEffect(() => {
     socket.on("correctGuess", ({ playerId, score }) => {
       if (playerId === socket.id) {
@@ -506,7 +477,6 @@ export default function GameScreen() {
   }, []);
 
   useEffect(() => {
-    // Add a timeout effect for the wrong guess message
     let timeoutId;
     if (guessedWrong) {
       timeoutId = setTimeout(() => {
@@ -520,24 +490,20 @@ export default function GameScreen() {
     };
   }, [guessedWrong]);
 
-  // Modify the socket event listener for wrong guesses
   useEffect(() => {
     socket.on("wrongGuess", ({ playerId }) => {
       if (playerId === socket.id) {
-        // Reset guessedWrong first to ensure the animation triggers again
         setGuessedWrong(false);
-        // Use setTimeout to ensure the state actually changes before setting to true
         setTimeout(() => {
           setGuessedWrong(true);
         }, 10);
         if (hintsEnabled && primaryAnswer) {
           setRevealedHint((prev) => {
-            // Reveal one more letter
             const nextIndex = prev.length;
             if (nextIndex < primaryAnswer.length) {
               return primaryAnswer.substring(0, nextIndex + 1);
             }
-            return prev; // No change if we already revealed everything
+            return prev;
           });
         }
       }
@@ -548,7 +514,6 @@ export default function GameScreen() {
     };
   }, [socket.id, hintsEnabled, primaryAnswer]);
 
-  // Add particle effect
   useEffect(() => {
     const canvas = document.createElement("canvas");
     canvas.className = "particle-canvas";
@@ -564,7 +529,6 @@ export default function GameScreen() {
     const ctx = canvas.getContext("2d");
     const particles = [];
 
-    // Resize handler
     const handleResize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -572,7 +536,6 @@ export default function GameScreen() {
     handleResize();
     window.addEventListener("resize", handleResize);
 
-    // Particle class
     class Particle {
       constructor() {
         this.reset();
@@ -604,12 +567,10 @@ export default function GameScreen() {
       }
     }
 
-    // Create particles
     for (let i = 0; i < 50; i++) {
       particles.push(new Particle());
     }
 
-    // Animation loop
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particles.forEach((particle) => {
@@ -646,11 +607,9 @@ export default function GameScreen() {
     socket.on("roundOver", async ({ scores, socketToUserMap }) => {
       setShowingAnswer(true);
 
-      // Show answer for 3 seconds before transitioning
       await new Promise((resolve) => setTimeout(resolve, 3000));
       setShowingAnswer(false);
 
-      // Fetch the host's socket ID from the server
       get("/api/hostSocketId", { roomCode })
         .then(({ hostSocketId }) => {
           const isHost = socket.id === hostSocketId;
@@ -663,7 +622,7 @@ export default function GameScreen() {
               currentRound,
               totalRounds,
               imagePath,
-              totalTime: timePerRound, // Pass the current round's time to use for next round
+              totalTime: timePerRound,
               gameMode,
               revealMode,
               hintsEnabled,
@@ -891,10 +850,8 @@ export default function GameScreen() {
 
       {showingAnswer && (
         <>
-          {/* Semi-transparent overlay that makes everything unclickable */}
           <div className="fixed inset-0 bg-black/60 z-[9999] pointer-events-auto" />
 
-          {/* Keep the original answer display but make it above the overlay */}
           <div className="fixed inset-0 flex flex-col items-center justify-center bg-black/80 z-[10000] pointer-events-none">
             <h2 className="text-3xl font-bold text-white mb-4">The answer was:</h2>
             <p className="text-4xl font-bold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
