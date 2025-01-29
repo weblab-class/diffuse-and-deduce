@@ -19,6 +19,32 @@ export default function GameScreen() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Validate game state on mount and after reloads
+  useEffect(() => {
+    // Check if we have valid state from navigation
+    if (!location.state) {
+      console.log("No valid game state found, redirecting to home");
+      socket.emit("leaveRoom", { roomCode });
+      navigate("/");
+      return;
+    }
+
+    // Handle page reloads and navigation
+    const handleBeforeUnload = () => {
+      // Clear session storage to prevent persisting game state
+      sessionStorage.removeItem("gameState");
+      socket.emit("leaveRoom", { roomCode });
+      return null;
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      socket.emit("leaveRoom", { roomCode });
+    };
+  }, [roomCode, navigate, location]);
+
   const { state } = useLocation();
   const currentRound = state?.currentRound || 1;
   const totalRounds = state?.totalRounds || 1;
@@ -235,6 +261,42 @@ export default function GameScreen() {
       socket.off("guessResult");
     };
   }, []);
+
+  useEffect(() => {
+    // Handle navigation and reload
+    const handleUnload = (e) => {
+      // Emit leave room event
+      socket.emit("leaveRoom", { roomCode });
+
+      // Force redirect
+      window.location.href = "/";
+
+      // Prevent the default reload behavior
+      e.preventDefault();
+      e.returnValue = "";
+
+      // Return a string to show the confirmation dialog in some browsers
+      return "Are you sure you want to leave?";
+    };
+
+    // Block navigation using the History API
+    window.history.pushState(null, null, window.location.pathname);
+
+    const blockNavigation = () => {
+      socket.emit("leaveRoom", { roomCode });
+      window.location.href = "/";
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+    window.addEventListener("popstate", blockNavigation);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      window.removeEventListener("popstate", blockNavigation);
+      socket.emit("leaveRoom", { roomCode });
+    };
+  }, [roomCode]);
 
   const handleSubmitGuess = () => {
     socket.emit("submitGuess", { roomCode, guessText });
