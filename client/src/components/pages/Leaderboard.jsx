@@ -227,8 +227,8 @@ const Leaderboard = () => {
                 animationStage >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               }`}
             >
-              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-40">
-                <div className="animate-bounce text-center">
+              <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-40">
+                <div className="animate-bounce text-center" style={{ animationDuration: "2s" }}>
                   <div className="flex justify-center mb-2">
                     <Trophy type="silver" />
                   </div>
@@ -255,8 +255,8 @@ const Leaderboard = () => {
                 animationStage >= 3 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               }`}
             >
-              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-40">
-                <div className="animate-bounce text-center">
+              <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-40">
+                <div className="animate-bounce text-center" style={{ animationDuration: "2s" }}>
                   <div className="flex justify-center mb-2">
                     <Trophy type="gold" />
                   </div>
@@ -285,8 +285,8 @@ const Leaderboard = () => {
                 animationStage >= 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               }`}
             >
-              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-40">
-                <div className="animate-bounce text-center">
+              <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-40">
+                <div className="animate-bounce text-center" style={{ animationDuration: "2s" }}>
                   <div className="flex justify-center mb-2">
                     <Trophy type="bronze" />
                   </div>
@@ -435,7 +435,7 @@ const Leaderboard = () => {
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col">
+    <div className="min-h-screen overflow-y-auto relative flex flex-col">
       <Header backNav="/room-actions" />
       {/* Background layers */}
       <div className="fixed top-0 left-0 right-0 bottom-0 -z-10 bg-gradient-to-br from-[#1a1a2e] to-[#0a0a1b]">
