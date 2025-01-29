@@ -64,13 +64,15 @@ function startRoundTimer(roomCode) {
   // create an interval that checks the DB each second
   const interval = setInterval(async () => {
     try {
-      const round = await Round.findOne({ roomCode });
+      const round = await Round.findOne({ roomCode, isActive: true });
 
       // Check if round exists and is active
       if (!round) {
         console.log(`No round found for room ${roomCode}, clearing timer`);
-        // clearInterval(interval);
-        // delete rooms[roomCode].interval;
+        clearInterval(interval);
+        if (rooms[roomCode]) {
+          delete rooms[roomCode].interval;
+        }
         return;
       }
 
@@ -93,8 +95,8 @@ function startRoundTimer(roomCode) {
         rooms[roomCode].previousScores = { ...rooms[roomCode].scores };
 
         // Notify clients that round is over with round information
-        io.to(roomCode).emit("roundOver", { 
-          scores: rooms[roomCode].scores,  
+        io.to(roomCode).emit("roundOver", {
+          scores: rooms[roomCode].scores,
           socketToUserMap,
           // currentRound: round.currentRound,
           // totalRounds: round.totalRounds
@@ -180,10 +182,15 @@ module.exports = {
 
       const Round = require("./models/round");
 
-      socket.on('goToLeaderboard', async ({ roomCode }) => {
+      socket.on("goToLeaderboard", async ({ roomCode }) => {
         // Broadcast the event to all clients, including the sender
         const room = await Room.findOne({ code: roomCode });
-        io.to(roomCode).emit('navigateToLeaderboard', { roomCode, hostId: room.hostId, scores: rooms[roomCode].scores, socketToUserMap });
+        io.to(roomCode).emit("navigateToLeaderboard", {
+          roomCode,
+          hostId: room.hostId,
+          scores: rooms[roomCode].scores,
+          socketToUserMap,
+        });
       });
 
       socket.on("submitGuess", async ({ roomCode, guessText }) => {
@@ -467,29 +474,38 @@ module.exports = {
             socket.emit("errorMessage", "Could not start round");
           }
 
-          console.log("Starting new round with params:", { roomCode, totalTime, topic, totalRounds, currentRound, revealMode, hintsEnabled, gameMode });
-          
+          console.log("Starting new round with params:", {
+            roomCode,
+            totalTime,
+            topic,
+            totalRounds,
+            currentRound,
+            revealMode,
+            hintsEnabled,
+            gameMode,
+          });
+
           // First mark any existing rounds as inactive
           await Round.updateMany({ roomCode }, { isActive: false });
 
           // Create a new round with all required fields
-          const round = new Round({ 
+          const round = new Round({
             roomCode,
-            totalTime,  // Set totalTime when creating round
+            totalTime, // Set totalTime when creating round
             isActive: true,
             totalRounds,
             currentRound,
-            startTime: Date.now(), 
+            startTime: Date.now(),
             revealMode,
-            hintsEnabled
+            hintsEnabled,
           });
-          
+
           console.log("Created round in server with roomcode:", roomCode);
-          console.log("Round details:", { 
-            totalTime: round.totalTime, 
-            totalRounds: round.totalRounds, 
+          console.log("Round details:", {
+            totalTime: round.totalTime,
+            totalRounds: round.totalRounds,
             currentRound: round.currentRound,
-            topic: topic  // Log the topic being used
+            topic: topic, // Log the topic being used
           });
 
           // Initialize room if it doesn't exist
@@ -519,16 +535,18 @@ module.exports = {
           }
 
           // Get available images (ones we haven't used yet)
-          const availableImages = files.filter(file => !roomUsedImages[roomCode].has(file));
-          
+          const availableImages = files.filter((file) => !roomUsedImages[roomCode].has(file));
+
           // Select random image from available ones
           const randomIndex = Math.floor(Math.random() * availableImages.length);
           const selectedImage = availableImages[randomIndex];
-          
+
           // Mark as used
           roomUsedImages[roomCode].add(selectedImage);
-          
-          console.log(`Selected image for room ${roomCode}: ${selectedImage} (${roomUsedImages[roomCode].size}/${files.length} used)`);
+
+          console.log(
+            `Selected image for room ${roomCode}: ${selectedImage} (${roomUsedImages[roomCode].size}/${files.length} used)`
+          );
 
           round.correctAnswers = path.parse(selectedImage).name.split("-");
           round.primaryAnswer = round.correctAnswers[0]; // use the first label for hints
@@ -558,12 +576,12 @@ module.exports = {
             startTime: round.startTime,
             totalTime: round.totalTime,
             imagePath,
-            totalRounds: round.totalRounds,  // Use the saved totalRounds
+            totalRounds: round.totalRounds, // Use the saved totalRounds
             currentRound: round.currentRound,
             gameMode,
             revealMode: round.revealMode,
             primaryAnswer: round.primaryAnswer,
-            hintsEnabled: round.hintsEnabled
+            hintsEnabled: round.hintsEnabled,
           });
 
           // Start the timer after everything is set up
