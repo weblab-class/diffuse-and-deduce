@@ -84,18 +84,31 @@ function startRoundTimer(roomCode) {
         round.isActive = false;
         await round.save();
 
+        // Prepare data to emit
+        let emitScores = { ...rooms[roomCode].scores };
+        let emitSocketToUserMap = { ...socketToUserMap };
+
+        const isImportedImages = roomGameModes[roomCode]?.isImportedImages;
+        if (isImportedImages) {
+          const hostSocketId = roomGameModes[roomCode].host;
+
+          // Remove host's data
+          delete emitScores[hostSocketId];
+          delete emitSocketToUserMap[hostSocketId];
+        }
+
+        // Emit the 'roundOver' event with filtered data
+        io.to(roomCode).emit("roundOver", {
+          scores: emitScores,
+          socketToUserMap: emitSocketToUserMap,
+        });
+
         // Clean up timer
         clearInterval(interval);
         delete rooms[roomCode].interval;
 
-        // Update prev scores
+        // Optionally, reset previousScores if needed
         rooms[roomCode].previousScores = { ...rooms[roomCode].scores };
-
-        // Notify clients that round is over with round information
-        io.to(roomCode).emit("roundOver", {
-          scores: rooms[roomCode].scores,
-          socketToUserMap,
-        });
       } else {
         // Send time update (capped at total round time)
         const timeUpdate = { timeElapsed: Math.min(elapsed, round.totalTime) };

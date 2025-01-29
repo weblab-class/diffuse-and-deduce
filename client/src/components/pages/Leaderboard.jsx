@@ -32,9 +32,6 @@ const Leaderboard = () => {
   const entries = Object.entries(socketToUserMap).filter(([socketId]) => socketId in scores);
   entries.sort((a, b) => scores[b[0]] - scores[a[0]]);
   const sortedSocketToUserMap = new Map(entries);
-  if (importedImages && isHost && socket.id) {
-    sortedSocketToUserMap.delete(socket.id);
-  }
 
   const handleNextRound = () => {
     console.log("Next Round button clicked");
