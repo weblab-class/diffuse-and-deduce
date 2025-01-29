@@ -37,6 +37,7 @@ const RandomReveal = () => {
   const gameMode = state?.gameMode || "single";
   const revealMode = state?.revealMode || "diffusion";
   const timePerRound = state?.timePerRound || 30;
+  const importedImages = state?.importedImages || false;
 
   const canvasRef = useRef(null);
   const [revealCircles, setRevealCircles] = useState([]);
@@ -225,6 +226,7 @@ const RandomReveal = () => {
               revealMode,
               hintsEnabled,
               sabotageEnabled,
+              importedImages,
             },
           });
         })
@@ -251,6 +253,45 @@ const RandomReveal = () => {
       socket.off("scoreUpdate", handleScoreUpdate);
     };
   }, [roomCode, navigate, timePerRound]);
+
+  const renderGuessInput = () => {
+    if (importedImages && isHost) {
+      return (
+        <div className="text-center p-4 bg-white/5 rounded-lg">
+          <p className="text-[#E94560] font-semibold">
+            You imported these images - watching in spectator mode
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex gap-4 items-center pt-4">
+        <input
+          type="text"
+          value={guessText}
+          onChange={(e) => setGuessText(e.target.value)}
+          placeholder="Enter your guess..."
+          className={`flex-1 p-3 rounded-lg bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#E94560] ${
+            isShaking ? "animate-shake" : ""
+          }`}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !guessedCorrectly) {
+              handleSubmitGuess();
+            }
+          }}
+          disabled={guessDisabled}
+        />
+        <button
+          onClick={handleSubmitGuess}
+          disabled={guessedCorrectly || guessDisabled}
+          className="px-6 py-3 bg-[#E94560] text-white rounded-lg hover:bg-[#E94560]/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Submit
+        </button>
+      </div>
+    );
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -752,33 +793,7 @@ const RandomReveal = () => {
                   <p className="text-sm text-gray-300">Waiting for the round to end... </p>
                 </div>
               ) : (
-                <div
-                  className={`bg-white/5 backdrop-blur-2xl rounded-xl p-3 border border-purple-500/20 shadow-lg ${
-                    guessedWrong ? "animate-shake" : ""
-                  }`}
-                >
-                  <div className="flex gap-2 items-center justify-center pt-4">
-                    <input
-                      className="flex-1 bg-white/10 text-purple-100 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50"
-                      placeholder="Enter guess..."
-                      value={guessText}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleSubmitGuess();
-                        }
-                      }}
-                      onChange={(e) => setGuessText(e.target.value)}
-                      disabled={guessDisabled}
-                    />
-                    <button
-                      onClick={handleSubmitGuess}
-                      className="glow bg-gradient-to-r from-purple-600/80 to-indigo-600/80 text-white px-6 py-2 rounded-lg hover:-translate-y-1 hover:shadow-purple-500/20 hover:shadow-lg transition-all duration-300 border border-white/10"
-                      disabled={guessDisabled}
-                    >
-                      Submit
-                    </button>
-                  </div>
-                </div>
+                renderGuessInput()
               )}
 
               {guessedWrong && (

@@ -145,7 +145,7 @@ const Leaderboard = () => {
                     <div className="flex justify-center mt-4">
                       {console.log("Next Round button rendered")}
                       <button
-                        className="text-white px-4 py-2 rounded rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 group-hover:border-purple-500/30 transition-all duration-300"
+                        className="text-white px-4 py-2 rounded rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md border border-white/10 hover:bg-[#442e74] transition-all duration-300"
                         onClick={handleNextRound}
                       >
                         Next Round
