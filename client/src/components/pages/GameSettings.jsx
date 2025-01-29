@@ -489,7 +489,7 @@ const GameSettings = () => {
                             : "bg-white/5 text-white/90 hover:bg-gradient-to-r hover:from-white/10 hover:to-white/5"
                         }`}
                     >
-                      <div className="relative flex items-center w-full min-h-[3rem] flex-col">
+                      <div className="relative flex items-center justify-center w-full min-h-[3rem] flex-col">
                         <div className="w-full flex justify-center items-center">
                           <span className="text-2xl relative">
                             {displayTopic(topic)}
