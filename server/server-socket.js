@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 let io;
+let sharedImageStorage;
 
 const userToSocketMap = {}; // maps user ID to socket object
 const socketToUserMap = {}; // maps socket ID to user object
@@ -160,7 +161,10 @@ function checkGuess(guessText, correctAnswers) {
 }
 
 module.exports = {
-  init: (http) => {
+  init: (http, imageStorage) => {
+    if (imageStorage) {
+      sharedImageStorage = imageStorage;
+    }
     io = require("socket.io")(http, {
       pingTimeout: 60000,
       pingInterval: 25000,
@@ -340,8 +344,22 @@ module.exports = {
               imagePath = `/api/get-game-image?roomCode=${roomCode}&imageIds=${JSON.stringify([
                 selectedImageId,
               ])}`;
-              round.correctAnswers = ["uploaded-image"]; // You might want to handle this differently
-              round.primaryAnswer = "uploaded-image";
+
+              // Get the image data from storage to access its label
+              if (!sharedImageStorage) {
+                throw new Error("Image storage not initialized");
+              }
+              const imageData = sharedImageStorage.get(selectedImageId);
+              if (imageData && imageData.label) {
+                // Process the label to create valid answers - only exact match
+                const label = imageData.label.toLowerCase().trim();
+                round.correctAnswers = [label];
+                round.primaryAnswer = label;
+                console.log(`Setting answer for image ${selectedImageId}:`, round.correctAnswers);
+              } else {
+                round.correctAnswers = ["uploaded-image"];
+                round.primaryAnswer = "uploaded-image";
+              }
             } else {
               // Original code for predefined topics
               const imagesDir = path.join(__dirname, "public", "game-images", topic);
@@ -654,63 +672,46 @@ module.exports = {
       });
 
       // socket.on("disconnect", async (reason) => {
-      //   console.log(`Socket disconnected: ${socket.id}`);
-      //   const rooms = await Room.find({ "players.id": socket.id });
-      //   for (const room of rooms) { // TODO FIX THIS SO DON'T HAVE MANY OLD ROOMS
-      //     if (room.hostId === socket.id) {
-      //       // Options are to either delete the room or assign a new host (if there are other players left)
-      //       await Room.deleteOne({ code: room.code });
-      //       socket.leave(room.code);
-      //       return;
-      //     }
-      //     room.players = room.players.filter(player => player.id !== socket.id);
-      //     await room.save();
-      //     socket.leave(room.code);
-      //     io.to(room.code).emit("roomData", {
-      //       players: room.players,
-      //       hostId: room.hostId,
-      //     });
-      //   }
-      // }); // TODO FIX THIS SO DON'T HAVE MANY OLD ROOMS
+      //   console.log(`socket has disconnected ${socket.id}`);
 
-      // Handle socket disconnects
-      //   socket.on("disconnect", async (reason) => {
-      //     console.log(`Socket disconnected: ${socket.id}`);
-      //     const user = getUserFromSocketID(socket.id);
-      //     removeUser(user, socket);
+      //   // Handle socket disconnects
+      //   //   socket.on("disconnect", async (reason) => {
+      //   //     console.log(`Socket disconnected: ${socket.id}`);
+      //   //     const user = getUserFromSocketID(socket.id);
+      //   //     removeUser(user, socket);
 
-      //     try {
-      //       // Find any rooms this socket was in
-      //       const rooms = await Room.find({ "players.id": socket.id });
-      //       for (const room of rooms) {
-      //         // Remove the player from the room's player list
-      //         room.players = room.players.filter((player) => player.id !== socket.id);
+      //   //     try {
+      //   //       // Find any rooms this socket was in
+      //   //       const rooms = await Room.find({ "players.id": socket.id });
+      //   //       for (const room of rooms) {
+      //   //         // Remove the player from the room's player list
+      //   //         room.players = room.players.filter((player) => player.id !== socket.id);
 
-      //         // If this was the host, mark the room as host disconnected
-      //         if (room.hostId === socket.id) {
-      //           console.log(`Host ${socket.id} disconnected from room ${room.code}`);
-      //           room.hostDisconnected = true;
-      //           // Optionally assign new host if there are other players
-      //           if (room.players.length > 0) {
-      //             room.hostId = room.players[0].id;
-      //             room.hostDisconnected = false;
-      //           }
-      //         }
+      //   //         // If this was the host, mark the room as host disconnected
+      //   //         if (room.hostId === socket.id) {
+      //   //           console.log(`Host ${socket.id} disconnected from room ${room.code}`);
+      //   //           room.hostDisconnected = true;
+      //   //           // Optionally assign new host if there are other players
+      //   //           if (room.players.length > 0) {
+      //   //             room.hostId = room.players[0].id;
+      //   //             room.hostDisconnected = false;
+      //   //           }
+      //   //         }
 
-      //         // Save the room (don't delete it)
-      //         await room.save();
+      //   //         // Save the room (don't delete it)
+      //   //         await room.save();
 
-      //         // Notify remaining players
-      //         io.to(room.code).emit("roomData", {
-      //           players: room.players,
-      //           hostId: room.hostId,
-      //           hostDisconnected: room.hostDisconnected,
-      //         });
-      //       }
-      //     } catch (err) {
-      //       console.error("Error handling disconnect:", err);
-      //     }
-      //   });
+      //   //         // Notify remaining players
+      //   //         io.to(room.code).emit("roomData", {
+      //   //           players: room.players,
+      //   //           hostId: room.hostId,
+      //   //           hostDisconnected: room.hostDisconnected,
+      //   //         });
+      //   //       }
+      //   //     } catch (err) {
+      //   //       console.error("Error handling disconnect:", err);
+      //   //     }
+      //   //   });
     });
   },
 

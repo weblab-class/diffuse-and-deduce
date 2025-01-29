@@ -8,24 +8,35 @@
 */
 
 const express = require("express");
+const multer = require("multer");
+const { v4: uuidv4 } = require("uuid");
+
+// Create and export imageStorage before any requires
+const imageStorage = new Map();
+exports.imageStorage = imageStorage;
 
 // import models so we can interact with the database
 const User = require("./models/user");
+const Round = require("./models/round");
+const Room = require("./models/room");
 
 // import authentication library
 const auth = require("./auth");
 
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    files: 10, // Maximum 10 files
+    fileSize: 5 * 1024 * 1024, // 5MB limit per file
+  },
+});
+
+//initialize socket with imageStorage
+const socketManager = require("./server-socket").init(null, imageStorage);
+
 // api endpoints: all these paths will be prefixed with "/api/"
 const router = express.Router();
-
-//initialize socket
-const socketManager = require("./server-socket");
-
-const Round = require("./models/round");
-const Room = require("./models/room");
-
-// Generating temporary IDs for guests
-const { v4: uuidv4 } = require("uuid");
 
 router.post("/login", auth.login);
 
@@ -141,29 +152,17 @@ router.get("/gameState", (req, res) => {
 //     });
 // });
 
-const multer = require("multer");
-
-// In-memory storage for uploaded images
-const imageStorage = new Map();
-
-// Configure multer for memory storage
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    files: 10, // Maximum 10 files
-    fileSize: 5 * 1024 * 1024, // 5MB limit per file
-  },
-});
-
 // Endpoint to handle image uploads
 router.post("/upload-images", upload.array("images", 10), (req, res) => {
   try {
-    const imageIds = req.files.map((file) => {
+    const labels = req.body.labels || [];
+    const imageIds = req.files.map((file, index) => {
       const imageId = uuidv4();
       imageStorage.set(imageId, {
         buffer: file.buffer,
         mimetype: file.mimetype,
         originalName: file.originalname,
+        label: Array.isArray(labels) ? labels[index] : labels,
       });
       return imageId;
     });
@@ -196,6 +195,7 @@ router.get("/get-game-image", (req, res) => {
     return res.status(404).json({ error: "Image not found" });
   }
 
+  // Send the image directly with proper content type
   res.set("Content-Type", image.mimetype);
   res.send(image.buffer);
 });
