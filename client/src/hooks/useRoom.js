@@ -12,8 +12,6 @@ const useRoom = (roomCode, playerName) => {
   useEffect(() => {
     if (!roomCode || !playerName) return;
 
-    console.log("Attempting to join room:", roomCode);
-
     socket.emit("joinRoom", { roomCode, playerName }, (response) => {
       if (response.error) {
         console.error("Join room error:", response.error);
@@ -28,14 +26,12 @@ const useRoom = (roomCode, playerName) => {
     if (!roomCode) return;
 
     const handleRoomData = (data) => {
-      console.log("Received room data:", data);
       setPlayers(data.players);
       setIsHost(data.hostId === socket.id);
       setHostId(data.hostId);
     };
 
     const handleRoundStarted = (data) => {
-      console.log("Round started with data:", data);
       const {
         startTime,
         totalTime,
@@ -49,8 +45,6 @@ const useRoom = (roomCode, playerName) => {
         sabotageEnabled,
         importedImages,
       } = data;
-
-      console.log(importedImages);
 
       const targetPath =
         revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
