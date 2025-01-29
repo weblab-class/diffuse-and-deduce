@@ -383,7 +383,7 @@ const GameSettings = () => {
                   Topics
                   <div className="h-0.5 w-1/2 bg-gradient-to-r from-[#E94560] to-transparent mt-2"></div>
                 </h2>
-                <ul className="grid grid-cols-1 gap-5 font-['Cormorant'] text-xl">
+                <ul className="grid grid-cols-1 gap-5 font-['Cormorant'] text-lg">
                   {topics.map((topic, index) => (
                     <motion.li
                       key={topic}
@@ -413,7 +413,7 @@ const GameSettings = () => {
                         },
                       }}
                       onClick={() => handleTopicClick(topic)}
-                      className={`relative p-4 rounded-xl font-medium cursor-pointer text-center
+                      className={`relative p-4 rounded-xl font-medium cursor-pointer w-full
                         transform transition-all duration-500 ease-out
                         before:absolute before:inset-0 before:rounded-xl before:transition-all before:duration-500
                         before:opacity-0 before:bg-gradient-to-r before:from-[#E94560]/20 before:to-[#0F3460]/20
@@ -424,31 +424,35 @@ const GameSettings = () => {
                             : "bg-white/5 text-white/90 hover:bg-gradient-to-r hover:from-white/10 hover:to-white/5"
                         }`}
                     >
-                      <div className="relative inline-flex items-center">
-                        {displayTopic(topic)}
-                        <motion.svg
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{
-                            scale: selectedTopic === topic ? 1 : 0,
-                            opacity: selectedTopic === topic ? 1 : 0,
-                          }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 500,
-                            damping: 25,
-                          }}
-                          className="ml-2 w-5 h-5 text-white/90"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </motion.svg>
+                      <div className="relative flex items-center w-full min-h-[3rem]">
+                        <div className="w-full flex justify-center items-center">
+                          <span className="text-2xl relative">
+                            {displayTopic(topic)}
+                            <motion.svg
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{
+                                scale: selectedTopic === topic ? 1 : 0,
+                                opacity: selectedTopic === topic ? 1 : 0,
+                              }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 25,
+                              }}
+                              className="w-5 h-5 text-white/90 flex-shrink-0 absolute -right-8 top-[0.35rem]"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </motion.svg>
+                          </span>
+                        </div>
                       </div>
                     </motion.li>
                   ))}
