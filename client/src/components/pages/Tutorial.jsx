@@ -58,7 +58,8 @@ const Tutorial = () => {
               <div className="bg-white/8 backdrop-blur-2xl rounded-lg p-4 mb-4 border border-purple-500/10">
                 <h3 className="text-lg font-semibold text-indigo-400 mb-2">Sabotage</h3>
                 <p className="text-gray-200 mb-4">
-                  Pick any other player to stall, add noise, or deduct.
+                  Pick any other player to stall, add noise, or deduct. (Requires at least 2
+                  players in the game).
                 </p>
 
                 <div className="space-y-4">
