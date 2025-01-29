@@ -47,7 +47,10 @@ const useRoom = (roomCode, playerName) => {
         revealMode,
         hintsEnabled,
         sabotageEnabled,
+        importedImages,
       } = data;
+
+      console.log(importedImages);
 
       const targetPath =
         revealMode === "random" ? `/random-reveal/${roomCode}` : `/game-screen/${roomCode}`;
@@ -64,6 +67,7 @@ const useRoom = (roomCode, playerName) => {
           revealMode,
           hintsEnabled,
           sabotageEnabled,
+          importedImages,
         },
       });
     };

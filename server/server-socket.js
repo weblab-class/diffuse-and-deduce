@@ -153,6 +153,7 @@ setInterval(cleanupRooms, 5 * 60 * 1000);
 
 function checkGuess(guessText, correctAnswers) {
   if (!guessText || !correctAnswers) return false;
+  if (correctAnswers.includes(guessText)) return true;
   const normalizedGuess = guessText.trim().toLowerCase().replace(/\s+/g, "");
   console.log(normalizedGuess);
   return correctAnswers.includes(normalizedGuess);
@@ -250,17 +251,6 @@ module.exports = {
 
       socket.on("submitGuess", async ({ roomCode, guessText }) => {
         try {
-          // Only block host from guessing if using imported images
-          const roomMode = roomGameModes[roomCode];
-          if (roomMode && roomMode.isImportedImages && roomMode.host === socket.id) {
-            socket.emit("guessResult", {
-              correct: false,
-              message: "As the host who imported the images, you cannot submit guesses",
-              isHost: true,
-            });
-            return;
-          }
-
           console.log("Received guess:", { roomCode, guessText });
           // Find the active round for this room
           const round = await Round.findOne({ roomCode, isActive: true });
@@ -539,6 +529,7 @@ module.exports = {
               primaryAnswer: round.primaryAnswer,
               hintsEnabled: round.hintsEnabled,
               sabotageEnabled: round.sabotageEnabled,
+              importedImages: topic === "Import_Images",
             });
 
             const room = await Room.findOne({ code: roomCode });

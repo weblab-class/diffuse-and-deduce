@@ -18,7 +18,6 @@ export default function GameScreen() {
   const [guessText, setGuessText] = useState("");
   const [guessedCorrectly, setGuessedCorrectly] = useState(false);
   const [guessedWrong, setGuessedWrong] = useState(false);
-  const [isSpectator, setIsSpectator] = useState(false);
   const navigate = useNavigate();
   const [reward, setReward] = useState(0);
 
@@ -31,10 +30,9 @@ export default function GameScreen() {
   const sabotageEnabled = state?.sabotageEnabled || false;
   const revealMode = state?.revealMode || "diffusion";
   const timePerRound = state?.timePerRound || 30;
-  const topic = state?.topic || "Animals";
-  const [topicState, setTopic] = useState(topic);
+  const importedImages = state?.importedImages || false;
+
   const [primaryAnswer, setPrimaryAnswer] = useState("");
-  // const [hintsEnabled, setHintsEnabled] = useState(location.state?.hintsEnabled ?? false);
   const [revealedHint, setRevealedHint] = useState("");
 
   const initialNoise = 8.0;
@@ -98,7 +96,6 @@ export default function GameScreen() {
           setImagePath(`${SERVER_URL}${serverImagePath}`); // Update imagePath with server URL
           setNoiseLevel(initialNoise); // Reset noise
           setImgLoaded(false); // Trigger image loading
-          setTopic(serverImagePath.split("/")[2]);
           setPrimaryAnswer(serverPrimaryAnswer);
         }
       )
@@ -253,21 +250,6 @@ export default function GameScreen() {
 
   useEffect(() => {
     // Handle various socket events
-    socket.on(
-      "roundStarted",
-      ({ startTime, totalTime, imagePath, primaryAnswer: serverPrimaryAnswer }) => {
-        console.log("Diffusion: Round started with image:", imagePath);
-        setTimeElapsed(0);
-        setImagePath(`${SERVER_URL}${imagePath}`);
-        setNoiseLevel(initialNoise);
-        setImgLoaded(false);
-        setPrimaryAnswer(serverPrimaryAnswer);
-        setRevealedHint("");
-        setGuessedCorrectly(false); // Reset here
-        setGuessedWrong(false); // Also reset wrong guesses
-      }
-    );
-
     socket.on("timeUpdate", ({ timeElapsed }) => {
       console.log("Received time update:", timeElapsed);
       setTimeElapsed(timeElapsed);
@@ -326,6 +308,7 @@ export default function GameScreen() {
               revealMode,
               hintsEnabled,
               sabotageEnabled,
+              importedImages,
             },
           });
         })
@@ -344,15 +327,6 @@ export default function GameScreen() {
 
   useEffect(() => {
     socket.on("guessResult", ({ correct, message, isHost }) => {
-      if (isHost) {
-        setIsSpectator(true);
-        if (message) {
-          // You could show this message in a toast or alert if desired
-          console.log(message);
-        }
-        return;
-      }
-
       if (correct) {
         setGuessedCorrectly(true);
         setGuessedWrong(false);
@@ -410,7 +384,7 @@ export default function GameScreen() {
   };
 
   const renderGuessInput = () => {
-    if (isSpectator) {
+    if (importedImages && isHost) {
       return (
         <div className="text-center p-4 bg-white/5 rounded-lg">
           <p className="text-[#E94560] font-semibold">

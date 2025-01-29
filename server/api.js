@@ -122,39 +122,6 @@ router.get("/gameState", (req, res) => {
     });
 });
 
-// router.get("/gameState", (req, res) => {
-//   const { roomCode } = req.query;
-//   console.log(`Received request for game state with roomCode: ${roomCode}`);
-
-//   Promise.all([
-//     Room.findOne({ code: roomCode }),
-//     Round.findOne({ roomCode })
-//   ])
-//     .then(([room, round]) => {
-//       if (!room) {
-//         console.log(`No room found for roomCode: ${roomCode}`);
-//         return res.status(404).json({ error: "Room not found" });
-//       }
-//       if (!round) {
-//         console.log(`No round found for roomCode: ${roomCode}`);
-//         return res.status(404).json({ error: "Round not found" });
-//       }
-//       console.log(`Found room and round for roomCode: ${roomCode}`);
-//       console.log(`Total rounds in room: ${room.settings?.rounds}`);
-//       res.json({
-//         imagePath: round.imagePath,
-//         startTime: round.startTime,
-//         totalTime: round.totalTime,
-//         totalRounds: room.settings?.rounds,
-//         // Add any other properties that might be needed by the client
-//       });
-//     })
-//     .catch((error) => {
-//       console.error("Error fetching game state:", error);
-//       res.status(500).json({ error: "Internal server error" });
-//     });
-// });
-
 // Endpoint to handle image uploads
 router.post("/upload-images", upload.array("images", 10), (req, res) => {
   try {
