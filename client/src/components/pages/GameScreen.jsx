@@ -641,14 +641,14 @@ export default function GameScreen() {
               {/* Main game content container */}
               <div className="flex-1 flex flex-row gap-4 min-h-0">
                 {/* Canvas container */}
-                <div className="flex-[3] relative">
+                <div className={`${sabotageEnabled ? "flex-[3]" : "flex-[2.5]"} relative`}>
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
                   <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
                     <canvas
                       ref={canvasRef}
                       className="w-full h-full object-contain rounded-xl"
-                      width="1200"
-                      height="800"
+                      width="1600"
+                      height="1000"
                     />
                   </div>
                 </div>
