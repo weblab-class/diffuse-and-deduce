@@ -3,3 +3,7 @@
 Saisneha Ghatti, Peter Lin, Daria Kryvosheieva | Website for MIT 6.9620 (Web Lab)
 
 Tools used: ChatGPT, Framer Motion, socket.io, React, Node.js
+
+Image Sources:
+- background images: ChatGPT;
+- game images: collected from the Internet (no image is our own).
