@@ -136,7 +136,7 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete }) => {
                 <p className="mb-2 text-sm text-white/90">
                   <span className="font-semibold">Click to upload</span> or drag and drop
                 </p>
-                <p className="text-xs text-white/70">PNG, JPG or GIF (MAX. 5MB each)</p>
+                <p className="text-xs text-white/70">PNG, JPG or GIF (MAX. 20MB each)</p>
               </div>
               <input
                 ref={fileInputRef}
