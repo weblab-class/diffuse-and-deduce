@@ -38,9 +38,12 @@ export default function GameScreen() {
   const initialNoise = 8.0;
   const canvasRef = useRef(null);
   const [noiseLevel, setNoiseLevel] = useState(initialNoise);
+  const [sabotageNoiseLevel, setSabotageNoiseLevel] = useState(0);
+  const sabotageNoiseLevelRef = useRef(sabotageNoiseLevel);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isShaking, setIsShaking] = useState(false);
+  const [showingAnswer, setShowingAnswer] = useState(false);
 
   const { players, isHost, hostId, error } = useRoom(roomCode, playerName);
 
@@ -58,7 +61,11 @@ export default function GameScreen() {
 
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
 
-  const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`); // default image
+  const [imagePath, setImagePath] = useState(`${SERVER_URL}/game-images/Animals/lion.jpg`);
+
+  useEffect(() => {
+    sabotageNoiseLevelRef.current = sabotageNoiseLevel;
+  }, [sabotageNoiseLevel]);
 
   useEffect(() => {
     if (!state) {
@@ -164,11 +171,15 @@ export default function GameScreen() {
   }, [selectedOpponent, performSabotage]);
 
   useEffect(() => {
-    socket.on("sabotageApplied", ({ type, from }) => {
+    const handleSabotageApplied = ({ type, from }) => {
+      console.log(`Received sabotageApplied: type=${type} from=${from}`);
       let message = "";
       if (type === "addNoise") {
         message = "Another player has added noise to your image!";
-        setNoiseLevel((prev) => prev + 10);
+        setSabotageNoiseLevel((prev) => {
+          console.log(`Previous sabotageNoiseLevel: ${prev}`);
+          return prev + 2;
+        });
       }
 
       if (type === "stall" && !guessedCorrectly) {
@@ -190,12 +201,14 @@ export default function GameScreen() {
       setTimeout(() => {
         setNotifications((prev) => prev.slice(1));
       }, 5000);
-    });
+    };
+
+    socket.on("sabotageApplied", handleSabotageApplied);
 
     return () => {
-      socket.off("sabotageApplied");
+      socket.off("sabotageApplied", handleSabotageApplied);
     };
-  }, [revealMode]);
+  }, []);
 
   useEffect(() => {
     document
@@ -278,7 +291,7 @@ export default function GameScreen() {
   }, [noiseLevel, imgLoaded, imagePath]);
 
   useEffect(() => {
-    socket.on("timeUpdate", ({ timeElapsed }) => {
+    const handleTimeUpdate = ({ timeElapsed }) => {
       setTimeElapsed(timeElapsed);
       const fraction = timeElapsed / timePerRound;
 
@@ -298,17 +311,30 @@ export default function GameScreen() {
         easedFraction = 0.7 + 0.3 * (1 - Math.pow(1 - endFraction, 3));
       }
 
-      setNoiseLevel(Math.max(initialNoise * (1 - easedFraction), 0));
-    });
+      const newNoiseLevel =
+        Math.max(initialNoise * (1 - easedFraction), 0) + sabotageNoiseLevelRef.current;
+      setNoiseLevel(newNoiseLevel);
+      console.log(
+        Math.max(initialNoise * (1 - easedFraction), 0),
+        sabotageNoiseLevelRef.current,
+        newNoiseLevel
+      );
+    };
 
+    socket.on("timeUpdate", handleTimeUpdate);
+
+    return () => {
+      socket.off("timeUpdate", handleTimeUpdate);
+    };
+  }, [timePerRound, initialNoise]);
+
+  useEffect(() => {
     socket.on("scoreUpdate", ({ scores, diff }) => {
       setDiff(diff);
       setScores(scores);
     });
 
     socket.on("roundOver", async ({ scores, socketToUserMap }) => {
-      const [showingAnswer, setShowingAnswer] = useState(false);
-
       setShowingAnswer(true);
 
       await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -600,46 +626,6 @@ export default function GameScreen() {
     }
     ctx.putImageData(imageData, 0, 0);
   };
-
-  const [showingAnswer, setShowingAnswer] = useState(false);
-
-  useEffect(() => {
-    socket.on("roundOver", async ({ scores, socketToUserMap }) => {
-      setShowingAnswer(true);
-
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      setShowingAnswer(false);
-
-      get("/api/hostSocketId", { roomCode })
-        .then(({ hostSocketId }) => {
-          const isHost = socket.id === hostSocketId;
-          navigate("/leaderboard", {
-            state: {
-              scores,
-              socketToUserMap,
-              roomCode,
-              isHost,
-              currentRound,
-              totalRounds,
-              imagePath,
-              totalTime: timePerRound,
-              gameMode,
-              revealMode,
-              hintsEnabled,
-              sabotageEnabled,
-              importedImages,
-            },
-          });
-        })
-        .catch((error) => {
-          console.error("GET request to /api/hostSocketId failed with error:", error);
-        });
-    });
-
-    return () => {
-      socket.off("roundOver");
-    };
-  }, [roomCode, navigate, timePerRound]);
 
   return (
     <div className="h-screen flex flex-row font-space-grotesk">

@@ -37,6 +37,7 @@ const RandomReveal = () => {
   const revealMode = state?.revealMode || "diffusion";
   const timePerRound = state?.timePerRound || 30;
   const importedImages = state?.importedImages || false;
+  const [showingAnswer, setShowingAnswer] = useState(false);
 
   const canvasRef = useRef(null);
   const [revealCircles, setRevealCircles] = useState([]);
@@ -207,8 +208,6 @@ const RandomReveal = () => {
     socket.on("scoreUpdate", handleScoreUpdate);
 
     socket.on("roundOver", async ({ scores, socketToUserMap }) => {
-      const [showingAnswer, setShowingAnswer] = useState(false);
-
       setShowingAnswer(true);
 
       await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -362,7 +361,7 @@ const RandomReveal = () => {
     };
     handleResize();
     window.addEventListener("resize", handleResize);
-    
+
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
@@ -455,6 +454,7 @@ const RandomReveal = () => {
 
     ctx.fill();
   };
+
   const drawImageWithReveals = (ctx, img, reveals, noise) => {
     ctx.drawImage(img, 0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -634,11 +634,11 @@ const RandomReveal = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const numCircles = 20; // Number of noise circles to add
+    const numCircles = 60; // Number of noise circles to add
     const newNoise = Array.from({ length: numCircles }).map(() => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      size: 15 + Math.random() * 30, // Size between 15 and 45
+      size: 60 + Math.random() * 30,
     }));
 
     setNoiseCircles((prev) => [...prev, ...newNoise]);
@@ -679,48 +679,6 @@ const RandomReveal = () => {
       drawImageWithReveals(ctx, img, revealCircles, noiseCircles);
     };
   }, [revealCircles, noiseCircles, imagePath, imgLoaded, timeElapsed, timePerRound]);
-
-  const [showingAnswer, setShowingAnswer] = useState(false);
-
-  useEffect(() => {
-    socket.on("roundOver", async ({ scores, socketToUserMap }) => {
-      setShowingAnswer(true);
-
-      // Show answer for 3 seconds before transitioning
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      setShowingAnswer(false);
-
-      // Fetch the host's socket ID from the server
-      get("/api/hostSocketId", { roomCode })
-        .then(({ hostSocketId }) => {
-          const isHost = socket.id === hostSocketId;
-          navigate("/leaderboard", {
-            state: {
-              scores,
-              socketToUserMap,
-              roomCode,
-              isHost,
-              currentRound,
-              totalRounds,
-              imagePath,
-              totalTime: timePerRound,
-              gameMode,
-              revealMode,
-              hintsEnabled,
-              sabotageEnabled,
-              importedImages,
-            },
-          });
-        })
-        .catch((error) => {
-          console.error("GET request to /api/hostSocketId failed with error:", error);
-        });
-    });
-
-    return () => {
-      socket.off("roundOver");
-    };
-  }, [roomCode, navigate, timePerRound]);
 
   return (
     <div className="h-screen flex flex-row font-space-grotesk">
