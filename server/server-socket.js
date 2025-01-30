@@ -199,13 +199,13 @@ module.exports = {
           if (type === "addNoise") {
             io.to(targetId).emit("sabotageApplied", {
               type: "addNoise",
-              from: socket.id,
+              from: actingPlayer.name,
               playerName: actingPlayer.name,
             });
           } else if (type === "stall") {
             io.to(targetId).emit("sabotageApplied", {
               type: "stall",
-              from: socket.id,
+              from: actingPlayer.name,
               playerName: actingPlayer.name,
             });
           } else if (type === "deduct") {
@@ -213,7 +213,7 @@ module.exports = {
             diff[targetId] = -60;
             io.to(targetId).emit("sabotageApplied", {
               type: "deduct",
-              from: socket.id,
+              from: actingPlayer.name,
               playerName: actingPlayer.name,
             });
           } else {

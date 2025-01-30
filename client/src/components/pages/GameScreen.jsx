@@ -134,11 +134,14 @@ export default function GameScreen() {
       });
 
       const notificationId = Date.now();
-      setNotifications(prev => [...prev, {
-        message: `You have sabotaged ${selectedOpponent.name} with ${type}!`,
-        id: notificationId,
-        type
-      }]);
+      setNotifications((prev) => [
+        ...prev,
+        {
+          message: `You have sabotaged ${selectedOpponent.name} with ${type}!`,
+          id: notificationId,
+          type,
+        },
+      ]);
 
       setTimeout(() => {
         setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
@@ -185,12 +188,10 @@ export default function GameScreen() {
 
   useEffect(() => {
     const handleSabotageApplied = ({ type, from }) => {
-      console.log(`Received sabotageApplied: type=${type} from=${from}`);
       let message = "";
       if (type === "addNoise") {
         message = `${from} has added noise to your image!`;
         setSabotageNoiseLevel((prev) => {
-          console.log(`Previous sabotageNoiseLevel: ${prev}`);
           return prev + 2;
         });
       }
