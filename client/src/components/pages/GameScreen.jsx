@@ -112,7 +112,7 @@ export default function GameScreen() {
   const performSabotage = useCallback(
     (type) => {
       if (!canSabotage) {
-        alert("You can perform sabotage actions once every 30 seconds.");
+        alert("You can only perform sabotage actions once every 30 seconds.");
         return;
       }
 
@@ -161,6 +161,8 @@ export default function GameScreen() {
         default:
           break;
       }
+
+      setSelectedOpponent(null);
     };
 
     window.addEventListener("keydown", handleKeyDown);
