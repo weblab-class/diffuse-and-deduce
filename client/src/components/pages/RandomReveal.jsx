@@ -353,15 +353,6 @@ const RandomReveal = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // canvas.width = 600;
-    // canvas.height = 400;
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
@@ -693,11 +684,11 @@ const RandomReveal = () => {
         <div className="flex-1 flex flex-col px-4">
           <div className="max-w-4xl mx-auto w-full flex flex-col h-full">
             {/* Time remaining display */}
-            <div className={`text-center pt-24 mb-2 ${isShaking ? "animate-violent-shake" : ""}`}>
+            <div className={`text-center pt-24 mb-4 ${isShaking ? "animate-violent-shake" : ""}`}>
               <p
                 className={`text-lg ${
                   timePerRound - timeElapsed <= 5 ? "text-red-200" : "text-purple-200"
-                } bg-white/5 backdrop-blur-xl inline-block px-4 py-1 rounded-full border border-white/10 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 placeholder-purple-200/50`}
+                } bg-white/5 backdrop-blur-xl inline-block px-4 py-1 rounded-full border border-white/10 glow mb-1 transition-colors duration-300`}
               >
                 Time Remaining:{" "}
                 <span
@@ -729,9 +720,13 @@ const RandomReveal = () => {
             </div>
 
             {/* Main game content container */}
-            <div className="flex-1 flex flex-row gap-4 min-h-0">
+            <div className="flex-1 flex flex-col md:flex-row gap-4 min-h-0 flex-wrap mb-8">
               {/* Canvas container */}
-              <div className={`${sabotageEnabled ? "flex-[3]" : "flex-[2.5]"} relative`}>
+              <div
+                className={`${
+                  sabotageEnabled ? "flex-1 md:flex-[3]" : "flex-1 md:flex-[2.5]"
+                } relative order-1`}
+              >
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
                 <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
                   <canvas
@@ -743,9 +738,42 @@ const RandomReveal = () => {
                 </div>
               </div>
 
+              {/* Input section */}
+              <div className="order-2 md:order-3 w-full md:w-full">
+                {guessedCorrectly ? (
+                  <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-3 text-center border border-purple-500/20 shadow-lg">
+                    <p className="text-lg text-purple-200">
+                      Congratulations! You scored{" "}
+                      <span
+                        className={`font-semibold text-purple-300 ${
+                          guessedCorrectly ? "score-animate" : ""
+                        }`}
+                      >
+                        {reward || 0}
+                      </span>{" "}
+                      points.
+                    </p>
+                    <p className="text-sm text-gray-300">Waiting for the round to end... </p>
+                  </div>
+                ) : (
+                  renderGuessInput()
+                )}
+
+                {guessedWrong && (
+                  <div className="mt-2 bg-red-500/10 backdrop-blur-xl text-red-200 py-2 px-4 rounded-lg border border-red-500/20 text-center animate-shake">
+                    Wrong guess! Try again.
+                    {hintsEnabled && revealedHint && (
+                      <div className="hint-message">
+                        Hint so far: <span style={{ fontWeight: "bold" }}>{revealedHint}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Sabotage Panel */}
               {sabotageEnabled && (
-                <div className="w-56">
+                <div className="w-full md:w-56 order-3 md:order-2">
                   <div className="relative h-full">
                     {/* Background effects */}
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform rotate-1">
@@ -823,65 +851,15 @@ const RandomReveal = () => {
                 </div>
               )}
             </div>
-
-            {/* Input section */}
-            <div className="mt-auto pb-8">
-              {guessedCorrectly ? (
-                <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-3 text-center border border-purple-500/20 shadow-lg">
-                  <p className="text-lg text-purple-200">
-                    Congratulations! You scored{" "}
-                    <span
-                      className={`font-semibold text-purple-300 ${
-                        guessedCorrectly ? "score-animate" : ""
-                      }`}
-                    >
-                      {reward || 0}
-                    </span>{" "}
-                    points.
-                  </p>
-                  <p className="text-sm text-gray-300">Waiting for the round to end... </p>
-                </div>
-              ) : (
-                renderGuessInput()
-              )}
-
-              {guessedWrong && (
-                <div className="mt-2 bg-red-500/10 backdrop-blur-xl text-red-200 py-2 px-4 rounded-lg border border-red-500/20 text-center animate-shake">
-                  Wrong guess! Try again.
-                  {hintsEnabled && revealedHint && (
-                    <div className="hint-message">
-                      Hint so far: <span style={{ fontWeight: "bold" }}>{revealedHint}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
 
-      {showingAnswer && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-50">
-          <h2 className="text-3xl font-bold text-white mb-4">The answer was:</h2>
-          <p className="text-4xl font-bold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
-            {primaryAnswer}
-          </p>
-        </div>
-      )}
-
-      <div className="fixed top-20 right-4 z-50">
-        {notifications.map((notif, index) => (
-          <Notification key={index} message={notif.message} type={notif.type} />
-        ))}
-      </div>
-
-      {/* Background Music */}
       <audio id="randomRevealBackgroundMusic" loop>
         <source src="/music/rounds.m4a" type="audio/mp4" />
         Your browser does not support the audio element.
       </audio>
 
-      {/* Music Control Button */}
       <button
         className="music-control"
         onClick={toggleMusic}
@@ -903,6 +881,25 @@ const RandomReveal = () => {
       >
         {isMusicPlaying ? "🔊" : "🔇"}
       </button>
+
+      {showingAnswer && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-[9999] pointer-events-auto" />
+
+          <div className="fixed inset-0 flex flex-col items-center justify-center bg-black/80 z-[10000] pointer-events-none">
+            <h2 className="text-3xl font-bold text-white mb-4">The answer was:</h2>
+            <p className="text-4xl font-bold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
+              {primaryAnswer}
+            </p>
+          </div>
+        </>
+      )}
+
+      <div className="fixed top-20 right-4 z-50">
+        {notifications.map((notif, index) => (
+          <Notification key={index} message={notif.message} type={notif.type} />
+        ))}
+      </div>
     </div>
   );
 };
