@@ -580,7 +580,6 @@ const RandomReveal = () => {
         },
       ]);
     } else {
-      // Normal size for earlier phases (60-100% of base size)
       const size = baseSize * (0.6 + Math.random() * 0.4);
       setRevealCircles((prev) => [
         ...prev,
@@ -595,37 +594,32 @@ const RandomReveal = () => {
     setLastRevealTime(now);
   };
 
-  // Calculate when the next reveal should happen
   const calculateRevealTiming = () => {
     const totalReveals = calculateTotalReveals(timePerRound);
     const progress = timeElapsed / timePerRound;
 
-    // Calculate coverage percentage
     const coveragePercent = isImageMostlyRevealed()
       ? 100
       : (revealCircles.length / totalReveals) * 100;
 
-    // If we're in the last 30% of time and coverage is below 90%, speed up dramatically
     if (progress > 0.6 && coveragePercent < 90) {
-      return 5; // Ultra-fast reveals (50ms) to catch up
+      return 5;
     }
 
-    // If we're behind schedule, reveal very quickly
     const expectedReveals = Math.floor(progress * totalReveals);
     if (revealCircles.length < expectedReveals) {
-      return 50; // Fast reveals (100ms) to catch up
+      return 50;
     }
 
-    // If we're on schedule, space reveals evenly but ensure we finish
     const timePerReveal = (timePerRound * (1 - progress)) / (totalReveals - revealCircles.length);
-    return Math.min(timePerReveal * 1000, 500); // Cap at 500ms to maintain momentum
+    return Math.min(timePerReveal * 1000, 500);
   };
 
   const addNoiseCircles = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const numCircles = 60; // Number of noise circles to add
+    const numCircles = 60;
     const newNoise = Array.from({ length: numCircles }).map(() => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
@@ -634,13 +628,11 @@ const RandomReveal = () => {
 
     setNoiseCircles((prev) => [...prev, ...newNoise]);
 
-    // Optionally, remove noise circles after a certain time (e.g., 5 seconds)
     setTimeout(() => {
       setNoiseCircles((prev) => prev.slice(numCircles));
     }, 5000);
   };
 
-  // Effect to handle periodic reveals - stop when round is over
   useEffect(() => {
     if (!imgLoaded || isRoundOver) return;
 
@@ -656,7 +648,6 @@ const RandomReveal = () => {
     return () => clearInterval(checkInterval);
   }, [imgLoaded, timeElapsed, timePerRound, isRoundOver]);
 
-  // Effect to redraw the canvas whenever reveals change
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !imgLoaded) return;
@@ -814,14 +805,14 @@ const RandomReveal = () => {
                             </h4>
                             <div className="space-y-2.5">
                               {[
-                                { key: "addNoise", label: "Add Noise", shortcut: "A", icon: "🌫" }, // Static/noise icon
-                                { key: "stall", label: "Stall", shortcut: "S", icon: "⏳" }, // Timer/hourglass for stalling
+                                { key: "addNoise", label: "Add Noise", shortcut: "A", icon: "🌫" },
+                                { key: "stall", label: "Stall", shortcut: "S", icon: "⏳" },
                                 {
                                   key: "deduct",
                                   label: "Deduct Points",
                                   shortcut: "D",
-                                  icon: "�",
-                                }, // Downward trend for point deduction
+                                  icon: "⬇️",
+                                },
                               ].map((action) => (
                                 <div
                                   key={action.key}

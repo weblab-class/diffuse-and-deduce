@@ -1,20 +1,18 @@
 const mongoose = require("mongoose");
 
-// You can also define a nested "Player" schema if you want more structure
 const PlayerSchema = new mongoose.Schema({
-  id: String, // socket.id
-  name: String, // player's display name
+  id: String,
+  name: String,
 });
 
 const RoomSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true },
-  hostId: { type: String, required: true }, // store the socket.id of the host
+  hostId: { type: String, required: true },
   hostDisconnected: { type: Boolean, default: false },
   players: { type: [PlayerSchema], default: [] },
   settings: {
     duration: { type: Number, default: 60 },
     rounds: { type: Number, default: 5 },
-    // add other fields as needed
   },
   isGameStarted: { type: Boolean, default: false },
   scores: { type: Map, of: Number, default: {} },

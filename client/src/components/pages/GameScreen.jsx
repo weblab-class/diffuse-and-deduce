@@ -53,8 +53,8 @@ export default function GameScreen() {
     (player) => player.id !== socket.id && !(importedImages && player.id === hostId)
   );
 
-  const [selectedOpponent, setSelectedOpponent] = useState(null); // Currently selected opponent for sabotage
-  const [guessDisabled, setGuessDisabled] = useState(false); // Disable guess input during stall sabotage
+  const [selectedOpponent, setSelectedOpponent] = useState(null);
+  const [guessDisabled, setGuessDisabled] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [canSabotage, setCanSabotage] = useState(true);
   const price = { stall: 50, addNoise: 50, deduct: 30 };
@@ -772,14 +772,14 @@ export default function GameScreen() {
                             </h4>
                             <div className="space-y-2.5">
                               {[
-                                { key: "addNoise", label: "Add Noise", shortcut: "A", icon: "🌫" }, // Static/noise icon
-                                { key: "stall", label: "Stall", shortcut: "S", icon: "⏳" }, // Timer/hourglass for stalling
+                                { key: "addNoise", label: "Add Noise", shortcut: "A", icon: "🌫" },
+                                { key: "stall", label: "Stall", shortcut: "S", icon: "⏳" },
                                 {
                                   key: "deduct",
                                   label: "Deduct Points",
                                   shortcut: "D",
-                                  icon: "�",
-                                }, // Downward trend for point deduction
+                                  icon: "⬇️",
+                                },
                               ].map((action) => (
                                 <div
                                   key={action.key}
