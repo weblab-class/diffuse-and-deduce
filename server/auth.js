@@ -1,12 +1,9 @@
 const { OAuth2Client } = require("google-auth-library");
 const User = require("./models/user");
-const socketManager = require("./server-socket");
 
-// create a new OAuth client used to verify google sign-in
 const CLIENT_ID = "199130750908-mjfqj052l47dekm5kdd3j8c5cmk9d5j0.apps.googleusercontent.com";
 const client = new OAuth2Client(CLIENT_ID);
 
-// accepts a login token from the frontend, and verifies that it's legit
 function verify(token) {
   return client
     .verifyIdToken({
@@ -16,7 +13,6 @@ function verify(token) {
     .then((ticket) => ticket.getPayload());
 }
 
-// gets user from DB, or makes a new account if it doesn't exist yet
 function getOrCreateUser(user) {
   // the "sub" field means "subject", which is a unique identifier for each user
   return User.findOne({ googleid: user.sub }).then((existingUser) => {
@@ -29,7 +25,6 @@ function getOrCreateUser(user) {
       googleid: user.sub,
     });
 
-    // Saves the new user to MongoDB
     return newUser.save().then((savedUser) => savedUser.toObject());
   });
 }
@@ -38,7 +33,6 @@ function login(req, res) {
   verify(req.body.token)
     .then((user) => getOrCreateUser(user))
     .then((user) => {
-      // persist user in the session
       req.session.user = user;
       res.send(user);
     })
@@ -56,7 +50,6 @@ function logout(req, res) {
 }
 
 function populateCurrentUser(req, res, next) {
-  // simply populate "req.user" for convenience
   req.user = req.session.user;
   next();
 }

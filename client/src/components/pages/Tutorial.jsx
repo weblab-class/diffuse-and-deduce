@@ -35,6 +35,10 @@ const Tutorial = () => {
               <p className="text-gray-200">
                 Guess the image as quickly as possible to earn more points.{" "}
               </p>
+              <p className="text-gray-200 pt-2">
+                To submit a guess, enter it in the input field below the image and press the
+                "Submit" button OR the "Enter" key on your keyboard.{" "}
+              </p>
             </div>
 
             <div className="h-px bg-gradient-to-r from-transparent via-purple-400/30 to-transparent my-8" />
@@ -47,9 +51,9 @@ const Tutorial = () => {
                 image.
               </p>
               <p className="text-gray-200 pt-2">
-                The player importing images will watch the game as a spectator, that is, they will
-                be able to see denoising images and manage rounds but won't be able to submit
-                guesses, sabotage others, or be sabotaged.
+                The player importing images will watch the game as a spectator. That is, they will
+                be able to observe denoising and manage rounds, but won't be able to submit guesses,
+                sabotage others, or be sabotaged.
               </p>
             </div>
 
@@ -64,7 +68,8 @@ const Tutorial = () => {
                 <h3 className="text-lg font-semibold text-indigo-400 mb-2">Sabotage</h3>
                 <p className="text-gray-200 mb-4">
                   Pick an opponent to add noise, stall, or deduct. (Requires at least 2 players in
-                  the game).
+                  the game). To execute a sabotage action, press the corresponding key on your
+                  keyboard.
                 </p>
 
                 <div className="space-y-4">

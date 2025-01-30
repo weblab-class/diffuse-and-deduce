@@ -4,15 +4,15 @@ const path = require("path");
 let io;
 let sharedImageStorage;
 
-const userToSocketMap = {}; // maps user ID to socket object
-const socketToUserMap = {}; // maps socket ID to user object
-const roomUsedImages = {}; // Track used images per room
-const roomTopics = {}; // Track the topic for each room
-const roomHosts = {}; // Track the host for each room
-const roomGameModes = {}; // Track if room is using imported images
-const roomUploadedImages = {}; // Store uploaded images per room
+const userToSocketMap = {};
+const socketToUserMap = {};
+const roomUsedImages = {};
+const roomTopics = {};
+const roomHosts = {};
+const roomGameModes = {};
+const roomUploadedImages = {};
 
-const rooms = {}; // to store interval references for each room
+const rooms = {};
 
 const getAllConnectedUsers = () => Object.values(socketToUserMap);
 const getSocketFromUserID = (userid) => userToSocketMap[userid];
@@ -74,25 +74,20 @@ function startRoundTimer(roomCode) {
         if (isImportedImages) {
           const hostSocketId = roomGameModes[roomCode].host;
 
-          // Remove host's data
           delete emitScores[hostSocketId];
           delete emitSocketToUserMap[hostSocketId];
         }
 
-        // Emit the 'roundOver' event with filtered data
         io.to(roomCode).emit("roundOver", {
           scores: emitScores,
           socketToUserMap: emitSocketToUserMap,
         });
 
-        // Clean up timer
         clearInterval(interval);
         delete rooms[roomCode].interval;
 
-        // Optionally, reset previousScores if needed
         rooms[roomCode].previousScores = { ...rooms[roomCode].scores };
       } else {
-        // Send time update (capped at total round time)
         const timeUpdate = { timeElapsed: Math.min(elapsed, round.totalTime) };
         io.to(roomCode).emit("timeUpdate", timeUpdate);
       }
@@ -107,7 +102,6 @@ function startRoundTimer(roomCode) {
   rooms[roomCode].timerStartTime = timerStartTime;
 }
 
-// Clean up old rooms periodically
 const cleanupRooms = async () => {
   try {
     // Only clean up rooms that are:
@@ -135,12 +129,10 @@ const cleanupRooms = async () => {
   }
 };
 
-// Helper function to convert date to ObjectId
 function objectIdFromDate(date) {
   return Math.floor(date.getTime() / 1000).toString(16) + "0000000000000000";
 }
 
-// Clean up rooms every 5 minutes
 setInterval(cleanupRooms, 5 * 60 * 1000);
 
 function checkGuess(guessText, correctAnswers) {
@@ -170,67 +162,52 @@ module.exports = {
 
       socket.on("sabotage", async ({ roomCode, type, targetId }) => {
         try {
-          // Validate sabotage parameters
           if (!roomCode || !type || !targetId) {
             return socket.emit("errorMessage", "Invalid sabotage parameters.");
           }
 
-          // Fetch the room from the database
           const room = await Room.findOne({ code: roomCode });
           if (!room) {
             return socket.emit("errorMessage", "Room not found.");
           }
 
-          // Find the acting player in the room
           const actingPlayer = room.players.find((p) => p.id === socket.id);
           if (!actingPlayer) {
             return socket.emit("errorMessage", "You are not part of this room.");
           }
 
-          // Prevent sabotaging oneself
           if (actingPlayer.id === targetId) {
             return socket.emit("errorMessage", "You cannot sabotage yourself.");
           }
 
-          // Find the target player
           const targetPlayer = room.players.find((p) => p.id === targetId);
           if (!targetPlayer) {
             return socket.emit("errorMessage", "Target player not found in the room.");
           }
 
-          // Ensure the acting player has enough points
           const actingScore = rooms[roomCode].scores[socket.id] || 0;
           if (actingScore < price[type]) {
             return socket.emit("errorMessage", "Not enough points to perform sabotage.");
           }
 
-          // Deduct points from the acting player
           rooms[roomCode].scores[socket.id] -= price[type];
 
-          // Initialize the difference object for score updates
           const diff = {
-            [socket.id]: -price[type], // Acting player loses points
+            [socket.id]: -price[type],
           };
 
-          // Apply the sabotage effect based on the type
           if (type === "addNoise") {
-            // Notify the target to add noise
             io.to(targetId).emit("sabotageApplied", { type: "addNoise", from: socket.id });
           } else if (type === "stall") {
-            // Notify the target to stall (disable guessing)
             io.to(targetId).emit("sabotageApplied", { type: "stall", from: socket.id });
           } else if (type === "deduct") {
-            // Deduct 50 points from the target player
             rooms[roomCode].scores[targetId] = (rooms[roomCode].scores[targetId] || 0) - 60;
             diff[targetId] = -60;
-
-            // Notify the target about the deduction
             io.to(targetId).emit("sabotageApplied", { type: "deduct", from: socket.id });
           } else {
             return socket.emit("errorMessage", "Unknown sabotage type.");
           }
 
-          // Emit updated scores to all players in the room
           io.to(roomCode).emit("scoreUpdate", { scores: rooms[roomCode].scores, diff });
         } catch (err) {
           console.error("Error handling sabotage:", err);
@@ -250,7 +227,6 @@ module.exports = {
 
           const playerId = socket.id;
 
-          // Initialize scores object if it doesn't exist
           if (!rooms[roomCode]) {
             rooms[roomCode] = { scores: {} };
           }
@@ -258,10 +234,8 @@ module.exports = {
             rooms[roomCode].scores = {};
           }
 
-          // Save a snapshot of scores before any updates
-          // Ensure a previousScores object exists for this room (persists between rounds)
           if (!rooms[roomCode].previousScores) {
-            rooms[roomCode].previousScores = { ...rooms[roomCode].scores }; // Copy current scores at the start of the game
+            rooms[roomCode].previousScores = { ...rooms[roomCode].scores };
           }
 
           if (!rooms[roomCode].scores[playerId]) {
@@ -285,10 +259,9 @@ module.exports = {
           Object.keys(rooms[roomCode].scores).forEach((playerId) => {
             const currentScore = rooms[roomCode].scores[playerId] || 0;
             const previousScore = rooms[roomCode].previousScores[playerId] || 0;
-            diff[playerId] = currentScore - previousScore; // Net change since the last round
+            diff[playerId] = currentScore - previousScore;
           });
 
-          // Score update
           io.to(roomCode).emit("scoreUpdate", { scores: rooms[roomCode].scores, diff });
         } catch (err) {
           console.error("Error in submitGuess:", err);
@@ -350,40 +323,32 @@ module.exports = {
             let imagePath;
 
             if (topic === "Import_Images") {
-              // Use the stored uploaded images
               const currentUploadedImages = roomUploadedImages[roomCode];
               if (!currentUploadedImages || currentUploadedImages.length === 0) {
                 throw new Error("No uploaded images available for this room");
               }
 
-              // Initialize used images tracking for this room if needed
               if (!roomUsedImages[roomCode]) {
                 roomUsedImages[roomCode] = new Set();
               }
 
-              // If we've used all images, reset the tracking
               if (roomUsedImages[roomCode].size === currentUploadedImages.length) {
                 roomUsedImages[roomCode].clear();
               }
 
-              // Get available images (ones we haven't used yet)
               const availableImages = currentUploadedImages.filter(
                 (id) => !roomUsedImages[roomCode].has(id)
               );
 
-              // Select random image
               const randomIndex = Math.floor(Math.random() * availableImages.length);
               const selectedImageId = availableImages[randomIndex];
 
-              // Mark as used
               roomUsedImages[roomCode].add(selectedImageId);
 
-              // For uploaded images, use special URL format
               imagePath = `/api/get-game-image?roomCode=${roomCode}&imageIds=${JSON.stringify([
                 selectedImageId,
               ])}`;
 
-              // Get image data for answer
               if (!sharedImageStorage) {
                 throw new Error("Image storage not initialized");
               }
@@ -403,7 +368,6 @@ module.exports = {
                 round.primaryAnswer = "uploaded-image";
               }
             } else {
-              // Original code for predefined topics
               const imagesDir = path.join(__dirname, "public", "game-images", topic);
               const files = fs
                 .readdirSync(imagesDir)
@@ -413,17 +377,14 @@ module.exports = {
                 throw new Error(`No images found for topic: ${topic}`);
               }
 
-              // Initialize used images tracking for this room if needed
               if (!roomUsedImages[roomCode]) {
                 roomUsedImages[roomCode] = new Set();
               }
 
-              // If we've used all images, reset the tracking
               if (roomUsedImages[roomCode].size === files.length) {
                 roomUsedImages[roomCode].clear();
               }
 
-              // Get available images (ones we haven't used yet)
               const availableImages = files.filter((file) => !roomUsedImages[roomCode].has(file));
 
               const randomIndex = Math.floor(Math.random() * availableImages.length);
@@ -448,7 +409,7 @@ module.exports = {
               startTime: round.startTime,
               totalTime: round.totalTime,
               imagePath,
-              totalRounds: round.totalRounds, // Use the saved totalRounds
+              totalRounds: round.totalRounds,
               currentRound: round.currentRound,
               gameMode,
               revealMode: round.revealMode,
@@ -465,7 +426,6 @@ module.exports = {
               scores: rooms[roomCode].scores,
             });
 
-            // Start the timer after everything is set up
             startRoundTimer(roomCode);
           } catch (err) {
             console.error("Error starting round:", err);
@@ -498,7 +458,6 @@ module.exports = {
             return callback({ error: "Player name is required" });
           }
 
-          // Clean up old rooms first
           await cleanupRooms();
 
           const roomCode = generateRoomCode();
@@ -509,7 +468,6 @@ module.exports = {
           });
           await newRoom.save();
 
-          // In memory game state
           rooms[roomCode] = {
             players: [{ id: socket.id, name: playerName }],
             scores: { [socket.id]: 0 },
@@ -517,7 +475,6 @@ module.exports = {
 
           socket.join(roomCode);
 
-          // Emit room data to everyone in room
           io.to(roomCode).emit("roomData", {
             players: newRoom.players,
             hostId: newRoom.hostId,
@@ -533,33 +490,27 @@ module.exports = {
 
       socket.on("joinRoom", async ({ roomCode, playerName }, callback) => {
         try {
-          // Validate input
           if (!roomCode || !playerName) {
             return callback({ error: "Room code and player name are required." });
           }
 
-          // Find the room
           const room = await Room.findOne({ code: roomCode });
           if (!room) {
             return callback({ error: "Room not found." });
           }
 
-          // Check if player already exists
           const existingPlayer = room.players.find((player) => player.name === playerName);
           if (existingPlayer) {
-            // Update the player's socket ID
             existingPlayer.id = socket.id;
             if (room.hostId === existingPlayer.id) {
               room.hostId = socket.id;
             }
           } else {
-            // Add new player
             room.players.push({ id: socket.id, name: playerName });
           }
 
           await room.save();
 
-          // Update in-memory room data
           if (!rooms[roomCode]) {
             rooms[roomCode] = { players: [], scores: {} };
           }
@@ -573,7 +524,6 @@ module.exports = {
 
           socket.join(roomCode);
 
-          // Emit updated room data to all clients in the room
           io.to(roomCode).emit("roomData", {
             players: room.players,
             hostId: room.hostId,
@@ -594,7 +544,6 @@ module.exports = {
         }
 
         try {
-          // MONGODB cleanup
           const room = await Room.findOne({ code: roomCode });
           if (!room) {
             return callback({ error: "Room not found." });
@@ -628,7 +577,6 @@ module.exports = {
             );
             delete rooms[roomCode].scores[socket.id];
 
-            // Notify all users in room of the leaving user before potential room deletion
             io.to(roomCode).emit("roomData", {
               players: room.players,
               hostId: room.hostId,
@@ -636,7 +584,6 @@ module.exports = {
             });
 
             if (rooms[roomCode].players.length === 0) {
-              // Clear any existing interval before deleting the room
               if (rooms[roomCode] && rooms[roomCode].interval) {
                 clearInterval(rooms[roomCode].interval);
               }
@@ -644,7 +591,6 @@ module.exports = {
             }
           }
 
-          // SOCKETIO cleanup
           socket.leave(roomCode);
           callback({ error: null });
         } catch (err) {
@@ -656,16 +602,13 @@ module.exports = {
       socket.on("updateSettings", async ({ roomCode, settings }) => {
         try {
           const room = await Room.findOne({ code: roomCode });
-          if (!room) return; // handle error or do nothing
+          if (!room) return;
 
-          // Only host can update
           if (room.hostId !== socket.id) return;
 
-          // Update room settings
           room.settings = settings;
           await room.save();
 
-          // Broadcast updated settings
           io.to(roomCode).emit("settingsUpdated", room.settings);
         } catch (err) {
           console.error("Error updating settings:", err);

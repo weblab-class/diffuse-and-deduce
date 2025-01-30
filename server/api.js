@@ -106,7 +106,6 @@ router.get("/gameState", (req, res) => {
         // totalRounds: round.totalRounds,
         // currentRound: round.currentRound,
         primaryAnswer: round.primaryAnswer,
-        // Add any other properties that might be needed by the client
       });
     })
     .catch((error) => {
@@ -161,7 +160,6 @@ router.get("/get-game-image", (req, res) => {
     return res.status(404).json({ error: "Image not found" });
   }
 
-  // Send the image directly with proper content type
   res.set("Content-Type", image.mimetype);
   res.send(image.buffer);
 });

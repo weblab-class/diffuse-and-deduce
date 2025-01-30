@@ -1,5 +1,3 @@
-// client-socket.js
-
 import socketIOClient from "socket.io-client";
 import { post } from "./utilities";
 const endpoint = window.location.hostname + ":" + window.location.port;
