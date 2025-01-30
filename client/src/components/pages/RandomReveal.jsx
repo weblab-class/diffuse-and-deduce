@@ -354,8 +354,15 @@ const RandomReveal = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    canvas.width = 600;
-    canvas.height = 400;
+    // canvas.width = 600;
+    // canvas.height = 400;
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
