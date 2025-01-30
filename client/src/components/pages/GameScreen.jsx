@@ -642,7 +642,7 @@ export default function GameScreen() {
         <div className="flex-1 flex flex-col px-4">
           <div className="max-w-4xl mx-auto w-full flex flex-col h-full">
             {/* Time remaining display */}
-            <div className={`text-center pt-24 mb-2 ${isShaking ? "animate-violent-shake" : ""}`}>
+            <div className={`text-center pt-24 mb-4 ${isShaking ? "animate-violent-shake" : ""}`}>
               <p
                 className={`text-lg ${
                   timePerRound - timeElapsed <= 5 ? "text-red-200" : "text-purple-200"
@@ -678,9 +678,13 @@ export default function GameScreen() {
             </div>
 
             {/* Main game content container */}
-            <div className="flex-1 flex flex-row gap-4 min-h-0">
+            <div className="flex-1 flex flex-col md:flex-row gap-4 min-h-0 flex-wrap mb-8">
               {/* Canvas container */}
-              <div className={`${sabotageEnabled ? "flex-[3]" : "flex-[2.5]"} relative`}>
+              <div
+                className={`${
+                  sabotageEnabled ? "flex-1 md:flex-[3]" : "flex-1 md:flex-[2.5]"
+                } relative order-1`}
+              >
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform -rotate-1"></div>
                 <div className="relative h-full bg-white/5 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-xl canvas-container glow">
                   <canvas
@@ -692,9 +696,42 @@ export default function GameScreen() {
                 </div>
               </div>
 
+              {/* Input section */}
+              <div className="order-2 md:order-3 w-full md:w-full">
+                {guessedCorrectly ? (
+                  <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-3 text-center border border-purple-500/20 shadow-lg">
+                    <p className="text-lg text-purple-200">
+                      Congratulations! You scored{" "}
+                      <span
+                        className={`font-semibold text-purple-300 ${
+                          guessedCorrectly ? "score-animate" : ""
+                        }`}
+                      >
+                        {reward || 0}
+                      </span>{" "}
+                      points.
+                    </p>
+                    <p className="text-sm text-gray-300">Waiting for the round to end... </p>
+                  </div>
+                ) : (
+                  renderGuessInput()
+                )}
+
+                {guessedWrong && (
+                  <div className="mt-2 bg-red-500/10 backdrop-blur-xl text-red-200 py-2 px-4 rounded-lg border border-red-500/20 text-center animate-shake">
+                    Wrong guess! Try again.
+                    {hintsEnabled && revealedHint && (
+                      <div className="hint-message">
+                        Hint so far: <span style={{ fontWeight: "bold" }}>{revealedHint}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Sabotage Panel */}
               {sabotageEnabled && (
-                <div className="w-56">
+                <div className="w-full md:w-56 order-3 md:order-2">
                   <div className="relative h-full">
                     {/* Background effects */}
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl transform rotate-1">
@@ -769,39 +806,6 @@ export default function GameScreen() {
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Input section */}
-            <div className="mt-auto pb-8">
-              {guessedCorrectly ? (
-                <div className="bg-white/5 backdrop-blur-2xl rounded-xl p-3 text-center border border-purple-500/20 shadow-lg">
-                  <p className="text-lg text-purple-200">
-                    Congratulations! You scored{" "}
-                    <span
-                      className={`font-semibold text-purple-300 ${
-                        guessedCorrectly ? "score-animate" : ""
-                      }`}
-                    >
-                      {reward || 0}
-                    </span>{" "}
-                    points.
-                  </p>
-                  <p className="text-sm text-gray-300">Waiting for the round to end... </p>
-                </div>
-              ) : (
-                renderGuessInput()
-              )}
-
-              {guessedWrong && (
-                <div className="mt-2 bg-red-500/10 backdrop-blur-xl text-red-200 py-2 px-4 rounded-lg border border-red-500/20 text-center animate-shake">
-                  Wrong guess! Try again.
-                  {hintsEnabled && revealedHint && (
-                    <div className="hint-message">
-                      Hint so far: <span style={{ fontWeight: "bold" }}>{revealedHint}</span>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
