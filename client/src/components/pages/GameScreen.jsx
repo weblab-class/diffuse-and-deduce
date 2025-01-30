@@ -133,6 +133,17 @@ export default function GameScreen() {
         targetId: selectedOpponent.id,
       });
 
+      const notificationId = Date.now();
+      setNotifications(prev => [...prev, {
+        message: `You have sabotaged ${selectedOpponent.name} with ${type}!`,
+        id: notificationId,
+        type
+      }]);
+
+      setTimeout(() => {
+        setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      }, 5000);
+
       setScores((prevScores) => ({
         ...prevScores,
         [socket.id]: prevScores[socket.id] - price[type],
@@ -177,7 +188,7 @@ export default function GameScreen() {
       console.log(`Received sabotageApplied: type=${type} from=${from}`);
       let message = "";
       if (type === "addNoise") {
-        message = "Another player has added noise to your image!";
+        message = `${from} has added noise to your image!`;
         setSabotageNoiseLevel((prev) => {
           console.log(`Previous sabotageNoiseLevel: ${prev}`);
           return prev + 2;
@@ -185,23 +196,24 @@ export default function GameScreen() {
       }
 
       if (type === "stall" && !guessedCorrectly) {
-        message = "Another user has stalled your guessing!";
+        message = `${from} has stalled your guessing!`;
         setGuessDisabled(true);
         setTimeout(() => setGuessDisabled(false), 5000);
       }
 
       if (type === "deduct") {
-        message = "Another user has deducted 60 points from your score!";
+        message = `${from} has deducted 60 points from your score!`;
         setScores((prevScores) => ({
           ...prevScores,
           [socket.id]: (prevScores[socket.id] || 0) - 60,
         }));
       }
 
-      setNotifications((prev) => [...prev, { message, type }]);
+      const notificationId = Date.now();
+      setNotifications((prev) => [...prev, { message, type, id: notificationId }]);
 
       setTimeout(() => {
-        setNotifications((prev) => prev.slice(1));
+        setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
       }, 5000);
     };
 

@@ -197,13 +197,25 @@ module.exports = {
           };
 
           if (type === "addNoise") {
-            io.to(targetId).emit("sabotageApplied", { type: "addNoise", from: socket.id });
+            io.to(targetId).emit("sabotageApplied", {
+              type: "addNoise",
+              from: socket.id,
+              playerName: actingPlayer.name,
+            });
           } else if (type === "stall") {
-            io.to(targetId).emit("sabotageApplied", { type: "stall", from: socket.id });
+            io.to(targetId).emit("sabotageApplied", {
+              type: "stall",
+              from: socket.id,
+              playerName: actingPlayer.name,
+            });
           } else if (type === "deduct") {
             rooms[roomCode].scores[targetId] = (rooms[roomCode].scores[targetId] || 0) - 60;
             diff[targetId] = -60;
-            io.to(targetId).emit("sabotageApplied", { type: "deduct", from: socket.id });
+            io.to(targetId).emit("sabotageApplied", {
+              type: "deduct",
+              from: socket.id,
+              playerName: actingPlayer.name,
+            });
           } else {
             return socket.emit("errorMessage", "Unknown sabotage type.");
           }
