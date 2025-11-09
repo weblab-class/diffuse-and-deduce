@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "main": "server/server.js",
+  "engines": { "node": "18.x" },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "nodemon"
+    "start": "node"
   },
   "repository": {
     "type": "git",
