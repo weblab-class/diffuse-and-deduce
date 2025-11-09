@@ -17,9 +17,6 @@
   "author": "",
   "license": "ISC",
   "homepage": "",
-  "engines": {
-    "node": ">=18.x"
-  },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",
     "@react-oauth/google": "^0.12.1",
